@@ -1,0 +1,445 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>온길 앱 — 활동지원사</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<style>
+:root{
+  --primary-50:#F0FDF9;--primary-100:#E1F5EE;--primary-400:#5DCAA5;
+  --primary-600:#1D9E75;--primary-700:#0F6E56;--primary-800:#065F46;--primary-900:#064E3B;
+  --accent-amber:#FAC775;--accent-coral:#F5C4B3;--accent-stone:#444441;--accent-pebble:#B4B2A9;
+  --med-bg:#FEF0F0;--med-text:#BF3030;--med-accent:#E04545;
+  --wel-bg:#EDFAF3;--wel-text:#276B4C;--wel-accent:#3EA673;
+  --dai-bg:#FFF5E6;--dai-text:#B56F10;--dai-accent:#E8991E;
+  --role-supporter:#E8991E;
+  --br-sm:6px;--br-md:10px;--br-lg:14px;--br-xl:20px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif;background:#e9ebe9;color:#1c1c1a;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:24px 12px;gap:16px}
+button{font-family:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--primary-600);outline-offset:2px}
+
+/* proto nav (프레임 밖 상단) */
+.proto-nav{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:420px}
+.proto-nav button{border:1px solid #c9ccc9;background:#fff;border-radius:999px;padding:7px 13px;font-size:12px;font-weight:600;color:#555}
+.proto-nav button.on{background:var(--role-supporter);color:#3a2600;border-color:var(--role-supporter)}
+.proto-tag{font-size:11px;color:#8a8d8a;text-align:center}
+
+/* phone frame */
+.phone{width:390px;max-width:100%;height:800px;background:#fff;border-radius:32px;box-shadow:0 18px 50px rgba(0,0,0,.22);overflow:hidden;position:relative;display:flex;flex-direction:column;border:1px solid #d0d3d0}
+.statusbar{height:26px;background:var(--primary-900);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:11px;font-weight:600;flex-shrink:0}
+.navbar{height:50px;background:var(--primary-800);color:#fff;display:flex;align-items:center;padding:0 12px;gap:10px;flex-shrink:0}
+.navbar .nb-back{background:none;border:none;color:#fff;font-size:20px;width:32px;text-align:left}
+.navbar .nb-title{font-weight:700;font-size:16px;flex:1}
+.navbar .nb-act{background:rgba(255,255,255,.15);border:none;color:#fff;font-size:12px;font-weight:700;padding:6px 11px;border-radius:var(--br-sm)}
+.navbar .wm-on{color:var(--primary-400);font-weight:800;font-size:17px}
+.navbar .wm-gil{color:#fff;font-weight:800;font-size:17px}
+
+.screenbody{flex:1;overflow-y:auto;background:#f7f8f7}
+.screen{display:none;padding:16px 16px 20px}
+.screen.active{display:block}
+.pxlabel{font-size:10.5px;color:#aeb0ad;margin-bottom:10px}
+.pxlabel b{color:var(--dai-text)}
+
+/* bottom tab */
+.tabbar{height:60px;background:#fff;border-top:1px solid #e6e8e6;display:flex;flex-shrink:0}
+.tabbar button{flex:1;border:none;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#9a9d9a;font-size:10.5px;font-weight:600}
+.tabbar button .ti{font-size:20px}
+.tabbar button.on{color:var(--dai-text)}
+
+/* generic */
+h2.h{font-size:20px;font-weight:800;margin-bottom:2px}
+.sub{color:var(--accent-pebble);font-size:12.5px;margin-bottom:14px}
+.card{background:#fff;border:1px solid #e6e8e6;border-radius:var(--br-md);padding:14px;margin-bottom:12px}
+.big-btn{width:100%;background:var(--accent-amber);color:#3a2600;border:none;border-radius:var(--br-md);padding:16px;font-size:16px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn{border:none;border-radius:var(--br-md);padding:13px 16px;font-weight:700;font-size:14px}
+.btn-primary{background:var(--primary-600);color:#fff;width:100%}
+.btn-ghost{background:#fff;border:1px solid #d5d8d5;color:#555}
+.sec{font-size:14px;font-weight:800;margin:16px 0 10px;color:var(--accent-stone)}
+
+.statrow{display:flex;gap:10px;margin-bottom:6px}
+.statrow .st{flex:1;background:#fff;border:1px solid #e6e8e6;border-radius:var(--br-md);padding:12px;text-align:center}
+.statrow .st .n{font-size:24px;font-weight:800;color:var(--dai-text)}
+.statrow .st .l{font-size:11px;color:var(--accent-pebble);margin-top:2px}
+
+.task{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e6e8e6;border-radius:var(--br-md);padding:13px;margin-bottom:10px}
+.task .tm{font-weight:800;color:var(--dai-text);font-size:14px}
+.task .flex{flex:1}
+.task .nm{font-weight:700;font-size:14px}
+.task .mt{font-size:11.5px;color:var(--accent-pebble)}
+.pill{font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:999px}
+.pill.done{background:var(--wel-bg);color:var(--wel-text)}
+.pill.wait{background:#eee;color:#777}
+.task.now{border-color:var(--dai-accent);box-shadow:0 0 0 1px var(--dai-accent)}
+
+.hrow{display:flex;align-items:center;gap:11px;background:#fff;border:1px solid #e6e8e6;border-radius:var(--br-md);padding:13px;margin-bottom:10px}
+.hrow .av{width:38px;height:38px;border-radius:50%;background:var(--dai-bg);color:var(--dai-text);display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0}
+.hrow .flex{flex:1;min-width:0}
+.hrow .ht{font-weight:700;font-size:13.5px}
+.hrow .hs{font-size:11.5px;color:var(--accent-pebble);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip{font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px;flex-shrink:0}
+.chip.med{background:var(--med-bg);color:var(--med-text)}
+.chip.wel{background:var(--wel-bg);color:var(--wel-text)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--med-accent);flex-shrink:0}
+
+.filt{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:2px}
+.filt button{border:1px solid #d5d8d5;background:#fff;border-radius:999px;padding:6px 13px;font-size:12px;font-weight:600;color:#555;white-space:nowrap;flex-shrink:0}
+.filt button.on{background:var(--dai-text);color:#fff;border-color:var(--dai-text)}
+
+/* forms */
+label.fl{display:block;font-size:12px;font-weight:700;margin-bottom:6px}
+label.fl .rq{color:var(--med-accent)}
+input.fi,textarea.fi,select.fi{width:100%;border:1px solid #d5d8d5;border-radius:var(--br-md);padding:12px;font-size:15px;font-family:inherit;background:#fff}
+textarea.fi{resize:vertical;min-height:80px}
+.fg{margin-bottom:16px}
+
+/* wizard mobile */
+.msteps{display:flex;gap:6px;margin-bottom:16px}
+.msteps .mb{flex:1;height:6px;border-radius:3px;background:#e2e5e2}
+.msteps .mb.on{background:var(--primary-600)}
+.stepno{font-size:12px;font-weight:800;color:var(--dai-text);margin-bottom:3px}
+.wzh{font-size:18px;font-weight:800;margin-bottom:2px}
+.wzs{font-size:12.5px;color:var(--accent-pebble);margin-bottom:16px}
+.wstep{display:none}
+.wstep.on{display:block}
+
+.catg{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:16px}
+.cat{border:1.5px solid #d5d8d5;background:#fff;border-radius:var(--br-md);padding:14px 8px;text-align:center;font-weight:700;font-size:13px}
+.cat .ce{font-size:24px;display:block;margin-bottom:5px}
+.cat.sel{border-color:var(--dai-accent);background:var(--dai-bg);color:var(--dai-text)}
+
+.iconrow{margin-bottom:18px}
+.irl{font-weight:800;font-size:14px;margin-bottom:9px}
+.iopts{display:flex;gap:8px}
+.iopt{flex:1;border:1.5px solid #d5d8d5;background:#fff;border-radius:var(--br-xl);padding:13px 4px;text-align:center;font-weight:700;font-size:12px}
+.iopt .ie{font-size:28px;display:block;margin-bottom:4px}
+.iopt.sel{border-color:var(--dai-accent);background:var(--dai-bg);color:var(--dai-text)}
+
+.skipnote{background:var(--primary-50);border:1px solid var(--primary-100);border-radius:var(--br-md);padding:11px;font-size:12px;color:var(--primary-700);margin-bottom:14px}
+.sumcard{background:var(--dai-bg);border:1px solid var(--dai-accent);border-radius:var(--br-md);padding:14px;margin-bottom:14px}
+.sumrow{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.06);font-size:13px}
+.sumrow:last-child{border:none}
+.sumrow .k{color:var(--dai-text);font-weight:600}
+.sumrow .v{font-weight:700;text-align:right}
+.ref{background:var(--primary-50);border:1px solid var(--primary-100);border-radius:var(--br-md);padding:11px;margin-bottom:16px}
+.ref h5{font-size:12px;color:var(--primary-700);font-weight:800;margin-bottom:8px}
+.refi{background:#fff;border:1px solid #e0efe8;border-radius:var(--br-sm);padding:8px 9px;font-size:11.5px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.refi button{font-size:11px;color:var(--primary-600);background:none;border:none;font-weight:700;flex-shrink:0}
+
+.wzfoot{display:flex;gap:8px;margin-top:8px}
+.wzfoot .btn{flex:1}
+
+/* detail */
+.dblock{background:#fff;border:1px solid #e6e8e6;border-radius:var(--br-md);padding:14px;margin-bottom:11px}
+.dblock h3{font-size:13px;font-weight:800;color:var(--accent-stone);margin-bottom:8px}
+.dkv{display:grid;grid-template-columns:76px 1fr;gap:7px 8px;font-size:13px}
+.dkv .dk{color:var(--accent-pebble);font-weight:600}
+.tag{display:inline-block;background:var(--dai-bg);color:var(--dai-text);font-size:12px;font-weight:600;padding:5px 9px;border-radius:var(--br-sm);margin:0 5px 5px 0}
+
+/* settings */
+.setrow{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #e6e8e6;border-radius:var(--br-md);padding:15px 14px;margin-bottom:9px;font-weight:600;font-size:14px}
+.setrow .si{font-size:18px;width:24px;text-align:center}
+.setrow .flex{flex:1}
+.setrow .ar{color:var(--accent-pebble)}
+.sw{width:42px;height:24px;border-radius:999px;background:var(--primary-600);position:relative;flex-shrink:0}
+.sw::after{content:"";position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;right:3px}
+.prof-hd{background:var(--dai-bg);border-radius:var(--br-md);padding:18px;display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.prof-hd .pav{width:54px;height:54px;border-radius:50%;background:var(--dai-accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800}
+.prof-hd .pn{font-size:17px;font-weight:800}
+.prof-hd .pr{font-size:12px;color:var(--dai-text);font-weight:600}
+</style>
+
+<div class="proto-nav">
+  <button data-tab="home" data-go="home" class="on">[S-01] 홈</button>
+  <button data-tab="journal" data-go="journal">[S-12/13] 일지</button>
+  <button data-tab="handover" data-go="handover">[S-20/21] 인수인계</button>
+  <button data-tab="settings" data-go="settings">설정</button>
+</div>
+<div class="proto-tag">⚠ 정적 프로토타입 · 활동지원사 앱 (390px)</div>
+
+<div class="phone">
+  <div class="statusbar"><span>9:41</span><span>온길 · 활동지원사</span><span>📶 🔋</span></div>
+  <div class="navbar" id="navbar">
+    <button class="nb-back" id="nbBack" style="display:none" onclick="navBack()">←</button>
+    <span class="nb-title" id="nbTitle"><span class="wm-on">온</span><span class="wm-gil">길</span></span>
+    <button class="nb-act" id="nbAct" style="display:none"></button>
+  </div>
+
+  <div class="screenbody">
+
+    <!-- 홈 -->
+    <section class="screen active" data-screen="home">
+      <div class="pxlabel"><b>[S-01]</b> 홈 — 오늘 업무 현황 · ST-01</div>
+      <h2 class="h">김지원 님 👋</h2>
+      <div class="sub">7월 8일 화 · 오늘 방문 3건</div>
+      <div class="statrow">
+        <div class="st"><div class="n">3</div><div class="l">방문</div></div>
+        <div class="st"><div class="n">1</div><div class="l">작성대기</div></div>
+        <div class="st"><div class="n">2</div><div class="l">새 인계</div></div>
+      </div>
+      <button class="big-btn" onclick="openWizard()">✍️ 일지 작성하기</button>
+
+      <div class="sec">📋 오늘 일정</div>
+      <div class="task"><span class="tm">09:00</span><div class="flex"><div class="nm">홍길동</div><div class="mt">2시간 · 신변·이동</div></div><span class="pill done">완료</span></div>
+      <div class="task now"><span class="tm">13:00</span><div class="flex"><div class="nm">홍길동</div><div class="mt">3시간 · 일지 작성 필요</div></div><button class="pill" style="background:var(--dai-accent);color:#fff;border:none" onclick="openWizard()">작성</button></div>
+      <div class="task"><span class="tm">17:00</span><div class="flex"><div class="nm">김영수</div><div class="mt">2시간 · 예정</div></div><span class="pill wait">예정</span></div>
+
+      <div class="sec">🔁 최근 인수인계</div>
+      <div class="hrow" onclick="openDetail()">
+        <div class="av">박</div>
+        <div class="flex"><div class="ht">투약 시간 변경 안내</div><div class="hs">박서연 → 홍길동 · 2시간 전</div></div>
+        <span class="chip med">중요</span><span class="dot"></span>
+      </div>
+      <div class="hrow" onclick="goScreen('handover')">
+        <div class="av">이</div>
+        <div class="flex"><div class="ht">식사 선호 변경</div><div class="hs">이민호 → 김영수 · 어제</div></div>
+        <span class="dot"></span>
+      </div>
+    </section>
+
+    <!-- 일지 (목록/위자드/상세 스택) -->
+    <section class="screen" data-screen="journal">
+      <!-- 목록 -->
+      <div id="jList">
+        <div class="pxlabel"><b>[S-13]</b> 일지 목록 · ST-02</div>
+        <h2 class="h">활동일지</h2>
+        <div class="sub">이번 주 4건 작성</div>
+        <button class="big-btn" onclick="openWizard()">✍️ 새 일지 작성</button>
+        <div class="hrow" onclick="openDetail()"><div class="av">홍</div><div class="flex"><div class="ht">홍길동 · 3시간</div><div class="hs">신변·이동·병원동행 · 07-05</div></div><span class="chip wel">제출</span></div>
+        <div class="hrow" onclick="openDetail()"><div class="av">김</div><div class="flex"><div class="ht">김영수 · 2시간</div><div class="hs">식사·가사지원 · 07-04</div></div><span class="chip wel">제출</span></div>
+        <div class="hrow" onclick="openDetail()"><div class="av">홍</div><div class="flex"><div class="ht">홍길동 · 2.5시간</div><div class="hs">병원동행·신변 · 07-03</div></div><span class="chip wel">제출</span></div>
+        <div class="hrow" onclick="openDetail()"><div class="av">홍</div><div class="flex"><div class="ht">홍길동 · 2시간</div><div class="hs">이동·가사지원 · 07-01</div></div><span class="chip" style="background:#eee;color:#777">임시</span></div>
+      </div>
+
+      <!-- 위자드 -->
+      <div id="jWizard" style="display:none">
+        <div class="pxlabel"><b>[S-12]</b> 일지 작성 5단계 · ST-05</div>
+        <div class="msteps" id="mSteps">
+          <div class="mb on"></div><div class="mb"></div><div class="mb"></div><div class="mb"></div><div class="mb"></div>
+        </div>
+
+        <div class="wstep on" data-step="1">
+          <div class="stepno">STEP 1 / 5</div><div class="wzh">서비스 정보</div>
+          <div class="wzs">날짜와 시작 시간은 자동 입력됩니다.</div>
+          <div class="fg"><label class="fl" for="m-date">날짜 <span class="rq">*</span></label><input class="fi" id="m-date" type="date" value="2026-07-08"></div>
+          <div class="fg"><label class="fl" for="m-who">이용자 <span class="rq">*</span></label><select class="fi" id="m-who"><option>홍길동</option><option>김영수</option></select></div>
+          <div class="fg"><label class="fl" for="m-start">시작 시간 <span class="rq">*</span></label><input class="fi" id="m-start" type="time" value="13:00"></div>
+        </div>
+
+        <div class="wstep" data-step="2">
+          <div class="stepno">STEP 2 / 5</div><div class="wzh">활동 내역</div>
+          <div class="wzs">제공한 활동을 선택하세요.</div>
+          <div class="ref">
+            <h5>📎 이전 일지 참조</h5>
+            <div class="refi"><span>07-05 · 신변·이동·식사 (3h)</span><button>불러오기</button></div>
+            <div class="refi"><span>07-03 · 병원동행·신변 (2.5h)</span><button>불러오기</button></div>
+          </div>
+          <div class="catg">
+            <button class="cat sel" onclick="this.classList.toggle('sel')"><span class="ce">🚿</span>신변처리</button>
+            <button class="cat sel" onclick="this.classList.toggle('sel')"><span class="ce">🚶</span>이동지원</button>
+            <button class="cat" onclick="this.classList.toggle('sel')"><span class="ce">🍚</span>식사보조</button>
+            <button class="cat" onclick="this.classList.toggle('sel')"><span class="ce">🧹</span>가사지원</button>
+            <button class="cat sel" onclick="this.classList.toggle('sel')"><span class="ce">🏥</span>병원동행</button>
+            <button class="cat" onclick="this.classList.toggle('sel')"><span class="ce">💬</span>의사소통</button>
+          </div>
+          <div class="fg"><label class="fl" for="m-dur">소요 시간 메모</label><textarea class="fi" id="m-dur">병원동행 60분, 신변처리 40분, 이동지원 30분</textarea></div>
+        </div>
+
+        <div class="wstep" data-step="3">
+          <div class="stepno">STEP 3 / 5</div><div class="wzh">건강·식사</div>
+          <div class="wzs">아이콘으로 빠르게 기록하세요.</div>
+          <div class="iconrow"><div class="irl">🍚 식사</div><div class="iopts">
+            <button class="iopt sel" onclick="mpick(this)"><span class="ie">😋</span>잘 먹음</button>
+            <button class="iopt" onclick="mpick(this)"><span class="ie">😐</span>조금</button>
+            <button class="iopt" onclick="mpick(this)"><span class="ie">❌</span>못 먹음</button>
+          </div></div>
+          <div class="iconrow"><div class="irl">💪 건강</div><div class="iopts">
+            <button class="iopt sel" onclick="mpick(this)"><span class="ie">💪</span>양호</button>
+            <button class="iopt" onclick="mpick(this)"><span class="ie">🤧</span>감기</button>
+            <button class="iopt" onclick="mpick(this)"><span class="ie">😴</span>피곤</button>
+          </div></div>
+          <div class="iconrow"><div class="irl">😊 기분</div><div class="iopts">
+            <button class="iopt sel" onclick="mpick(this)"><span class="ie">😊</span>좋음</button>
+            <button class="iopt" onclick="mpick(this)"><span class="ie">😐</span>보통</button>
+            <button class="iopt" onclick="mpick(this)"><span class="ie">😢</span>가라앉음</button>
+          </div></div>
+        </div>
+
+        <div class="wstep" data-step="4">
+          <div class="stepno">STEP 4 / 5 · 선택</div><div class="wzh">특이사항</div>
+          <div class="wzs">없으면 건너뛸 수 있습니다.</div>
+          <div class="skipnote">ℹ️ 인계할 내용이 없다면 <b>건너뛰기</b>를 누르세요.</div>
+          <div class="fg"><label class="fl" for="m-beh">행동 관찰</label><textarea class="fi" id="m-beh" placeholder="특이 행동, 정서 변화"></textarea></div>
+          <div class="fg"><label class="fl" for="m-hand">다음 지원사 인계</label><textarea class="fi" id="m-hand" placeholder="다음 방문 참고 내용"></textarea></div>
+        </div>
+
+        <div class="wstep" data-step="5">
+          <div class="stepno">STEP 5 / 5</div><div class="wzh">확인·제출</div>
+          <div class="wzs">종료 시간 입력 시 서비스 시간이 계산됩니다.</div>
+          <div class="fg"><label class="fl" for="m-end">종료 시간 <span class="rq">*</span></label><input class="fi" id="m-end" type="time" value="16:00" onchange="mCalc()"></div>
+          <div class="fg"><label class="fl">서비스 시간</label><input class="fi" id="m-total" value="3시간 00분" readonly style="background:#f2f4f2;font-weight:700"></div>
+          <div class="sumcard">
+            <div class="sumrow"><span class="k">이용자</span><span class="v">홍길동</span></div>
+            <div class="sumrow"><span class="k">시간</span><span class="v">13:00~16:00</span></div>
+            <div class="sumrow"><span class="k">활동</span><span class="v">신변·이동·병원동행</span></div>
+            <div class="sumrow"><span class="k">건강</span><span class="v">잘먹음/양호/좋음</span></div>
+          </div>
+        </div>
+
+        <div class="wzfoot">
+          <button class="btn btn-ghost" id="mPrev" onclick="mGo(-1)">← 이전</button>
+          <button class="btn btn-ghost" id="mSkip" style="display:none" onclick="mGo(1)">건너뛰기</button>
+          <button class="btn btn-primary" id="mNext" onclick="mGo(1)">다음 →</button>
+          <button class="btn btn-primary" id="mSubmit" style="display:none" onclick="mSubmit()">제출</button>
+        </div>
+      </div>
+
+      <!-- 상세 -->
+      <div id="jDetail" style="display:none">
+        <div class="pxlabel"><b>[S-13]</b> 일지 상세 · ST-03</div>
+        <h2 class="h">활동일지 <span class="chip wel" style="font-size:12px;vertical-align:middle">제출</span></h2>
+        <div class="sub">홍길동 · 2026-07-05 (금)</div>
+        <div class="dblock"><h3>서비스 정보</h3><div class="dkv">
+          <span class="dk">이용자</span><span>홍길동</span>
+          <span class="dk">시간</span><span>13:00~16:00 (3시간)</span>
+          <span class="dk">장소</span><span>자택</span>
+        </div></div>
+        <div class="dblock"><h3>활동 내역</h3>
+          <span class="tag">🚿 신변처리 40분</span><span class="tag">🚶 이동지원 30분</span>
+          <span class="tag">🍚 식사보조 50분</span><span class="tag">🧹 가사지원 60분</span>
+        </div>
+        <div class="dblock"><h3>건강·식사</h3><div class="dkv">
+          <span class="dk">식사</span><span>😋 잘 먹음</span>
+          <span class="dk">건강</span><span>💪 양호</span>
+          <span class="dk">기분</span><span>😊 좋음</span>
+        </div></div>
+        <div class="dblock"><h3>특이사항</h3>
+          <p style="font-size:13px;line-height:1.7">오후 산책 중 다리 통증 호소하여 10분 휴식 후 재개. 저녁 혈압약 정상 복용 확인. 다음 방문 시 보행 상태 관찰 요망.</p>
+        </div>
+        <button class="btn btn-primary" onclick="openHWrite()">이 내용으로 인계 작성 →</button>
+      </div>
+    </section>
+
+    <!-- 인수인계 (목록/작성) -->
+    <section class="screen" data-screen="handover">
+      <div id="hList">
+        <div class="pxlabel"><b>[S-20]</b> 인수인계 목록 · ST-02</div>
+        <h2 class="h">인수인계</h2>
+        <div class="sub">새 항목 2건</div>
+        <button class="big-btn" onclick="openHWrite()">➕ 인계 작성</button>
+        <div class="filt">
+          <button class="on">전체</button><button>안읽음</button><button>중요</button><button>홍길동</button><button>김영수</button>
+        </div>
+        <div class="hrow" onclick="openDetail()"><div class="av">박</div><div class="flex"><div class="ht">투약 시간 변경 안내</div><div class="hs">박서연 → 홍길동 · 2시간 전</div></div><span class="chip med">중요</span><span class="dot"></span></div>
+        <div class="hrow" onclick="openDetail()"><div class="av">이</div><div class="flex"><div class="ht">식사 선호 변경</div><div class="hs">이민호 → 김영수 · 어제</div></div><span class="dot"></span></div>
+        <div class="hrow" onclick="openDetail()"><div class="av">최</div><div class="flex"><div class="ht">보행 보조기 사용 시작</div><div class="hs">최수진 → 홍길동 · 2일 전</div></div><span class="chip wel">읽음</span></div>
+        <div class="hrow" onclick="openDetail()"><div class="av">박</div><div class="flex"><div class="ht">가족 방문 일정</div><div class="hs">박서연 → 홍길동 · 3일 전</div></div><span class="chip wel">읽음</span></div>
+        <div class="hrow" onclick="openDetail()"><div class="av">이</div><div class="flex"><div class="ht">알레르기 주의</div><div class="hs">이민호 → 김영수 · 5일 전</div></div><span class="chip med">중요</span></div>
+      </div>
+
+      <div id="hWrite" style="display:none">
+        <div class="pxlabel"><b>[S-21]</b> 인수인계 작성 · ST-04</div>
+        <h2 class="h">인계 작성</h2>
+        <div class="sub">다음 지원사에게 전달할 내용</div>
+        <div class="fg"><label class="fl" for="h-who">대상 이용자 <span class="rq">*</span></label><select class="fi" id="h-who"><option>홍길동</option><option>김영수</option></select></div>
+        <div class="fg"><label class="fl" for="h-cat">분류 <span class="rq">*</span></label><select class="fi" id="h-cat"><option>투약·건강</option><option>식사</option><option>이동·보행</option><option>안전·사고</option><option>일정</option></select></div>
+        <div class="fg"><label class="fl" for="h-title">제목 <span class="rq">*</span></label><input class="fi" id="h-title" placeholder="예) 투약 시간 변경 안내"></div>
+        <div class="fg"><label class="fl" for="h-body">내용 <span class="rq">*</span></label><textarea class="fi" id="h-body" style="min-height:110px" placeholder="구체적으로 작성해 주세요"></textarea></div>
+        <div class="fg"><label class="fl">중요도</label><div class="filt" style="margin-bottom:0">
+          <button onclick="mimp(this)">일반</button><button class="on" onclick="mimp(this)">중요</button><button onclick="mimp(this)">긴급</button>
+        </div></div>
+        <button class="btn btn-primary" onclick="hSend()">전달하기</button>
+      </div>
+    </section>
+
+    <!-- 설정 -->
+    <section class="screen" data-screen="settings">
+      <div class="pxlabel">설정 · ST-11</div>
+      <div class="prof-hd"><div class="pav">김</div><div><div class="pn">김지원</div><div class="pr">활동지원사 · 서울지원센터</div></div></div>
+      <div class="setrow"><span class="si">🔔</span><span class="flex">알림 받기</span><span class="sw"></span></div>
+      <div class="setrow"><span class="si">📍</span><span class="flex">방문 위치 자동 기록</span><span class="sw"></span></div>
+      <div class="setrow"><span class="si">👤</span><span class="flex">내 프로필</span><span class="ar">›</span></div>
+      <div class="setrow"><span class="si">📋</span><span class="flex">담당 이용자 관리</span><span class="ar">›</span></div>
+      <div class="setrow"><span class="si">🔒</span><span class="flex">개인정보·동의 관리</span><span class="ar">›</span></div>
+      <div class="setrow"><span class="si">❓</span><span class="flex">도움말</span><span class="ar">›</span></div>
+      <div class="setrow" style="color:var(--med-text)"><span class="si">🚪</span><span class="flex">로그아웃</span><span class="ar">›</span></div>
+    </section>
+
+  </div>
+
+  <nav class="tabbar" id="tabbar">
+    <button data-tab="home" class="on" onclick="goScreen('home')"><span class="ti">🏠</span>홈</button>
+    <button data-tab="journal" onclick="goScreen('journal')"><span class="ti">📄</span>일지</button>
+    <button data-tab="handover" onclick="goScreen('handover')"><span class="ti">🔁</span>인수인계</button>
+    <button data-tab="settings" onclick="goScreen('settings')"><span class="ti">⚙️</span>설정</button>
+  </nav>
+</div>
+
+<script>
+const TITLES={home:'',journal:'활동일지',handover:'인수인계',settings:'설정'};
+function resetStacks(){
+  jList.style.display='block';jWizard.style.display='none';jDetail.style.display='none';
+  hList.style.display='block';hWrite.style.display='none';
+}
+function setNav(title,back,act){
+  const nb=document.getElementById('nbBack'),tt=document.getElementById('nbTitle'),ac=document.getElementById('nbAct');
+  document.getElementById('nbBack').style.display=back?'block':'none';
+  if(title){tt.innerHTML=title;} else {tt.innerHTML='<span class="wm-on">온</span><span class="wm-gil">길</span>';}
+  ac.style.display=act?'block':'none'; if(act) ac.textContent=act;
+}
+function goScreen(tab){
+  resetStacks();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.dataset.screen===tab));
+  document.querySelectorAll('.tabbar button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+  document.querySelectorAll('.proto-nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+  setNav(TITLES[tab],false,false);
+  document.querySelector('.screenbody').scrollTop=0;
+}
+document.querySelectorAll('.proto-nav button').forEach(b=>b.addEventListener('click',()=>goScreen(b.dataset.go)));
+
+let stack=null; // track sub-screen for back
+function openWizard(){
+  goScreen('journal'); jList.style.display='none'; jWizard.style.display='block';
+  mcur=1; mRender(); setNav('일지 작성',true,null); stack='wizard';
+}
+function openDetail(){
+  goScreen('journal'); jList.style.display='none'; jDetail.style.display='block';
+  setNav('일지 상세',true,null); stack='detail';
+  document.querySelector('.screenbody').scrollTop=0;
+}
+function navBack(){
+  if(stack==='hwrite'){goScreen('handover');return;}
+  goScreen('journal');
+}
+document.getElementById('tabbar');
+
+// 인계 작성 진입 (상세 → 작성, 목록 → 작성)
+function openHWrite(){ goScreen('handover'); hList.style.display='none'; hWrite.style.display='block'; setNav('인계 작성',true,null); stack='hwrite'; }
+// hook big button in handover list via filt? add explicit: reuse detail button already calls goScreen('handover')
+
+function mpick(b){b.parentElement.querySelectorAll('.iopt').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');}
+function mimp(b){b.parentElement.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');}
+
+// wizard
+let mcur=1;const MT=5;
+function mRender(){
+  document.querySelectorAll('#jWizard .wstep').forEach(s=>s.classList.toggle('on',+s.dataset.step===mcur));
+  document.querySelectorAll('#mSteps .mb').forEach((b,i)=>b.classList.toggle('on',i<mcur));
+  document.getElementById('mPrev').style.visibility=mcur===1?'hidden':'visible';
+  document.getElementById('mSkip').style.display=mcur===4?'block':'none';
+  document.getElementById('mNext').style.display=mcur===MT?'none':'block';
+  document.getElementById('mSubmit').style.display=mcur===MT?'block':'none';
+}
+function mGo(d){const n=mcur+d;if(n<1||n>MT)return;mcur=n;mRender();document.querySelector('.screenbody').scrollTop=0;}
+function mCalc(){
+  const s=document.getElementById('m-start').value,e=document.getElementById('m-end').value;if(!s||!e)return;
+  const[sh,sm]=s.split(':').map(Number),[eh,em]=e.split(':').map(Number);
+  let m=(eh*60+em)-(sh*60+sm);if(m<0)m+=1440;
+  document.getElementById('m-total').value=Math.floor(m/60)+'시간 '+String(m%60).padStart(2,'0')+'분';
+}
+function mSubmit(){alert('일지가 제출되었습니다. (프로토타입)');openDetail();}
+function hSend(){alert('인계가 전달되었습니다. (프로토타입)');goScreen('handover');}
+mRender();
+
+// 인계 목록에서 작성 버튼 연결: 상세→작성 버튼 already; add a write entry via long-press not needed.
+// Provide "작성" via handover list: add floating handled by detail button -> go handover then openHWrite
+</script>

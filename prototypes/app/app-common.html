@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>온길 — 공통·인증 (앱 프로토타입)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<style>
+:root{
+  --primary-50:#F0FDF9; --primary-100:#E1F5EE; --primary-400:#5DCAA5;
+  --primary-600:#1D9E75; --primary-700:#0F6E56; --primary-800:#065F46; --primary-900:#064E3B;
+  --accent-amber:#FAC775; --accent-coral:#F5C4B3; --accent-stone:#444441; --accent-pebble:#B4B2A9;
+  --med-bg:#FEF0F0; --med-text:#BF3030; --med-accent:#E04545;
+  --edu-bg:#EEF4FD; --edu-text:#2E5FA8; --edu-accent:#4377C0;
+  --wel-bg:#EDFAF3; --wel-text:#276B4C; --wel-accent:#3EA673;
+  --dai-bg:#FFF5E6; --dai-text:#B56F10; --dai-accent:#E8991E;
+  --tra-bg:#F4EFFB; --tra-text:#6A43A8; --tra-accent:#8A5DC6;
+  --leg-bg:#EEF2F7; --leg-text:#3E5E7A; --leg-accent:#5A7FA0;
+  --role-guardian:#0F6E56; --role-therapist:#E04545; --role-teacher:#4377C0;
+  --role-social:#3EA673; --role-supporter:#E8991E; --role-person:#FAC775;
+  --br-sm:6px; --br-md:10px; --br-lg:14px; --br-xl:20px;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif;
+  color:var(--accent-stone);background:#dfe4e1;line-height:1.5;
+  display:flex;flex-direction:column;align-items:center;padding:24px 12px 60px;min-height:100vh;}
+h1,h2,h3,h4,p{margin:0;}
+button{font-family:inherit;cursor:pointer;}
+a{color:inherit;}
+:focus-visible{outline:2px solid var(--primary-600);outline-offset:2px;}
+.wm-on{color:var(--primary-600);}
+.wm-gil{color:var(--accent-stone);}
+
+.proto-nav{width:100%;max-width:820px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;
+  background:var(--accent-stone);color:#fff;padding:8px 12px;border-radius:var(--br-md);margin-bottom:20px;font-size:12px;}
+.proto-nav b{margin-right:6px;color:var(--accent-amber);}
+.proto-nav button{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);
+  border-radius:var(--br-sm);padding:4px 8px;font-size:11px;}
+.proto-nav button.active{background:var(--primary-600);border-color:var(--primary-600);}
+
+.phone{width:390px;max-width:100%;height:800px;background:#000;border-radius:40px;padding:10px;
+  box-shadow:0 30px 70px rgba(0,0,0,.35);position:relative;}
+.viewport{width:100%;height:100%;background:#fff;border-radius:30px;overflow:hidden;position:relative;}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;}
+.screen.active{display:flex;}
+
+.statusbar{height:28px;flex:0 0 28px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;font-size:12px;font-weight:700;background:transparent;position:relative;z-index:2;}
+.statusbar.light{color:#fff;}
+.navbar{height:52px;flex:0 0 52px;display:flex;align-items:center;gap:8px;padding:0 12px;
+  border-bottom:1px solid #eef0ee;background:#fff;}
+.navbar .back{border:none;background:none;font-size:22px;color:var(--accent-stone);width:36px;height:36px;}
+.navbar .title{font-size:16px;font-weight:700;}
+.content{flex:1;overflow-y:auto;padding:22px 22px 28px;}
+.ia-tag{font-size:10px;font-weight:700;color:#fff;background:var(--accent-stone);opacity:.85;
+  padding:3px 8px;border-radius:999px;position:absolute;top:34px;left:14px;z-index:5;}
+
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:6px;}
+.field input,.field select{width:100%;border:1.5px solid #d9ddd9;border-radius:var(--br-md);padding:13px 14px;
+  font-size:15px;font-family:inherit;}
+.field input:focus{border-color:var(--primary-600);}
+.hint{font-size:12px;color:#9d9c96;margin-top:6px;}
+.btn-primary{width:100%;background:var(--primary-600);color:#fff;border:none;padding:15px;border-radius:var(--br-md);
+  font-size:16px;font-weight:700;}
+.btn-ghost{width:100%;background:#fff;color:var(--primary-700);border:1.5px solid var(--primary-600);
+  padding:15px;border-radius:var(--br-md);font-size:16px;font-weight:700;margin-top:10px;}
+.title-lg{font-size:24px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px;}
+.desc{color:#6b6b66;font-size:14px;margin-bottom:24px;}
+.social-btn{width:100%;border:1.5px solid #d9ddd9;background:#fff;border-radius:var(--br-md);padding:14px;
+  font-size:15px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.divider{display:flex;align-items:center;gap:12px;color:#b7bab6;font-size:12px;margin:20px 0;}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:#e5e8e5;}
+.alt{text-align:center;font-size:13px;color:#6b6b66;margin-top:20px;}
+.alt a{color:var(--primary-700);font-weight:700;text-decoration:none;}
+.linkrow{text-align:right;margin:-4px 0 16px;}
+.linkrow a{font-size:13px;color:var(--primary-700);font-weight:600;text-decoration:none;}
+
+.splash{background:var(--primary-900);align-items:center;justify-content:flex-start;}
+.splash-inner{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding-bottom:120px;width:100%;}
+.splash-inner .mark{width:96px;height:106px;margin-bottom:26px;animation:pop .6s ease;}
+@keyframes pop{from{transform:scale(.7);opacity:0;}to{transform:scale(1);opacity:1;}}
+.splash-word{font-size:40px;font-weight:800;letter-spacing:-.02em;}
+.splash-word .wm-on{color:var(--primary-400);}
+.splash-word .wm-gil{color:#fff;}
+.splash-slogan{color:rgba(255,255,255,.85);font-size:15px;margin-top:14px;}
+.splash-foot{color:rgba(255,255,255,.5);font-size:12px;padding-bottom:30px;}
+
+.ob-hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  padding:20px;background:linear-gradient(160deg,var(--primary-50),#e6f4ee);}
+.ob-visual{width:120px;height:120px;border-radius:32px;background:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:60px;box-shadow:0 14px 34px rgba(6,78,59,.12);margin-bottom:28px;}
+.ob-hero h2{font-size:24px;font-weight:800;margin-bottom:12px;}
+.ob-hero p{color:#6b6b66;font-size:15px;max-width:280px;}
+.ob-dots{display:flex;gap:8px;justify-content:center;padding:18px 0;}
+.ob-dots span{width:8px;height:8px;border-radius:50%;background:#cfd6d1;}
+.ob-dots span.on{width:22px;border-radius:999px;background:var(--primary-600);}
+.ob-foot{padding:0 22px 28px;background:linear-gradient(160deg,transparent,#e6f4ee);}
+.ob-skip{position:absolute;top:36px;right:18px;z-index:6;font-size:13px;color:#6b6b66;background:none;border:none;font-weight:600;}
+
+.stepbar{display:flex;align-items:center;justify-content:center;margin-bottom:22px;}
+.stepbar .dot{width:26px;height:26px;border-radius:50%;background:#e5e8e5;color:#9d9c96;font-weight:700;font-size:12px;
+  display:flex;align-items:center;justify-content:center;}
+.stepbar .dot.on{background:var(--primary-600);color:#fff;}
+.stepbar .bar{width:26px;height:2px;background:#e5e8e5;}
+.stepbar .bar.on{background:var(--primary-600);}
+
+.rs-card{display:flex;align-items:center;gap:14px;border:2px solid #e5e8e5;border-radius:var(--br-md);
+  padding:14px;margin-bottom:10px;background:#fff;width:100%;text-align:left;position:relative;}
+.rs-card.sel{border-color:var(--primary-600);background:var(--primary-50);}
+.rs-ico{width:44px;height:44px;border-radius:50%;flex:0 0 44px;display:flex;align-items:center;justify-content:center;
+  font-size:22px;color:#fff;}
+.rs-card h4{font-size:15px;font-weight:700;margin-bottom:2px;}
+.rs-card p{font-size:12px;color:#9d9c96;}
+.rs-card .check{margin-left:auto;color:var(--primary-600);font-weight:800;opacity:0;font-size:18px;}
+.rs-card.sel .check{opacity:1;}
+
+.verify-ico{width:80px;height:80px;border-radius:50%;background:var(--primary-100);color:var(--primary-700);
+  display:flex;align-items:center;justify-content:center;font-size:38px;margin:8px auto 18px;}
+.otp-row{display:flex;gap:8px;justify-content:center;margin:20px 0;}
+.otp-row input{width:44px;height:54px;text-align:center;font-size:22px;font-weight:700;border:1.5px solid #d9ddd9;border-radius:var(--br-md);}
+
+.consent-all{background:var(--primary-50);border:1px solid var(--primary-100);border-radius:var(--br-md);padding:14px;margin-bottom:14px;}
+.consent-all label{display:flex;align-items:center;gap:10px;font-weight:800;font-size:14px;}
+.consent-all input{width:20px;height:20px;accent-color:var(--primary-600);}
+.consent-item{border:1px solid #e5e8e5;border-radius:var(--br-md);padding:13px 14px;margin-bottom:10px;}
+.consent-head{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.consent-head label{display:flex;align-items:center;gap:9px;font-weight:600;font-size:13px;flex:1;}
+.consent-head input{width:18px;height:18px;accent-color:var(--primary-600);flex:0 0 18px;}
+.tag-req{font-size:10px;font-weight:700;color:var(--med-text);background:var(--med-bg);padding:2px 7px;border-radius:999px;}
+.tag-opt{font-size:10px;font-weight:700;color:var(--leg-text);background:var(--leg-bg);padding:2px 7px;border-radius:999px;}
+.consent-view{font-size:12px;color:var(--primary-700);font-weight:600;text-decoration:none;white-space:nowrap;}
+.consent-body{font-size:12px;color:#8a8a85;margin-top:8px;display:none;padding-top:8px;border-top:1px dashed #e5e8e5;}
+.consent-body.open{display:block;}
+
+.invite-banner{background:var(--primary-50);border:1px solid var(--primary-100);border-radius:var(--br-md);
+  padding:16px;text-align:center;margin-bottom:18px;font-size:14px;}
+.invite-banner .who{font-weight:800;color:var(--primary-700);}
+.perm-preview{border:1px solid #e5e8e5;border-radius:var(--br-md);padding:14px;margin-bottom:20px;}
+.perm-preview h4{font-size:13px;margin-bottom:10px;}
+.perm-line{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px dashed #eee;}
+.perm-line:last-child{border-bottom:none;}
+.perm-val{font-weight:700;color:var(--primary-700);}
+
+.legal h2{font-size:16px;font-weight:700;margin:20px 0 8px;}
+.legal p{font-size:13px;color:#555;margin-bottom:10px;}
+.legal ul{font-size:13px;color:#555;padding-left:18px;margin-bottom:10px;}
+.legal li{margin-bottom:5px;}
+.legal .meta{color:#9d9c96;font-size:12px;margin-bottom:16px;}
+.legal-toc{background:var(--primary-50);border-radius:var(--br-md);padding:14px;margin-bottom:18px;}
+.legal-toc a{display:block;font-size:12px;color:var(--primary-700);margin-bottom:6px;font-weight:600;text-decoration:none;}
+
+.logo-inline{display:flex;align-items:center;gap:8px;justify-content:center;font-size:22px;font-weight:800;
+  letter-spacing:-.02em;margin-bottom:10px;}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><g id="ongil-mark-def">
+  <path d="M20 25 H55" stroke="#4377C0" stroke-width="9" stroke-linecap="round"/>
+  <path d="M55 25 Q68 25 68 38 V50" stroke="#3EA673" stroke-width="9" stroke-linecap="round"/>
+  <path d="M20 25 V70" stroke="#E04545" stroke-width="9" stroke-linecap="round"/>
+  <path d="M20 70 Q35 82 70 78" stroke="#0F6E56" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="42" cy="50" r="14" fill="#FAC775"/>
+  <path d="M56 50 H66" stroke="#E8991E" stroke-width="9" stroke-linecap="round"/>
+</g></defs></svg>
+
+<nav class="proto-nav" aria-label="프로토타입 화면 전환">
+  <b>온길 앱 · 공통/인증</b>
+  <button data-go="SPLASH" class="active">스플래시</button>
+  <button data-go="ONBOARD">온보딩</button>
+  <button data-go="A-02">A-02 로그인</button>
+  <button data-go="A-03">A-03 회원가입</button>
+  <button data-go="A-04">A-04 기본정보</button>
+  <button data-go="A-05">A-05 이메일인증</button>
+  <button data-go="A-06">A-06 초대수락</button>
+  <button data-go="A-07">A-07 비번재설정</button>
+  <button data-go="A-08">A-08 동의수집</button>
+  <button data-go="A-09">A-09 이용약관</button>
+  <button data-go="A-10">A-10 개인정보</button>
+</nav>
+
+<div class="phone">
+  <div class="viewport">
+
+    <!-- SPLASH -->
+    <div class="screen splash active" data-screen="SPLASH">
+      <div class="statusbar light"><span>9:41</span><span>● ● ● ▮</span></div>
+      <div class="splash-inner">
+        <svg class="mark" viewBox="0 0 90 100" aria-label="온길 로고"><use href="#ongil-mark-def"/></svg>
+        <div class="splash-word"><span class="wm-on">온</span><span class="wm-gil">길</span></div>
+        <div class="splash-slogan">내 삶의 모든 길이 여기 있습니다</div>
+      </div>
+      <div class="splash-foot">© 2026 Ongil</div>
+    </div>
+
+    <!-- ONBOARDING -->
+    <div class="screen" data-screen="ONBOARD">
+      <div class="statusbar"><span>9:41</span><span>● ● ● ▮</span></div>
+      <button class="ob-skip" onclick="goScreen('A-02')">건너뛰기</button>
+      <div class="ob-hero">
+        <div class="ob-visual" id="obVisual">🗂️</div>
+        <h2 id="obTitle">생애 전체를,<br>함께 기록합니다</h2>
+        <p id="obDesc">의료·교육·복지·일상·전환·법률 6개 도메인의 기록을 한곳에서 관리하세요.</p>
+      </div>
+      <div class="ob-foot">
+        <div class="ob-dots">
+          <span class="on" data-ob="0"></span><span data-ob="1"></span><span data-ob="2"></span>
+        </div>
+        <button class="btn-primary" id="obNext" onclick="obNext()">다음</button>
+      </div>
+    </div>
+
+    <!-- A-02 LOGIN -->
+    <div class="screen" data-screen="A-02">
+      <div class="statusbar"><span>9:41</span><span>● ● ● ▮</span></div>
+      <div class="content">
+        <div class="logo-inline">
+          <svg viewBox="0 0 90 100" width="26" height="30" aria-label="온길 로고"><use href="#ongil-mark-def"/></svg>
+          <span><span class="wm-on">온</span><span class="wm-gil">길</span></span>
+        </div>
+        <h1 class="title-lg" style="text-align:center">환영합니다</h1>
+        <p class="desc" style="text-align:center">로그인하여 기록을 이어가세요</p>
+        <div class="field"><label for="m-l-email">이메일</label><input id="m-l-email" type="email" placeholder="name@example.com"></div>
+        <div class="field"><label for="m-l-pw">비밀번호</label><input id="m-l-pw" type="password" placeholder="비밀번호 입력"></div>
+        <div class="linkrow"><a href="#" onclick="goScreen('A-07');return false">비밀번호 찾기</a></div>
+        <button class="btn-primary">로그인</button>
+        <div class="divider">또는</div>
+        <button class="social-btn">🟡 카카오로 계속하기</button>
+        <button class="social-btn">🟢 네이버로 계속하기</button>
+        <p class="alt">아직 계정이 없으신가요? <a href="#" onclick="goScreen('A-03');return false">회원가입</a></p>
+      </div>
+    </div>
+
+    <!-- A-03 SIGNUP / ROLE -->
+    <div class="screen" data-screen="A-03">
+      <div class="statusbar"><span>9:41</span><span>● ● ● ▮</span></div>
+      <div class="navbar"><button class="back" onclick="goScreen('A-02')">‹</button><span class="title">회원가입</span></div>
+      <div class="content">
+        <div class="stepbar">
+          <div class="dot on">1</div><div class="bar"></div><div class="dot">2</div><div class="bar"></div>
+          <div class="dot">3</div><div class="bar"></div><div class="dot">4</div>
+        </div>
+        <h1 class="title-lg">역할을 선택하세요</h1>
+        <p class="desc">역할에 맞는 화면을 제공합니다. 나중에 변경할 수 있어요.</p>
+        <button class="rs-card sel" data-rsel><div class="rs-ico" style="background:var(--role-person);color:var(--primary-900)">🙋</div><div><h4>당사자</h4><p>내 삶을 내가 기록</p></div><span class="check">✓</span></button>
+        <button class="rs-card" data-rsel><div class="rs-ico" style="background:var(--role-guardian)">👪</div><div><h4>보호자</h4><p>가족을 대신해 관리</p></div><span class="check">✓</span></button>
+        <button class="rs-card" data-rsel><div class="rs-ico" style="background:var(--role-supporter)">🤝</div><div><h4>활동지원사</h4><p>현장 활동 기록</p></div><span class="check">✓</span></button>
+        <button class="rs-card" data-rsel><div class="rs-ico" style="background:var(--role-teacher)">🏫</div><div><h4>특수교사</h4><p>IEP·관찰 기록</p></div><span class="check">✓</span></button>
+        <button class="rs-card" data-rsel><div class="rs-ico" style="background:var(--role-social)">🧑‍💼</div><div><h4>사회복지사</h4><p>ISP·전환 지원</p></div><span class="check">✓</span></button>
+        <button class="rs-card" data-rsel><div class="rs-ico" style="background:var(--role-therapist)">🩺</div><div><h4>치료사</h4><p>치료계획·회기</p></div><span class="check">✓</span></button>
+        <button class="btn-primary" style="margin-top:8px" onclick="goScreen('A-04')">다음 →</button>
+      </div>
+    </div>
+
+    <!-- A-04 PROFILE -->
+    <div class="screen" data-screen="A-04">
+      <div class="statusbar"><span>9:41</span><span>● ● ● ▮</span></div>
+      <div class="navbar"><button class="back" onclick="goScreen('A-03')">‹</button><span class="title">기본 정보</span></div>
+      <div class="content">
+        <div class="stepbar">
+          <div class="dot on">1</div><div class="bar on"></div><div class="dot on">2</div><div class="bar"></div>
+          <div class="dot">3</div><div class="bar"></div><div class="dot">4</div>
+        </div>
+        <h1 class="title-lg">기본 정보 입력</h1>
+        <p class="desc">안전한 계정 생성을 위한 정보입니다</p>
+        <div class="field"><label for="m-name">이름</label><input id="m-name" type="text" placeholder="실명 입력"></div>
+        <div class="field"><label for="m-email">이메일</label><input id="m-email" type="email" placeholder="name@example.com"><p class="hint">이 이메일로 인증 메일이 발송됩니다.</p></div>
+        <div class="field"><label for="m-pw">비밀번호</label><input id="m-pw" type="password" placeholder="8자 이상"></div>
+        <div class="field"><label for="m-pw2">비밀번호 확인</label><input id="m-pw2" type="password" placeholder="다시 입력"></div>
+        <div class="field"><label for="m-phone">휴대폰 번호</label><input id="m-phone" type="tel" placeholder="010-0000-0000"></div>
+        <button class="btn-primary" onclick="goScreen('A-08')">다음 →</button>
+      </div>
+    </div>
+
+    <!-- A-05 EMAIL VERIFY -->
+    <div class="screen" data-screen="A-05">
+      <div class="statusbar"><span>9:41</span><span>● ● ● ▮</span></div>
+      <div class="navbar"><button class="back" onclick="goScreen('A-08')">‹</button><span class="title">이메일 인증</span></div>
+      <div class="content" style="text-align:center">
+        <div class="stepbar" style="justify-content:center">
+          <div class="dot on">1</div><div class="bar on"></div><div class="dot on">2</div><div class="bar on"></div>
+          <div class="dot on">3</div><div class="bar on"></div><div class="dot on">4</div>
+        </div>
+        <div class="verify-ico">✉️</div>
+        <h1 class="title-lg">이메일을 확인하세요</h1>
+        <p class="desc"><b>name@example.com</b> 으로 보낸<br>6자리 코드를 입력하세요</p>
+        <div class="otp-row">
+          <input type="text" maxlength="1" inputmode="numeric" aria-label="코드1">
+          <input type="text" maxlength="1" inputmode="numeric" aria-label="코드2">
+          <input type="text" maxlength="1" inputmode="numeric" aria-label="코드3">
+          <input type="text" maxlength="1" inputmode="numeric" aria-label="코드4">
+          <input type="text" maxlength="1" inputmode="numeric" aria-label="코드5">
+          <input type="text" maxlength="1" inputmode="numeric" aria-label="코드6">
+        </div>
+        <button class="btn-primary">인증 완료</button>
+        <p class="alt">메일을 못 받으셨나요? <a href="#" onclick="return false">재발송</a> <span style="color:#c3c6c2">(59초)</span></p>
+      </div>
+    </div>
+
+    <!-- A-06 INVITE -->
+    <div class="screen" data-screen="A-06">
+      <div class="statusbar"><span>9:41</span><span>● ● ● ▮</span></div>
+      <div class="navbar"><button class="back" onclick="goScreen('A-02')">‹</button><span class="title">초대 수락</span></div>
+      <div class="content">
+        <div class="logo-inline">
+          <svg viewBox="0 0 90 100" width="24" height="28" aria-label="온길 로고"><use href="#ongil-mark-def"/></svg>
+          <span><span class="wm-on">온</span><span class="wm-gil">길</span></span>
+        </div>
+        <h1 class="title-lg" style="text-align:center">초대를 받으셨습니다</h1>
+        <p class="desc" style="text-align:center">내용을 확인하고 수락하세요</p>
+        <div class="invite-banner"><span class="who">홍길동 보호자</span> 님이<br><b>홍영희</b> 님의 기록에<br>협력자로 초대했습니다</div>
+        <div class="perm-preview">
+          <h4>부여될 권한</h4>
+          <div class="perm-line"><span>연결 역할</span><span class="perm-val">특수교사</span></div>
+          <div class="perm-line"><span>교육 EDU</span><span class="perm-val">읽기 · 쓰기</span></div>
+          <div class="perm-line"><span>일상 DAI</span><span class="perm-val">읽기</span></div>
+          <div class="perm-line"><span>유효 기간</span><span class="perm-val">2027-03-01</span></div>
+        </div>
+        <button class="btn-primary" onclick="goScreen('A-08')">초대 수락하기</button>
+        <button class="btn-ghost">거절</button>
+      </div>
+    </div>
+
+    <!-- A-07 RESET -->
+    <div class="screen" data-screen="A-07">
+      <div class="statusbar"><span>9:41</span><span>● ● ● ▮</span></div>
+      <div class="navbar"><button class="back" onclick="goScreen('A-02')">‹</button><span class="title">비밀번호 재설정</span></div>
+      <div class="content">
+        <div class="logo-inline">
+          <svg viewBox="0 0 90 100" width="24" height="28" aria-label="온길 로고"><use href="#ongil-mark-def"/></svg>
+          <span><span class="wm-on">온</span><span class="wm-gil">길</span></span>
+        </div>
+        <h1 class="title-lg" style="text-align:center">비밀번호 재설정</h1>
+        <p class="desc" style="text-align:center">가입 이메일로 재설정 링크를 보내드립니다</p>
+        <div class="field"><label for="m-r-email">이메일</label><input id="m-r-email" type="email" placeholder="name@example.com"><p class="hint">등록된 이메일이면 링크가 발송됩니다.</p></div>
+        <button class="btn-primary">재설정 링크 받기</button>
+        <p class="alt"><a href="#" onclick="goScreen('A-02');return false">← 로그인으로 돌아가기</a></p>
+      </div>
+    </div>
+
+    <!-- A-08 CONSENT -->
+    <div class="screen" data-screen="A-08">
+      <div class="statusbar"><span>9:41</span><span>● ● ● ▮</span></div>
+      <div class="navbar"><button class="back" onclick="goScreen('A-04')">‹</button><span class="title">약관 동의</span></div>
+      <div class="content">
+        <div class="stepbar">
+          <div class="dot on">1</div><div class="bar on"></div><div class="dot on">2</div><div class="bar on"></div>
+          <div class="dot on">3</div><div class="bar"></div><div class="dot">4</div>
+        </div>
+        <h1 class="title-lg">약관 및 개인정보 동의</h1>
+        <p class="desc">개인정보보호법 제22조에 따라 분리 안내합니다</p>
+        <div class="consent-all"><label><input type="checkbox" id="m-consent-all"> 전체 동의 (선택 포함)</label></div>
+        <div class="consent-item"><div class="consent-head"><label><input type="checkbox" class="c-any c-req" checked> <span class="tag-req">필수</span> 만 14세 이상입니다</label></div></div>
+        <div class="consent-item"><div class="consent-head"><label><input type="checkbox" class="c-any c-req"> <span class="tag-req">필수</span> 이용약관 동의</label><a class="consent-view" href="#" onclick="goScreen('A-09');return false">보기</a></div></div>
+        <div class="consent-item">
+          <div class="consent-head"><label><input type="checkbox" class="c-any c-req"> <span class="tag-req">필수</span> 개인정보 수집·이용 동의</label><a class="consent-view" href="#" onclick="mToggle(this);return false">보기</a></div>
+          <div class="consent-body">수집: 이름·이메일·휴대폰·역할 / 목적: 회원 식별, 서비스 제공, 협력자 연결 / 보유: 탈퇴 후 5년(법령에 따름)</div>
+        </div>
+        <div class="consent-item"><div class="consent-head"><label><input type="checkbox" class="c-any c-req"> <span class="tag-req">필수</span> 민감정보(건강·장애) 처리 동의</label><a class="consent-view" href="#" onclick="goScreen('A-10');return false">보기</a></div></div>
+        <div class="consent-item">
+          <div class="consent-head"><label><input type="checkbox" class="c-any c-opt"> <span class="tag-opt">선택</span> 마케팅·이벤트 수신</label><a class="consent-view" href="#" onclick="mToggle(this);return false">보기</a></div>
+          <div class="consent-body">서비스 소식·이벤트 안내. 동의하지 않아도 이용 가능하며 언제든 철회할 수 있습니다.</div>
+        </div>
+        <button class="btn-primary" style="margin-top:6px" onclick="goScreen('A-05')">동의하고 계속 →</button>
+      </div>
+    </div>
+
+    <!-- A-09 TERMS -->
+    <div class="screen" data-screen="A-09">
+      <div class="statusbar"><span>9:41</span><span>● ● ● ▮</span></div>
+      <div class="navbar"><button class="back" onclick="goScreen('A-08')">‹</button><span class="title">이용약관</span></div>
+      <div class="content legal">
+        <p class="meta">시행일: 2026년 7월 7일 · v1.0</p>
+        <div class="legal-toc">
+          <a href="#">제1조 (목적)</a><a href="#">제2조 (정의)</a><a href="#">제3조 (약관의 효력)</a>
+          <a href="#">제4조 (서비스 제공)</a><a href="#">제5조 (회원의 의무)</a><a href="#">제6조 (기록의 소유)</a>
+        </div>
+        <h2>제1조 (목적)</h2>
+        <p>본 약관은 온길이 제공하는 장애인 생애주기 기록 플랫폼 서비스의 이용과 관련하여 회사와 회원 간의 권리·의무 및 책임 사항을 규정함을 목적으로 합니다.</p>
+        <h2>제2조 (정의)</h2>
+        <ul><li>"당사자": 기록의 주체가 되는 이용자</li><li>"보호자": 당사자를 대리해 권한을 관리하는 이용자</li><li>"협력자": 활동지원사·특수교사·사회복지사·치료사 등 기록 참여자</li></ul>
+        <h2>제3조 (약관의 효력 및 변경)</h2>
+        <p>본 약관은 서비스 화면 게시로 효력이 발생하며, 개정 시 적용일자·사유를 최소 7일 전 공지합니다.</p>
+        <h2>제6조 (기록의 소유와 권한)</h2>
+        <p>모든 생애 기록의 소유권은 당사자에게 있으며, 협력자의 열람·기록은 부여된 권한 범위 내에서만 이루어집니다.</p>
+      </div>
+    </div>
+
+    <!-- A-10 PRIVACY -->
+    <div class="screen" data-screen="A-10">
+      <div class="statusbar"><span>9:41</span><span>● ● ● ▮</span></div>
+      <div class="navbar"><button class="back" onclick="goScreen('A-08')">‹</button><span class="title">개인정보처리방침</span></div>
+      <div class="content legal">
+        <p class="meta">시행일: 2026년 7월 7일 · v1.0</p>
+        <div class="legal-toc">
+          <a href="#">1. 수집 항목</a><a href="#">2. 이용 목적</a><a href="#">3. 민감정보 처리</a>
+          <a href="#">4. 보유 및 파기</a><a href="#">5. 정보주체 권리</a><a href="#">6. 보호책임자</a>
+        </div>
+        <h2>1. 수집하는 개인정보 항목</h2>
+        <ul><li>필수: 이름·이메일·휴대폰·역할·비밀번호</li><li>민감정보: 건강·장애 관련 기록</li><li>자동 수집: 접속 로그·열람 이력·기기 정보</li></ul>
+        <h2>3. 민감정보의 처리</h2>
+        <p>개인정보보호법 제23조에 따라 건강·장애 민감정보는 별도 동의 후 처리하며, 암호화 저장 및 행 수준 접근 제어(RLS)로 권한 없는 접근을 차단합니다.</p>
+        <h2>5. 정보주체의 권리</h2>
+        <ul><li>언제든 열람·정정·삭제·처리정지를 요구할 수 있습니다.</li><li>선택 동의 항목은 개별 철회할 수 있습니다.</li></ul>
+        <h2>6. 개인정보 보호책임자</h2>
+        <p>연락처: privacy@ongil.example</p>
+      </div>
+    </div>
+
+    <div class="ia-tag" id="iaTag">SPLASH · 스플래시</div>
+  </div>
+</div>
+
+<script>
+var NAMES={'SPLASH':'스플래시','ONBOARD':'온보딩','A-02':'로그인','A-03':'회원가입·역할선택','A-04':'기본정보',
+  'A-05':'이메일인증','A-06':'초대링크수락','A-07':'비밀번호재설정','A-08':'동의수집','A-09':'이용약관','A-10':'개인정보처리방침'};
+function goScreen(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.toggle('active',s.dataset.screen===id);});
+  document.querySelectorAll('.proto-nav button').forEach(function(b){b.classList.toggle('active',b.dataset.go===id);});
+  document.getElementById('iaTag').textContent=(id==='SPLASH'||id==='ONBOARD'?id:'['+id+']')+' · '+NAMES[id];
+  var c=document.querySelector('.screen.active .content');if(c)c.scrollTop=0;
+}
+document.querySelectorAll('.proto-nav button').forEach(function(b){b.addEventListener('click',function(){goScreen(b.dataset.go);});});
+
+setTimeout(function(){if(document.querySelector('.screen.active').dataset.screen==='SPLASH')goScreen('ONBOARD');},2200);
+
+var OB=[
+  {v:'🗂️',t:'생애 전체를,<br>함께 기록합니다',d:'의료·교육·복지·일상·전환·법률 6개 도메인의 기록을 한곳에서 관리하세요.'},
+  {v:'🔐',t:'안전하게,<br>필요한 만큼만',d:'도메인·수준·기간별 권한을 직접 설정하고, 열람 로그까지 투명하게 확인하세요.'},
+  {v:'🤝',t:'함께 걷는<br>사람들과 연결',d:'보호자·활동지원사·특수교사·사회복지사·치료사가 한 사람의 생애를 함께 기록합니다.'}
+];
+var obi=0;
+function obRender(){
+  var o=OB[obi];
+  document.getElementById('obVisual').innerHTML=o.v;
+  document.getElementById('obTitle').innerHTML=o.t;
+  document.getElementById('obDesc').innerHTML=o.d;
+  document.querySelectorAll('.ob-dots span').forEach(function(s,i){s.classList.toggle('on',i===obi);});
+  document.getElementById('obNext').textContent=(obi===OB.length-1)?'시작하기':'다음';
+}
+function obNext(){ if(obi<OB.length-1){obi++;obRender();} else {goScreen('A-02');obi=0;obRender();} }
+
+document.querySelectorAll('[data-rsel]').forEach(function(c){
+  c.addEventListener('click',function(){
+    document.querySelectorAll('[data-rsel]').forEach(function(x){x.classList.remove('sel');});
+    c.classList.add('sel');
+  });
+});
+
+function mToggle(a){a.closest('.consent-item').querySelector('.consent-body').classList.toggle('open');}
+var mall=document.getElementById('m-consent-all');
+if(mall){mall.addEventListener('change',function(){
+  document.querySelectorAll('.c-any').forEach(function(c){c.checked=mall.checked;});
+});}
+
+var otp=document.querySelectorAll('.otp-row input');
+otp.forEach(function(inp,i){inp.addEventListener('input',function(){if(inp.value&&otp[i+1])otp[i+1].focus();});});
+</script>
+</body>
+</html>

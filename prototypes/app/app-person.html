@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>온길 · 당사자 앱 프로토타입</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --primary-50:#F0FDF9; --primary-100:#E1F5EE; --primary-400:#5DCAA5;
+    --primary-600:#1D9E75; --primary-700:#0F6E56; --primary-800:#065F46; --primary-900:#064E3B;
+    --accent-amber:#FAC775; --accent-coral:#F5C4B3; --accent-stone:#444441; --accent-pebble:#B4B2A9;
+    --med-bg:#FEF0F0; --med-text:#BF3030; --med-accent:#E04545;
+    --edu-bg:#EEF4FD; --edu-text:#2E5FA8; --edu-accent:#4377C0;
+    --wel-bg:#EDFAF3; --wel-text:#276B4C; --wel-accent:#3EA673;
+    --dai-bg:#FFF5E6; --dai-text:#B56F10; --dai-accent:#E8991E;
+    --tra-bg:#F4EFFB; --tra-text:#6A43A8; --tra-accent:#8A5DC6;
+    --leg-bg:#EEF2F7; --leg-text:#3E5E7A; --leg-accent:#5A7FA0;
+    --br-sm:6px; --br-md:10px; --br-lg:14px; --br-xl:20px;
+    --ink:#1a1c1a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif;
+    background:#E8EAE8; color:var(--ink); font-size:20px;
+    display:flex; flex-direction:column; align-items:center; min-height:100vh; padding:24px 12px 60px;
+  }
+
+  /* 프로토타입 상단 네비 (프레임 밖) */
+  .proto-bar{
+    width:100%; max-width:760px; background:var(--primary-900); color:#fff;
+    border-radius:var(--br-lg); padding:14px 18px; margin-bottom:22px;
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+  }
+  .proto-bar .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:16px;margin-right:6px;}
+  .proto-badge{background:var(--accent-amber);color:var(--primary-900);font-size:11px;font-weight:800;
+    padding:3px 8px;border-radius:999px;letter-spacing:.02em;}
+  .wm-on{color:var(--primary-400);} .wm-gil{color:#fff;}
+  .proto-nav{display:flex;flex-wrap:wrap;gap:8px;margin-left:auto;}
+  .proto-nav button{
+    font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;
+    background:rgba(255,255,255,.10);color:#fff;border:1px solid rgba(255,255,255,.22);
+    padding:8px 12px;border-radius:999px;transition:.15s;
+  }
+  .proto-nav button:hover{background:rgba(255,255,255,.22);}
+  .proto-nav button.on{background:var(--accent-amber);color:var(--primary-900);border-color:var(--accent-amber);}
+
+  /* 폰 프레임 */
+  .phone{
+    width:390px; max-width:100%; height:820px; background:#fff;
+    border-radius:34px; box-shadow:0 24px 60px rgba(6,44,32,.28), 0 0 0 10px #12201a;
+    overflow:hidden; position:relative; display:flex; flex-direction:column;
+  }
+  .statusbar{height:26px;flex:0 0 26px;background:var(--primary-900);color:#fff;
+    display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:12px;font-weight:700;}
+  .statusbar .dots{letter-spacing:2px;}
+  .navbar{height:52px;flex:0 0 52px;background:var(--primary-800);color:#fff;
+    display:flex;align-items:center;gap:10px;padding:0 16px;}
+  .navbar .back{background:none;border:none;color:#fff;font-size:24px;cursor:pointer;
+    width:40px;height:40px;border-radius:10px;display:none;align-items:center;justify-content:center;}
+  .navbar .back:hover{background:rgba(255,255,255,.15);}
+  .navbar .title{font-size:20px;font-weight:800;display:flex;align-items:center;gap:8px;}
+  .ia-tag{background:rgba(255,255,255,.18);font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;margin-left:auto;}
+
+  .content{flex:1 1 auto;overflow-y:auto;background:#fff;}
+  .content::-webkit-scrollbar{width:0;}
+
+  /* 하단 탭 */
+  .tabbar{height:70px;flex:0 0 70px;background:#fff;border-top:2px solid #E4E9E5;
+    display:flex;}
+  .tabbar button{flex:1;background:none;border:none;cursor:pointer;font-family:inherit;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    color:var(--accent-pebble);font-size:13px;font-weight:700;padding-top:6px;}
+  .tabbar button .ic{font-size:26px;line-height:1;}
+  .tabbar button.on{color:var(--primary-700);}
+  .tabbar button.on .ic{transform:translateY(-1px);}
+
+  .screen{display:none;padding:20px 18px 30px;}
+  .screen.active{display:block;}
+
+  h2.big{font-size:26px;font-weight:800;margin-bottom:4px;}
+  p.sub{font-size:18px;color:var(--accent-stone);margin-bottom:20px;line-height:1.5;}
+
+  /* P-01 홈 */
+  .today-card{background:linear-gradient(135deg,#0F6E56,#1D9E75);color:#fff;
+    border-radius:var(--br-xl);padding:22px;margin-bottom:22px;}
+  .today-card .date{font-size:18px;font-weight:700;opacity:.92;}
+  .today-card .greet{font-size:24px;font-weight:800;margin-top:6px;line-height:1.35;}
+  .big-action{
+    width:100%;background:var(--accent-amber);color:var(--primary-900);border:none;cursor:pointer;
+    font-family:inherit;border-radius:var(--br-xl);padding:26px 20px;margin-bottom:18px;
+    display:flex;align-items:center;gap:18px;text-align:left;box-shadow:0 6px 0 #E3A94B;
+    transition:transform .08s;
+  }
+  .big-action:active{transform:translateY(3px);box-shadow:0 3px 0 #E3A94B;}
+  .big-action .emoji{font-size:52px;line-height:1;}
+  .big-action .lbl{font-size:24px;font-weight:800;}
+  .big-action .lbl small{display:block;font-size:16px;font-weight:600;opacity:.75;margin-top:4px;}
+  .home-sub-row{display:flex;gap:14px;}
+  .home-sub-row button{flex:1;background:var(--primary-50);border:2px solid var(--primary-100);
+    border-radius:var(--br-lg);padding:20px 12px;cursor:pointer;font-family:inherit;
+    display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--primary-800);font-size:18px;font-weight:800;}
+  .home-sub-row button .ic{font-size:38px;}
+  .home-sub-row button:active{background:var(--primary-100);}
+
+  /* 위자드 P-02 */
+  .wiz-progress{display:flex;align-items:center;gap:8px;margin-bottom:18px;}
+  .wiz-progress .steps{display:flex;gap:6px;flex:1;}
+  .wiz-progress .dot{height:10px;border-radius:999px;flex:1;background:#DCE5E0;transition:.25s;}
+  .wiz-progress .dot.done{background:var(--primary-600);}
+  .wiz-progress .label{font-size:16px;font-weight:800;color:var(--primary-700);white-space:nowrap;}
+  .wiz-question{font-size:28px;font-weight:800;margin-bottom:22px;line-height:1.3;}
+
+  .icon-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+  .icon-opt{
+    background:#fff;border:3px solid #E0E6E2;border-radius:var(--br-xl);cursor:pointer;font-family:inherit;
+    padding:20px 12px;display:flex;flex-direction:column;align-items:center;gap:12px;
+    min-height:130px;justify-content:center;transition:.12s;
+  }
+  .icon-opt .glyph{font-size:56px;line-height:1;width:72px;height:72px;display:flex;align-items:center;justify-content:center;}
+  .icon-opt .name{font-size:20px;font-weight:800;color:var(--ink);}
+  .icon-opt:active{transform:scale(.97);}
+  .icon-opt.sel{border-color:var(--primary-600);background:var(--primary-50);box-shadow:0 0 0 4px var(--primary-100);}
+  .icon-opt.sel .name{color:var(--primary-800);}
+  .icon-opt .check{position:absolute;}
+
+  .extra-btn{width:100%;border:3px dashed var(--accent-pebble);background:#FafAf8;border-radius:var(--br-lg);
+    padding:16px;font-family:inherit;font-size:19px;font-weight:800;color:var(--accent-stone);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;}
+  .extra-btn .ic{font-size:28px;}
+  .extra-btn.on{border-style:solid;border-color:var(--primary-600);background:var(--primary-50);color:var(--primary-800);}
+
+  .wiz-footer{display:flex;gap:12px;margin-top:8px;}
+  .btn-next{flex:2;background:var(--primary-600);color:#fff;border:none;cursor:pointer;font-family:inherit;
+    font-size:22px;font-weight:800;border-radius:var(--br-xl);padding:20px;box-shadow:0 5px 0 var(--primary-800);}
+  .btn-next:active{transform:translateY(3px);box-shadow:0 2px 0 var(--primary-800);}
+  .btn-next:disabled{background:#C6D2CC;box-shadow:0 5px 0 #A9B7B0;cursor:not-allowed;color:#fff;}
+  .btn-prev{flex:1;background:#EEF2EF;color:var(--accent-stone);border:none;cursor:pointer;font-family:inherit;
+    font-size:20px;font-weight:800;border-radius:var(--br-xl);padding:20px;}
+
+  /* 저장 애니메이션 오버레이 */
+  .save-overlay{position:absolute;inset:0;background:rgba(15,110,86,.97);color:#fff;z-index:30;
+    display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;padding:30px;}
+  .save-overlay.show{display:flex;animation:fadeIn .25s ease;}
+  .save-overlay .spark{font-size:96px;animation:pop .6s cubic-bezier(.2,1.4,.4,1);}
+  .save-overlay .msg{font-size:28px;font-weight:800;}
+  .save-overlay .msg2{font-size:19px;opacity:.9;font-weight:600;}
+  @keyframes pop{0%{transform:scale(0) rotate(-30deg);opacity:0}60%{transform:scale(1.25) rotate(10deg)}100%{transform:scale(1) rotate(0)}}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes fall{0%{transform:translateY(-30px) rotate(0);opacity:1}100%{transform:translateY(80vh) rotate(180deg);opacity:0}}
+  .confetti{position:absolute;font-size:30px;animation:fall 1.6s linear infinite;}
+
+  /* P-10 기록 보기 */
+  .rec-card{display:flex;align-items:center;gap:16px;border:2px solid #E4E9E5;border-radius:var(--br-lg);
+    padding:16px;margin-bottom:14px;}
+  .rec-card .glyph{width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;
+    font-size:38px;flex:0 0 64px;}
+  .rec-card .body{flex:1;}
+  .rec-card .rday{font-size:18px;font-weight:800;}
+  .rec-card .rdesc{font-size:17px;color:var(--accent-stone);margin-top:2px;}
+  .rec-card .chip{font-size:14px;font-weight:800;padding:4px 10px;border-radius:999px;}
+  .confirm-card{border:2px solid var(--accent-amber);background:#FFFBF0;border-radius:var(--br-lg);padding:18px;margin-bottom:16px;}
+  .confirm-card.done{border-color:#E4E9E5;background:#F7F9F7;}
+  .confirm-card .ctitle{font-size:17px;font-weight:800;margin-bottom:8px;}
+  .confirm-card .cdesc{font-size:15px;color:var(--accent-stone);margin-bottom:14px;}
+  .confirm-card .cbtn{width:100%;background:var(--primary-600);color:#fff;border:none;cursor:pointer;font-family:inherit;
+    font-size:17px;font-weight:800;border-radius:var(--br-lg);padding:16px;}
+
+  /* P-23 설정/동의 */
+  .set-group-title{font-size:17px;font-weight:800;color:var(--accent-pebble);margin:22px 0 10px;}
+  .set-row{display:flex;align-items:center;gap:14px;border:2px solid #E4E9E5;border-radius:var(--br-lg);
+    padding:18px 16px;margin-bottom:12px;}
+  .set-row .ic{font-size:32px;}
+  .set-row .txt{flex:1;}
+  .set-row .txt .t{font-size:20px;font-weight:800;}
+  .set-row .txt .d{font-size:16px;color:var(--accent-stone);margin-top:3px;line-height:1.4;}
+  .toggle{width:60px;height:34px;border-radius:999px;background:#CBD5CF;border:none;cursor:pointer;position:relative;flex:0 0 60px;transition:.2s;}
+  .toggle::after{content:"";position:absolute;top:3px;left:3px;width:28px;height:28px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3);}
+  .toggle.on{background:var(--primary-600);} .toggle.on::after{left:29px;}
+  .consent-status{display:inline-flex;align-items:center;gap:6px;font-size:16px;font-weight:800;
+    color:var(--wel-text);background:var(--wel-bg);padding:6px 12px;border-radius:999px;}
+  .withdraw{background:var(--med-bg);color:var(--med-text);border:2px solid var(--med-accent);
+    border-radius:var(--br-md);font-family:inherit;font-size:15px;font-weight:800;padding:8px 14px;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<div class="proto-bar">
+  <span class="brand">
+    <svg viewBox="0 0 90 100" width="30" height="34" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="온길 로고">
+      <path d="M20 25 H55" stroke="#4377C0" stroke-width="9" stroke-linecap="round"/>
+      <path d="M55 25 Q68 25 68 38 V50" stroke="#3EA673" stroke-width="9" stroke-linecap="round"/>
+      <path d="M20 25 V70" stroke="#E04545" stroke-width="9" stroke-linecap="round"/>
+      <path d="M20 70 Q35 82 70 78" stroke="#0F6E56" stroke-width="9" stroke-linecap="round"/>
+      <circle cx="42" cy="50" r="14" fill="#FAC775"/>
+      <path d="M56 50 H66" stroke="#E8991E" stroke-width="9" stroke-linecap="round"/>
+    </svg>
+    <span><span class="wm-on">온</span><span class="wm-gil">길</span></span>
+  </span>
+  <span class="proto-badge">PROTOTYPE · 당사자 앱</span>
+  <div class="proto-nav">
+    <button data-go="P-01" class="on">P-01 홈</button>
+    <button data-go="P-02">P-02 자기표현</button>
+    <button data-go="P-10">P-10 기록보기</button>
+    <button data-go="P-23">P-23 설정</button>
+  </div>
+</div>
+
+<div class="phone">
+  <div class="statusbar"><span>9:41</span><span class="dots">●●● 🔋</span></div>
+
+  <div class="navbar">
+    <button class="back" id="navBack" aria-label="뒤로">‹</button>
+    <span class="title" id="navTitle">😊 오늘</span>
+    <span class="ia-tag" id="iaTag">P-01</span>
+  </div>
+
+  <div class="content" id="content">
+
+    <!-- P-01 오늘 기록 홈 -->
+    <section class="screen active" data-screen="P-01">
+      <div class="today-card">
+        <div class="date">7월 8일 화요일</div>
+        <div class="greet">안녕하세요, 지우님!<br>오늘 하루는 어땠어요?</div>
+      </div>
+
+      <button class="big-action" onclick="goExpress()">
+        <span class="emoji">✏️</span>
+        <span class="lbl">오늘 이야기하기<small>기분·밥·활동을 눌러서 알려주세요</small></span>
+      </button>
+
+      <div class="home-sub-row">
+        <button onclick="switchTab('P-10')"><span class="ic">📷</span>내 기록<br>보기</button>
+        <button onclick="switchTab('P-23')"><span class="ic">⚙️</span>설정</button>
+      </div>
+    </section>
+
+    <!-- P-02 자기표현 4단계 위자드 -->
+    <section class="screen" data-screen="P-02">
+      <div class="wiz-progress">
+        <div class="steps">
+          <div class="dot done" data-d="1"></div>
+          <div class="dot" data-d="2"></div>
+          <div class="dot" data-d="3"></div>
+          <div class="dot" data-d="4"></div>
+        </div>
+        <span class="label" id="wizLabel">1/4</span>
+      </div>
+
+      <!-- Step 1 기분 -->
+      <div class="wiz-step" data-step="1">
+        <div class="wiz-question">지금 기분이 어때요?</div>
+        <div class="icon-grid" data-single>
+          <button class="icon-opt" data-val="좋아요"><span class="glyph">😊</span><span class="name">좋아요</span></button>
+          <button class="icon-opt" data-val="보통"><span class="glyph">😐</span><span class="name">보통이에요</span></button>
+          <button class="icon-opt" data-val="슬퍼요"><span class="glyph">😢</span><span class="name">슬퍼요</span></button>
+          <button class="icon-opt" data-val="화났어요"><span class="glyph">😡</span><span class="name">화났어요</span></button>
+        </div>
+      </div>
+
+      <!-- Step 2 밥 -->
+      <div class="wiz-step" data-step="2" style="display:none">
+        <div class="wiz-question">밥 먹었어요?</div>
+        <div class="icon-grid" data-single>
+          <button class="icon-opt" data-val="잘먹음"><span class="glyph">🍚</span><span class="name">잘 먹었어요</span></button>
+          <button class="icon-opt" data-val="조금"><span class="glyph">😐</span><span class="name">조금 먹었어요</span></button>
+          <button class="icon-opt" data-val="못먹음"><span class="glyph">❌</span><span class="name">못 먹었어요</span></button>
+        </div>
+        <button class="extra-btn" data-toggle onclick="toggleExtra(this)"><span class="ic">📷</span>밥 사진 올리기</button>
+      </div>
+
+      <!-- Step 3 활동 (복수) -->
+      <div class="wiz-step" data-step="3" style="display:none">
+        <div class="wiz-question">오늘 뭘 했어요?<br><span style="font-size:18px;font-weight:600;color:var(--accent-stone)">여러 개 골라도 돼요</span></div>
+        <div class="icon-grid" data-multi>
+          <button class="icon-opt" data-val="운동"><span class="glyph">🏃</span><span class="name">운동</span></button>
+          <button class="icon-opt" data-val="공부"><span class="glyph">📚</span><span class="name">공부</span></button>
+          <button class="icon-opt" data-val="만들기"><span class="glyph">🎨</span><span class="name">만들기</span></button>
+          <button class="icon-opt" data-val="친구"><span class="glyph">👫</span><span class="name">친구 만남</span></button>
+        </div>
+      </div>
+
+      <!-- Step 4 몸 -->
+      <div class="wiz-step" data-step="4" style="display:none">
+        <div class="wiz-question">몸은 어때요?</div>
+        <div class="icon-grid" data-single>
+          <button class="icon-opt" data-val="건강"><span class="glyph">💪</span><span class="name">건강해요</span></button>
+          <button class="icon-opt" data-val="감기"><span class="glyph">🤧</span><span class="name">감기 기운</span></button>
+          <button class="icon-opt" data-val="피곤"><span class="glyph">😴</span><span class="name">피곤해요</span></button>
+        </div>
+        <button class="extra-btn" data-toggle onclick="toggleExtra(this)"><span class="ic">📝</span>메모 남기기</button>
+        <button class="extra-btn" data-toggle onclick="toggleExtra(this)"><span class="ic">🎙</span>목소리로 말하기</button>
+      </div>
+
+      <div class="wiz-footer">
+        <button class="btn-prev" onclick="wizPrev()">이전</button>
+        <button class="btn-next" id="wizNext" onclick="wizNext()" disabled>다음</button>
+      </div>
+    </section>
+
+    <!-- P-10 기록 보기 -->
+    <section class="screen" data-screen="P-10">
+      <h2 class="big">내 기록 보기</h2>
+      <p class="sub">내가 남긴 이야기예요.</p>
+
+      <div class="confirm-card" id="p10-confirm-card">
+        <div class="ctitle">🔔 선생님이 새 계획을 올렸어요</div>
+        <div class="cdesc">치료 선생님이 "치료계획서"를 새로 썼어요. 읽어보고 확인해주세요.</div>
+        <button class="cbtn" id="p10-confirm-btn" onclick="confirmMyRecord()">다 봤어요, 확인할게요</button>
+      </div>
+
+      <div class="rec-card">
+        <div class="glyph" style="background:var(--dai-bg)">😊</div>
+        <div class="body"><div class="rday">오늘 · 7월 8일</div><div class="rdesc">기분 좋아요 · 운동, 친구</div></div>
+        <span class="chip" style="background:var(--dai-bg);color:var(--dai-text)">일상</span>
+      </div>
+      <div class="rec-card">
+        <div class="glyph" style="background:var(--wel-bg)">🍚</div>
+        <div class="body"><div class="rday">어제 · 7월 7일</div><div class="rdesc">밥 잘 먹음 · 공부</div></div>
+        <span class="chip" style="background:var(--wel-bg);color:var(--wel-text)">복지</span>
+      </div>
+      <div class="rec-card">
+        <div class="glyph" style="background:var(--med-bg)">🤧</div>
+        <div class="body"><div class="rday">7월 5일 일요일</div><div class="rdesc">감기 기운 · 집에서 쉼</div></div>
+        <span class="chip" style="background:var(--med-bg);color:var(--med-text)">의료</span>
+      </div>
+      <div class="rec-card">
+        <div class="glyph" style="background:var(--dai-bg)">🎨</div>
+        <div class="body"><div class="rday">7월 3일 목요일</div><div class="rdesc">만들기 활동 · 기분 좋아요</div></div>
+        <span class="chip" style="background:var(--dai-bg);color:var(--dai-text)">일상</span>
+      </div>
+    </section>
+
+    <!-- P-23 동의·권리 관리 (설정) -->
+    <section class="screen" data-screen="P-23">
+      <h2 class="big">설정</h2>
+      <p class="sub">내 기록과 권리를 관리해요.</p>
+
+      <div class="set-group-title">내 정보 지키기</div>
+      <div class="set-row">
+        <span class="ic">🔔</span>
+        <div class="txt"><div class="t">알림 받기</div><div class="d">기록할 시간을 알려줘요</div></div>
+        <button class="toggle on" onclick="this.classList.toggle('on')" aria-label="알림 켜기"></button>
+      </div>
+      <div class="set-row">
+        <span class="ic">🔊</span>
+        <div class="txt"><div class="t">소리로 읽어주기</div><div class="d">글자를 소리로 들려줘요</div></div>
+        <button class="toggle" onclick="this.classList.toggle('on')" aria-label="소리 켜기"></button>
+      </div>
+
+      <div class="set-group-title">누가 내 기록을 볼 수 있나요?</div>
+      <div class="set-row">
+        <span class="ic">👩‍👧</span>
+        <div class="txt"><div class="t">엄마 (보호자)</div><div class="d">내 기록을 볼 수 있어요</div></div>
+        <span class="consent-status">✅ 허락함</span>
+      </div>
+      <div class="set-row">
+        <span class="ic">🧑‍🏫</span>
+        <div class="txt"><div class="t">김 선생님 (특수교사)</div><div class="d">교육 기록만 볼 수 있어요</div></div>
+        <button class="withdraw" onclick="alert('허락을 취소했어요. 김 선생님은 이제 볼 수 없어요.')">그만 보게 하기</button>
+      </div>
+
+      <div class="set-group-title">내 권리</div>
+      <div class="set-row">
+        <span class="ic">📥</span>
+        <div class="txt"><div class="t">내 기록 내려받기</div><div class="d">내 모든 기록을 저장해요</div></div>
+        <button class="withdraw" style="background:var(--primary-50);color:var(--primary-700);border-color:var(--primary-400)" onclick="alert('기록을 준비하고 있어요. 다 되면 알려드릴게요.')">받기</button>
+      </div>
+    </section>
+
+  </div><!-- /content -->
+
+  <!-- 저장 애니메이션 오버레이 -->
+  <div class="save-overlay" id="saveOverlay">
+    <span class="confetti" style="left:14%;top:16%;animation-delay:0s">🎉</span>
+    <span class="confetti" style="left:78%;top:22%;animation-delay:.3s">⭐</span>
+    <span class="confetti" style="left:30%;top:70%;animation-delay:.15s">💚</span>
+    <span class="confetti" style="left:70%;top:66%;animation-delay:.45s">✨</span>
+    <span class="spark">✨</span>
+    <div class="msg">잘 저장했어요!</div>
+    <div class="msg2">오늘 이야기해줘서 고마워요 💚</div>
+  </div>
+
+  <div class="tabbar" id="tabbar">
+    <button data-tab="P-01" class="on" onclick="switchTab('P-01')"><span class="ic">📅</span>오늘기록</button>
+    <button data-tab="P-10" onclick="switchTab('P-10')"><span class="ic">📖</span>기록보기</button>
+    <button data-tab="P-23" onclick="switchTab('P-23')"><span class="ic">⚙️</span>설정</button>
+  </div>
+</div>
+
+<script>
+  const titles={'P-01':'😊 오늘','P-02':'오늘 이야기하기','P-10':'📖 내 기록','P-23':'⚙️ 설정'};
+  const tabScreens=['P-01','P-10','P-23'];
+
+  function goScreen(id){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.dataset.screen===id));
+    document.getElementById('navTitle').textContent=titles[id];
+    document.getElementById('iaTag').textContent=id;
+    document.getElementById('content').scrollTop=0;
+    // 뒤로가기 버튼: 위자드에서만 표시
+    document.getElementById('navBack').style.display = id==='P-02' ? 'flex':'none';
+    // 탭바 활성
+    document.querySelectorAll('#tabbar button').forEach(b=>b.classList.toggle('on',b.dataset.tab===id));
+    // 프로토 네비 활성
+    document.querySelectorAll('.proto-nav button').forEach(b=>b.classList.toggle('on',b.dataset.go===id));
+    // 탭바 표시: 위자드(플로우 중)에서는 숨김
+    document.getElementById('tabbar').style.display = id==='P-02' ? 'none':'flex';
+  }
+  function switchTab(id){ if(id==='P-02'){goExpress();return;} goScreen(id); }
+
+  /* P-10 기록 확인 (승인 아님) */
+  function confirmMyRecord(){
+    const card=document.getElementById('p10-confirm-card');
+    card.classList.add('done');
+    card.querySelector('.ctitle').textContent='✓ 확인했어요';
+    card.querySelector('.cdesc').textContent='2026년 7월 8일에 확인했어요.';
+    document.getElementById('p10-confirm-btn').remove();
+  }
+
+  // 프로토 상단 네비
+  document.querySelectorAll('.proto-nav button').forEach(b=>{
+    b.addEventListener('click',()=> b.dataset.go==='P-02'?goExpress():goScreen(b.dataset.go));
+  });
+  document.getElementById('navBack').addEventListener('click',()=>{ if(wizStep>1){wizPrev();}else{goScreen('P-01');} });
+
+  /* ===== 위자드 로직 ===== */
+  let wizStep=1;
+  const answers={1:null,2:null,3:[],4:null};
+
+  function goExpress(){
+    wizStep=1; answers[1]=null; answers[2]=null; answers[3]=[]; answers[4]=null;
+    document.querySelectorAll('.icon-opt').forEach(o=>o.classList.remove('sel'));
+    document.querySelectorAll('.extra-btn').forEach(o=>o.classList.remove('on'));
+    renderStep();
+    goScreen('P-02');
+  }
+
+  function renderStep(){
+    document.querySelectorAll('.wiz-step').forEach(s=>s.style.display = (+s.dataset.step===wizStep)?'block':'none');
+    document.getElementById('wizLabel').textContent=wizStep+'/4';
+    document.querySelectorAll('.wiz-progress .dot').forEach(d=>d.classList.toggle('done', +d.dataset.d<=wizStep));
+    document.getElementById('wizNext').textContent = wizStep===4 ? '✨ 저장하기' : '다음';
+    updateNextState();
+  }
+
+  function updateNextState(){
+    let ok;
+    if(wizStep===3) ok = answers[3].length>0;      // 복수선택: 하나 이상
+    else ok = answers[wizStep]!==null;              // 단일선택 필수
+    document.getElementById('wizNext').disabled = !ok;
+  }
+
+  // 아이콘 선택
+  document.querySelectorAll('.wiz-step').forEach(step=>{
+    const grid=step.querySelector('.icon-grid');
+    if(!grid) return;
+    const multi=grid.hasAttribute('data-multi');
+    const s=+step.dataset.step;
+    grid.querySelectorAll('.icon-opt').forEach(opt=>{
+      opt.addEventListener('click',()=>{
+        if(multi){
+          opt.classList.toggle('sel');
+          const v=opt.dataset.val;
+          const arr=answers[3];
+          const i=arr.indexOf(v);
+          if(i>=0) arr.splice(i,1); else arr.push(v);
+        }else{
+          grid.querySelectorAll('.icon-opt').forEach(o=>o.classList.remove('sel'));
+          opt.classList.add('sel');
+          answers[s]=opt.dataset.val;
+        }
+        updateNextState();
+      });
+    });
+  });
+
+  function toggleExtra(btn){ btn.classList.toggle('on'); }
+
+  function wizNext(){
+    if(wizStep<4){ wizStep++; renderStep(); document.getElementById('content').scrollTop=0; }
+    else finishWizard();
+  }
+  function wizPrev(){
+    if(wizStep>1){ wizStep--; renderStep(); document.getElementById('content').scrollTop=0; }
+    else goScreen('P-01');
+  }
+
+  function finishWizard(){
+    const ov=document.getElementById('saveOverlay');
+    ov.classList.add('show');
+    setTimeout(()=>{ ov.classList.remove('show'); goScreen('P-01'); },2200);
+  }
+
+  goScreen('P-01');
+</script>
+</body>
+</html>

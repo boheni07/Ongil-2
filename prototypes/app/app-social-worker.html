@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>온길 — 사회복지사 (앱)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<style>
+:root{
+  --primary-50:#F0FDF9;--primary-100:#E1F5EE;--primary-400:#5DCAA5;
+  --primary-600:#1D9E75;--primary-700:#0F6E56;--primary-800:#065F46;--primary-900:#064E3B;
+  --accent-amber:#FAC775;--accent-coral:#F5C4B3;--accent-stone:#444441;--accent-pebble:#B4B2A9;
+  --med-bg:#FEF0F0;--med-text:#BF3030;--med-accent:#E04545;
+  --edu-bg:#EEF4FD;--edu-text:#2E5FA8;--edu-accent:#4377C0;
+  --wel-bg:#EDFAF3;--wel-text:#276B4C;--wel-accent:#3EA673;
+  --dai-bg:#FFF5E6;--dai-text:#B56F10;--dai-accent:#E8991E;
+  --tra-bg:#F4EFFB;--tra-text:#6A43A8;--tra-accent:#8A5DC6;
+  --leg-bg:#EEF2F7;--leg-text:#3E5E7A;--leg-accent:#5A7FA0;
+  --role-social:#3EA673;
+  --br-sm:6px;--br-md:10px;--br-lg:14px;--br-xl:20px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif;background:#e9edeb;color:var(--accent-stone);min-height:100vh;padding:24px 12px 40px;display:flex;flex-direction:column;align-items:center;gap:16px;}
+button{font-family:inherit;cursor:pointer;}
+
+/* proto nav (outside frame) */
+.proto-nav{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:430px;}
+.proto-nav .pill{padding:6px 11px;border-radius:var(--br-sm);font-size:11px;font-weight:600;background:#fff;color:#666;border:1px solid #d5ddd9;}
+.proto-nav .pill.active{background:var(--role-social);color:#fff;border-color:var(--role-social);}
+.proto-title{font-size:12px;color:#889;font-weight:600;letter-spacing:.5px;}
+
+/* phone frame */
+.phone{width:390px;height:800px;background:#fff;border-radius:34px;box-shadow:0 18px 50px rgba(0,0,0,.22);overflow:hidden;position:relative;display:flex;flex-direction:column;border:1px solid #d9e0dc;}
+.statusbar{height:26px;background:var(--primary-800);display:flex;align-items:center;justify-content:space-between;padding:0 18px;color:#fff;font-size:11px;font-weight:600;flex-shrink:0;}
+.navbar{height:50px;background:var(--primary-800);display:flex;align-items:center;padding:0 14px;color:#fff;gap:10px;flex-shrink:0;}
+.navbar .back{width:30px;font-size:18px;color:#cdeee1;background:none;border:none;text-align:left;}
+.navbar .ttl{font-size:16px;font-weight:700;flex:1;}
+.navbar .act{font-size:12px;color:var(--accent-amber);font-weight:700;background:none;border:none;}
+.navbar .brand{display:flex;align-items:center;gap:6px;}
+.wm-on{color:var(--primary-400);font-weight:800;}.wm-gil{color:#fff;font-weight:800;}
+
+.content{flex:1;overflow-y:auto;background:#F4F6F5;padding:14px;}
+.ptag{font-size:10px;font-weight:600;color:#fff;background:var(--accent-stone);display:inline-block;padding:2px 7px;border-radius:var(--br-sm);margin-bottom:10px;}
+
+.screen{display:none;}
+.screen.active{display:block;animation:fade .2s;}
+@keyframes fade{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:none;}}
+
+.card{background:#fff;border:1px solid #e6ebe8;border-radius:var(--br-md);padding:14px;margin-bottom:12px;}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:var(--br-sm);}
+.chip.wel{background:var(--wel-bg);color:var(--wel-text);}
+.chip.tra{background:var(--tra-bg);color:var(--tra-text);}
+.chip.med{background:var(--med-bg);color:var(--med-text);}
+.chip.dai{background:#FFF3E0;color:#B56F10;}
+.warn{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:var(--br-sm);background:#FFF3E0;color:#B56F10;border:1px solid #F0CE8E;}
+.btn{padding:10px 14px;border-radius:var(--br-md);font-size:13px;font-weight:700;border:none;width:100%;}
+.btn.pri{background:var(--primary-600);color:#fff;}
+.btn.tra{background:var(--tra-accent);color:#fff;}
+.btn.ghost{background:#fff;border:1px solid #d5ddd9;color:#555;}
+.btn.amber{background:var(--accent-amber);color:var(--primary-900);}
+.sec-h{font-size:13px;font-weight:700;margin:4px 2px 10px;}
+
+/* home kpi */
+.kpi2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.kpi2 .k{background:#fff;border:1px solid #e6ebe8;border-radius:var(--br-md);padding:12px;}
+.kpi2 .k .n{font-size:24px;font-weight:800;color:var(--wel-text);}
+.kpi2 .k.t .n{color:var(--tra-text);}
+.kpi2 .k .l{font-size:11px;color:var(--accent-pebble);margin-top:2px;}
+.p-row{display:flex;gap:12px;align-items:center;}
+.p-row .av{width:40px;height:40px;border-radius:11px;background:var(--wel-bg);color:var(--wel-text);display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;}
+.p-row .nm{font-weight:700;font-size:14px;}
+.p-row .meta{font-size:11px;color:var(--accent-pebble);}
+.mini-bar{height:6px;border-radius:3px;background:#eef2f0;overflow:hidden;margin-top:8px;}
+.mini-bar i{display:block;height:100%;background:var(--wel-accent);}
+
+/* stepper */
+.stepper{display:flex;gap:4px;margin-bottom:18px;}
+.stepper .st{flex:1;text-align:center;font-size:9px;font-weight:600;color:var(--accent-pebble);}
+.stepper .st .bar{height:5px;border-radius:3px;background:#e6ebe8;margin-bottom:5px;}
+.stepper .st.done .bar,.stepper .st.cur .bar{background:var(--wel-accent);}
+.stepper.tra .st.done .bar,.stepper.tra .st.cur .bar{background:var(--tra-accent);}
+.stepper .st.cur{color:var(--wel-text);}
+.stepper.tra .st.cur{color:var(--tra-text);}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:11px;font-weight:600;margin-bottom:5px;color:#555;}
+.field input,.field textarea,.field select{width:100%;padding:10px;border:1px solid #d5ddd9;border-radius:var(--br-md);font-family:inherit;font-size:13px;}
+.field textarea{min-height:70px;resize:vertical;}
+.opt-wrap{display:flex;flex-wrap:wrap;gap:8px;}
+.opt-chip{padding:9px 12px;border:1.5px solid #d5ddd9;border-radius:var(--br-md);font-size:12px;font-weight:600;background:#fff;color:#555;}
+.opt-chip.sel{border-color:var(--wel-accent);background:var(--wel-bg);color:var(--wel-text);}
+.opt-chip.sel.tra{border-color:var(--tra-accent);background:var(--tra-bg);color:var(--tra-text);}
+.foot-btns{display:flex;gap:8px;margin-top:16px;}
+
+/* ISP detail progress */
+.goal-row{padding:12px;border:1px solid #e6ebe8;border-radius:var(--br-md);margin-bottom:10px;background:#fff;}
+.goal-row .top{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;margin-bottom:8px;}
+.prog{height:8px;border-radius:4px;background:#eef2f0;overflow:hidden;}
+.prog i{display:block;height:100%;background:var(--wel-accent);border-radius:4px;}
+.seg-bar{display:flex;gap:3px;margin:8px 0;}
+.seg-bar .sg{flex:1;height:12px;border-radius:2px;background:#eef2f0;}
+.seg-bar .sg.on{background:var(--wel-accent);}
+
+/* roadmap vertical for mobile */
+.rm-v{position:relative;padding-left:8px;}
+.rm-node{display:flex;gap:12px;align-items:flex-start;position:relative;padding-bottom:18px;}
+.rm-node:not(:last-child)::before{content:"";position:absolute;left:17px;top:36px;bottom:-2px;width:3px;background:#d5ddd9;}
+.rm-node.done:not(:last-child)::before{background:var(--tra-accent);}
+.rm-node .dot{width:36px;height:36px;border-radius:50%;background:#eef2f0;border:2px solid #d5ddd9;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;color:var(--accent-pebble);z-index:2;}
+.rm-node.done .dot{background:var(--tra-accent);border-color:var(--tra-accent);color:#fff;}
+.rm-node.cur .dot{background:#fff;border-color:var(--tra-accent);color:var(--tra-accent);box-shadow:0 0 0 4px var(--tra-bg);}
+.rm-node .lbl{font-size:14px;font-weight:700;color:#888;padding-top:6px;}
+.rm-node.done .lbl,.rm-node.cur .lbl{color:var(--tra-text);}
+.rm-node .cap{font-size:11px;color:var(--accent-pebble);font-weight:400;}
+.rm-node .now{display:inline-block;margin-left:6px;font-size:9px;font-weight:700;color:#fff;background:var(--tra-accent);padding:1px 6px;border-radius:var(--br-sm);vertical-align:middle;}
+
+/* service status list */
+.svc{display:flex;justify-content:space-between;align-items:flex-start;padding:11px 0;border-bottom:1px solid #f0f3f1;}
+.svc:last-child{border-bottom:none;}
+.svc .t{font-size:13px;font-weight:600;}
+.svc .m{font-size:11px;color:var(--accent-pebble);margin-top:2px;}
+.st-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:var(--br-sm);white-space:nowrap;}
+.st-ok{background:var(--wel-bg);color:var(--wel-text);}
+.st-pend{background:#FFF3E0;color:#B56F10;}
+.st-end{background:#f0f2f1;color:#888;}
+.seg-tab{display:flex;gap:6px;margin-bottom:12px;}
+.seg-tab .s{flex:1;text-align:center;font-size:12px;font-weight:600;padding:7px;border-radius:var(--br-md);background:#fff;border:1px solid #d5ddd9;color:#666;}
+.seg-tab .s.on{background:var(--wel-accent);color:#fff;border-color:var(--wel-accent);}
+
+/* timeline */
+.tl{position:relative;padding-left:20px;}
+.tl::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:2px;background:#e0e6e3;}
+.tl-item{position:relative;margin-bottom:12px;}
+.tl-item::before{content:"";position:absolute;left:-18px;top:6px;width:10px;height:10px;border-radius:50%;background:#fff;border:3px solid var(--wel-accent);}
+.tl-item.tra::before{border-color:var(--tra-accent);}
+.tl-card{background:#fff;border:1px solid #e6ebe8;border-radius:var(--br-md);padding:12px;}
+.tl-card.pinned{border:2px solid var(--med-accent);}
+.tl-card.milestone{border:2px solid var(--accent-amber);}
+.tl-date{font-size:10px;color:var(--accent-pebble);margin-bottom:4px;}
+.tl-title{font-weight:700;font-size:13px;margin:4px 0;}
+.tl-body{font-size:11.5px;color:#666;line-height:1.5;}
+
+/* bottom tab */
+.tabbar{height:58px;background:#fff;border-top:1px solid #e6ebe8;display:flex;flex-shrink:0;}
+.tabbar .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10px;font-weight:600;color:var(--accent-pebble);background:none;border:none;}
+.tabbar .tab .ic{font-size:19px;}
+.tabbar .tab.active{color:var(--wel-accent);}
+.setrow{display:flex;align-items:center;gap:12px;padding:14px 2px;border-bottom:1px solid #eef1ee;}
+.setrow .si{font-size:18px;}
+.setrow .flex{flex:1;font-size:14px;font-weight:600;}
+.setrow .ar{color:var(--accent-pebble);}
+.prof-hd{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+.pav{width:44px;height:44px;border-radius:50%;background:var(--wel-accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex:0 0 44px;}
+.pn{font-size:15px;font-weight:800;}
+.pr{font-size:12px;color:var(--accent-pebble);}
+</style>
+</head>
+<body>
+
+<div class="proto-title">온길 · 사회복지사 · 모바일 프로토타입</div>
+<div class="proto-nav">
+  <button class="pill active" data-go="W-01">W-01 홈</button>
+  <button class="pill" data-go="W-13">W-13 ISP작성</button>
+  <button class="pill" data-go="W-14">W-14 ISP점검</button>
+  <button class="pill" data-go="W-16">W-16 전환계획</button>
+  <button class="pill" data-go="W-17">W-17 서비스</button>
+  <button class="pill" data-go="W-20">W-20 타임라인</button>
+</div>
+
+<div class="phone">
+  <div class="statusbar"><span>9:41</span><span>온길 SW ● ▲ ▮▮▮</span></div>
+  <div class="navbar">
+    <button class="back" id="navback" style="display:none;">←</button>
+    <div class="brand" id="navbrand">
+      <svg viewBox="0 0 90 100" width="22" height="25" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="온길 로고">
+        <path d="M20 25 H55" stroke="#4377C0" stroke-width="9" stroke-linecap="round"/>
+        <path d="M55 25 Q68 25 68 38 V50" stroke="#3EA673" stroke-width="9" stroke-linecap="round"/>
+        <path d="M20 25 V70" stroke="#E04545" stroke-width="9" stroke-linecap="round"/>
+        <path d="M20 70 Q35 82 70 78" stroke="#0F6E56" stroke-width="9" stroke-linecap="round"/>
+        <circle cx="42" cy="50" r="14" fill="#FAC775"/>
+        <path d="M56 50 H66" stroke="#E8991E" stroke-width="9" stroke-linecap="round"/>
+      </svg>
+      <span style="font-size:17px;letter-spacing:-.02em;"><span class="wm-on">온</span><span class="wm-gil">길</span></span>
+    </div>
+    <div class="ttl" id="navttl" style="display:none;"></div>
+    <button class="act" id="navact">🔔</button>
+  </div>
+
+  <div class="content">
+
+    <!-- W-01 -->
+    <section class="screen active" data-screen="W-01">
+      <span class="ptag">[W-01] 홈 — 담당 당사자 현황</span>
+      <div style="font-size:18px;font-weight:800;margin-bottom:2px;">담당 당사자 현황</div>
+      <div style="font-size:12px;color:var(--accent-pebble);margin-bottom:14px;">최복지 사회복지사 · 7월 8일(화)</div>
+
+      <div class="kpi2">
+        <div class="k"><div class="n">12</div><div class="l">담당 당사자</div></div>
+        <div class="k"><div class="n">3</div><div class="l">재사정 임박</div></div>
+        <div class="k t"><div class="n">5</div><div class="l">전환계획 진행</div></div>
+        <div class="k t"><div class="n">8</div><div class="l">이번 주 서비스</div></div>
+      </div>
+
+      <div class="sec-h">오늘 할 일</div>
+      <div class="card" style="padding:4px 14px;">
+        <div class="svc"><div><div class="t">이서연 ISP 재사정</div><div class="m">D-30 경고</div></div><span class="warn">⚠️ D-30</span></div>
+        <div class="svc"><div><div class="t">박준호 전환계획</div><div class="m">훈련기관 배정</div></div><span class="chip tra">전환</span></div>
+        <div class="svc"><div><div class="t">김민수 서비스 점검</div><div class="m">주간활동 이용</div></div><span class="chip wel">복지</span></div>
+      </div>
+
+      <div class="sec-h">담당 당사자</div>
+      <div class="card">
+        <div class="p-row"><div class="av">김</div><div style="flex:1;"><div class="nm">김민수</div><div class="meta">지적장애 2급 · 28세</div></div><span class="chip wel">복지</span></div>
+        <div class="mini-bar"><i style="width:60%"></i></div>
+        <div style="font-size:10px;color:var(--accent-pebble);margin-top:4px;">ISP 달성률 60%</div>
+      </div>
+      <div class="card">
+        <div class="p-row"><div class="av">이</div><div style="flex:1;"><div class="nm">이서연</div><div class="meta">자폐성장애 · 22세</div></div><span class="warn">D-30</span></div>
+        <div class="mini-bar"><i style="width:40%"></i></div>
+        <div style="font-size:10px;color:var(--accent-pebble);margin-top:4px;">ISP 달성률 40%</div>
+      </div>
+      <div class="card">
+        <div class="p-row"><div class="av" style="background:var(--tra-bg);color:var(--tra-text)">박</div><div style="flex:1;"><div class="nm">박준호</div><div class="meta">지적장애 3급 · 19세</div></div><span class="chip tra">전환</span></div>
+        <div class="mini-bar"><i style="width:25%;background:var(--tra-accent)"></i></div>
+        <div style="font-size:10px;color:var(--accent-pebble);margin-top:4px;">전환계획 초기</div>
+      </div>
+    </section>
+
+    <!-- W-13 -->
+    <section class="screen" data-screen="W-13">
+      <span class="ptag">[W-13] ISP 작성 5단계</span>
+      <div style="font-size:12px;color:var(--accent-pebble);margin-bottom:12px;">김민수 · 2 / 5 단계</div>
+      <div class="stepper">
+        <div class="st done"><div class="bar"></div>기본</div>
+        <div class="st cur"><div class="bar"></div>욕구</div>
+        <div class="st"><div class="bar"></div>목표</div>
+        <div class="st"><div class="bar"></div>서비스</div>
+        <div class="st"><div class="bar"></div>확인</div>
+      </div>
+      <div class="sec-h">욕구 사정</div>
+      <div class="field">
+        <label>주요 욕구 영역 (복수)</label>
+        <div class="opt-wrap">
+          <button class="opt-chip sel">자립생활</button>
+          <button class="opt-chip sel">사회참여</button>
+          <button class="opt-chip sel">직업훈련</button>
+          <button class="opt-chip">건강관리</button>
+          <button class="opt-chip">여가활동</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="m-need">당사자·가족 욕구 진술</label>
+        <textarea id="m-need">독립적 일상생활 능력 향상, 대중교통 이용 훈련, 지역사회 직업활동 참여 희망.</textarea>
+      </div>
+      <div class="field">
+        <label for="m-tool">사정 도구</label>
+        <select id="m-tool"><option>ICF 기반 기능평가 (2026-06)</option><option>지역사회적응검사(CIS-A)</option></select>
+      </div>
+      <div class="foot-btns">
+        <button class="btn ghost" style="flex:1;">임시저장</button>
+        <button class="btn pri" style="flex:1.4;" data-go="W-14">다음 →</button>
+      </div>
+    </section>
+
+    <!-- W-14 -->
+    <section class="screen" data-screen="W-14">
+      <span class="ptag">[W-14] ISP 점검 · 달성률</span>
+      <div style="font-size:12px;color:var(--accent-pebble);margin-bottom:6px;">김민수 · ISP v3 · 재사정 2026-08-07</div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px;"><span class="warn">⚠️ 재사정 D-30</span></div>
+
+      <div class="goal-row" onclick="mSel(this,60,'자립생활')">
+        <div class="top"><span>자립생활</span><span style="color:var(--wel-text)">60%</span></div>
+        <div class="prog"><i style="width:60%"></i></div>
+      </div>
+      <div class="goal-row" onclick="mSel(this,80,'사회참여')">
+        <div class="top"><span>사회참여</span><span style="color:var(--wel-text)">80%</span></div>
+        <div class="prog"><i style="width:80%"></i></div>
+      </div>
+      <div class="goal-row" onclick="mSel(this,40,'직업훈련')">
+        <div class="top"><span>직업훈련 <span class="warn" style="margin-left:2px;">D-30</span></span><span style="color:var(--wel-text)">40%</span></div>
+        <div class="prog"><i style="width:40%"></i></div>
+      </div>
+      <div class="goal-row" onclick="mSel(this,70,'건강관리')">
+        <div class="top"><span>건강관리</span><span style="color:var(--wel-text)">70%</span></div>
+        <div class="prog"><i style="width:70%"></i></div>
+      </div>
+
+      <div class="card" style="margin-top:12px;">
+        <span class="chip wel" id="m14chip">복지 WEL · 자립생활</span>
+        <div style="display:flex;align-items:baseline;gap:8px;margin:10px 0;">
+          <div style="font-size:34px;font-weight:800;color:var(--wel-text)" id="m14pct">60%</div>
+          <div style="font-size:11px;color:var(--accent-pebble)">목표 달성률</div>
+        </div>
+        <div class="seg-bar" id="m14seg"></div>
+        <div class="svc"><div class="t">대중교통 단독 이용</div><span class="chip wel">달성</span></div>
+        <div class="svc"><div class="t">금전관리</div><span class="chip wel">달성</span></div>
+        <div class="svc"><div class="t">공공서류 접수</div><span class="warn">진행중</span></div>
+        <div class="foot-btns"><button class="btn amber">재사정 시작</button></div>
+      </div>
+    </section>
+
+    <!-- W-16 -->
+    <section class="screen" data-screen="W-16">
+      <span class="ptag">[W-16] 전환계획 작성</span>
+      <div style="font-size:12px;color:var(--accent-pebble);margin-bottom:12px;">박준호 · 학령기→성인기 · 목표 지원고용</div>
+
+      <div class="card" style="background:var(--tra-bg);border-color:var(--tra-accent);">
+        <div style="font-size:12px;font-weight:700;color:var(--tra-text);margin-bottom:14px;">전환 로드맵 · 현재 <b>훈련</b></div>
+        <div class="rm-v">
+          <div class="rm-node done"><div class="dot">🔍</div><div><div class="lbl">탐색</div><div class="cap">직업 흥미·적성 파악</div></div></div>
+          <div class="rm-node done"><div class="dot">📋</div><div><div class="lbl">계획</div><div class="cap">전환목표 수립</div></div></div>
+          <div class="rm-node cur"><div class="dot">🎓</div><div><div class="lbl">훈련 <span class="now">● 현재</span></div><div class="cap">직무·자립 훈련</div></div></div>
+          <div class="rm-node"><div class="dot">💼</div><div><div class="lbl">취업/자립</div><div class="cap">고용·지역사회 정착</div></div></div>
+        </div>
+      </div>
+
+      <div class="stepper tra">
+        <div class="st done"><div class="bar"></div>대상</div>
+        <div class="st done"><div class="bar"></div>목표</div>
+        <div class="st cur"><div class="bar"></div>훈련</div>
+        <div class="st"><div class="bar"></div>연계</div>
+        <div class="st"><div class="bar"></div>확인</div>
+      </div>
+
+      <div class="sec-h">훈련계획 수립</div>
+      <div class="field">
+        <label>훈련 유형 (복수)</label>
+        <div class="opt-wrap">
+          <button class="opt-chip sel tra">직무기능 훈련</button>
+          <button class="opt-chip sel tra">현장실습</button>
+          <button class="opt-chip">사회성 훈련</button>
+          <button class="opt-chip">이동권 훈련</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="m-org">훈련 기관</label>
+        <input id="m-org" value="OO직업재활센터 — 바리스타 직무반">
+      </div>
+      <div class="field">
+        <label for="m-goal">훈련 목표</label>
+        <textarea id="m-goal">주 3회 직무훈련, 6개월 내 카페 보조직무 수행. 현장실습으로 고용 연계.</textarea>
+      </div>
+      <div class="foot-btns">
+        <button class="btn ghost" style="flex:1;">임시저장</button>
+        <button class="btn tra" style="flex:1.4;" data-go="W-17">다음 →</button>
+      </div>
+    </section>
+
+    <!-- W-17 -->
+    <section class="screen" data-screen="W-17">
+      <span class="ptag">[W-17] 서비스 이용 현황</span>
+      <div style="font-size:12px;color:var(--accent-pebble);margin-bottom:12px;">담당 당사자 복지·전환 서비스</div>
+      <div class="seg-tab">
+        <div class="s on">전체</div><div class="s">이용중</div><div class="s">대기</div><div class="s">종료</div>
+      </div>
+      <div class="card" style="padding:4px 14px;">
+        <div class="svc"><div><div class="t">주간활동 서비스 <span class="chip wel">복지</span></div><div class="m">김민수 · OO복지관 · 2026.01~</div></div><span class="st-badge st-ok">이용중</span></div>
+        <div class="svc"><div><div class="t">바리스타 직업훈련 <span class="chip tra">전환</span></div><div class="m">김민수 · 직업재활센터 · 2026.03~</div></div><span class="st-badge st-ok">이용중</span></div>
+        <div class="svc"><div><div class="t">활동지원 서비스 <span class="chip wel">복지</span></div><div class="m">이서연 · 활동지원기관 · 2025.09~</div></div><span class="st-badge st-ok">이용중</span></div>
+        <div class="svc"><div><div class="t">전환기 현장실습 <span class="chip tra">전환</span></div><div class="m">박준호 · OO카페(연계)</div></div><span class="st-badge st-pend">대기</span></div>
+        <div class="svc"><div><div class="t">자립생활 훈련 <span class="chip wel">복지</span></div><div class="m">정하늘 · 자립생활센터 · ~2026.03</div></div><span class="st-badge st-end">종료</span></div>
+      </div>
+    </section>
+
+    <!-- W-20 -->
+    <section class="screen" data-screen="W-20">
+      <span class="ptag">[W-20] 타임라인 (복지+전환)</span>
+      <div style="font-size:12px;color:var(--accent-pebble);margin-bottom:12px;">김민수 · 복지 + 전환 스트림</div>
+      <div class="seg-tab">
+        <div class="s on">전체</div><div class="s">복지 WEL</div><div class="s">전환 TRA</div>
+      </div>
+      <div class="tl">
+        <div class="tl-item">
+          <div class="tl-card pinned">
+            <div style="display:flex;justify-content:space-between;"><span class="chip med">📌 응급정보</span><span class="tl-date">상시</span></div>
+            <div class="tl-title">응급 연락처 · 복용약</div>
+            <div class="tl-body">보호자 010-****-1234 · 항경련제 · 견과류 알레르기</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-card">
+            <div class="tl-date">2026-07-05</div><span class="chip wel">복지</span>
+            <div class="tl-title">자립생활 목표 점검</div>
+            <div class="tl-body">대중교통 단독 이용 달성. 금전관리 진행중. 달성률 60% 갱신.</div>
+          </div>
+        </div>
+        <div class="tl-item tra">
+          <div class="tl-card">
+            <div class="tl-date">2026-06-28</div><span class="chip tra">전환</span>
+            <div class="tl-title">바리스타 훈련 3개월차 평가</div>
+            <div class="tl-body">추출·위생관리 습득. 현장실습 연계 검토 시작.</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-card milestone">
+            <div style="display:flex;justify-content:space-between;"><span class="chip dai">🏅 이정표</span><span class="tl-date">2026-06-01</span></div>
+            <div class="tl-title">첫 독립 외출 성공</div>
+            <div class="tl-body">지하철 2회 환승 단독 이용, 목적지 왕복 완수.</div>
+          </div>
+        </div>
+        <div class="tl-item tra">
+          <div class="tl-card">
+            <div class="tl-date">2026-03-10</div><span class="chip tra">전환</span>
+            <div class="tl-title">전환계획 수립 · 훈련 배정</div>
+            <div class="tl-body">바리스타 직무반 배정. 로드맵 '훈련' 단계 진입.</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-card">
+            <div class="tl-date">2026-01-15</div><span class="chip wel">복지</span>
+            <div class="tl-title">ISP v3 수립</div>
+            <div class="tl-body">4개 목표영역 설정. 재사정 예정 8월.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 설정 -->
+    <section class="screen" data-screen="settings">
+      <span class="ptag">[설정] · ST-11</span>
+      <div style="font-size:18px;font-weight:800;margin-bottom:14px;">설정</div>
+      <div class="prof-hd"><div class="pav">최</div><div><div class="pn">최복지</div><div class="pr">사회복지사 · 서울복지관</div></div></div>
+      <div class="setrow"><span class="si">🔔</span><span class="flex">알림 받기</span><span class="ar">›</span></div>
+      <div class="setrow"><span class="si">📋</span><span class="flex">담당 당사자 관리</span><span class="ar">›</span></div>
+      <div class="setrow"><span class="si">🔒</span><span class="flex">개인정보·동의 관리</span><span class="ar">›</span></div>
+      <div class="setrow"><span class="si">❓</span><span class="flex">도움말</span><span class="ar">›</span></div>
+      <div class="setrow" style="color:var(--med-text)"><span class="si">🚪</span><span class="flex">로그아웃</span><span class="ar">›</span></div>
+    </section>
+
+  </div>
+
+  <!-- bottom tab -->
+  <nav class="tabbar">
+    <button class="tab active" data-go="W-01"><span class="ic">🏠</span>홈</button>
+    <button class="tab" data-go="W-14"><span class="ic">📊</span>ISP</button>
+    <button class="tab" data-go="W-16"><span class="ic">🧭</span>전환</button>
+    <button class="tab" data-go="W-20"><span class="ic">🗂️</span>타임라인</button>
+    <button class="tab" data-go="settings"><span class="ic">⚙️</span>설정</button>
+  </nav>
+</div>
+
+<script>
+const meta={
+  'W-01':{tab:'W-01',title:null,depth:1},
+  'W-13':{tab:'W-01',title:'ISP 작성',depth:2},
+  'W-14':{tab:'W-14',title:'ISP 점검',depth:2},
+  'W-16':{tab:'W-16',title:'전환계획',depth:2},
+  'W-17':{tab:'W-16',title:'서비스 현황',depth:2},
+  'W-20':{tab:'W-20',title:null,depth:1},
+  'settings':{tab:'settings',title:null,depth:1}
+};
+function goScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.dataset.screen===id));
+  document.querySelectorAll('.proto-nav .pill').forEach(p=>p.classList.toggle('active',p.dataset.go===id));
+  const m=meta[id]||{tab:id,depth:1};
+  document.querySelectorAll('.tabbar .tab').forEach(t=>t.classList.toggle('active',t.dataset.go===m.tab));
+  // navbar: brand on depth1, back+title on depth2
+  const back=document.getElementById('navback'),brand=document.getElementById('navbrand'),ttl=document.getElementById('navttl'),act=document.getElementById('navact');
+  if(m.depth>=2&&m.title){
+    back.style.display='block';brand.style.display='none';ttl.style.display='block';ttl.textContent=m.title;act.textContent='저장';
+  }else{
+    back.style.display='none';brand.style.display='flex';ttl.style.display='none';act.textContent='🔔';
+  }
+  document.querySelector('.content').scrollTop=0;
+}
+document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>goScreen(b.dataset.go)));
+document.getElementById('navback').addEventListener('click',()=>goScreen('W-01'));
+
+// W-14 mobile segments
+function renderSeg(el,pct){let f=Math.round(pct/10),h='';for(let i=0;i<10;i++)h+=`<div class="sg ${i<f?'on':''}"></div>`;el.innerHTML=h;}
+renderSeg(document.getElementById('m14seg'),60);
+function mSel(row,pct,name){
+  document.querySelectorAll('#m14pct').forEach(()=>{});
+  document.getElementById('m14pct').textContent=pct+'%';
+  document.getElementById('m14chip').textContent='복지 WEL · '+name;
+  renderSeg(document.getElementById('m14seg'),pct);
+}
+
+// seg-tab toggle demo
+document.querySelectorAll('.seg-tab').forEach(g=>g.querySelectorAll('.s').forEach(s=>s.addEventListener('click',()=>{
+  g.querySelectorAll('.s').forEach(x=>x.classList.remove('on'));s.classList.add('on');
+})));
+</script>
+</body>
+</html>

@@ -1,0 +1,869 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>온길 · 보호자 웹 프로토타입</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<style>
+:root{
+  --primary-50:#F0FDF9; --primary-100:#E1F5EE; --primary-400:#5DCAA5;
+  --primary-600:#1D9E75; --primary-700:#0F6E56; --primary-800:#065F46; --primary-900:#064E3B;
+  --accent-amber:#FAC775; --accent-coral:#F5C4B3; --accent-stone:#444441; --accent-pebble:#B4B2A9;
+  --med-bg:#FEF0F0; --med-text:#BF3030; --med-accent:#E04545;
+  --edu-bg:#EEF4FD; --edu-text:#2E5FA8; --edu-accent:#4377C0;
+  --wel-bg:#EDFAF3; --wel-text:#276B4C; --wel-accent:#3EA673;
+  --dai-bg:#FFF5E6; --dai-text:#B56F10; --dai-accent:#E8991E;
+  --tra-bg:#F4EFFB; --tra-text:#6A43A8; --tra-accent:#8A5DC6;
+  --leg-bg:#EEF2F7; --leg-text:#3E5E7A; --leg-accent:#5A7FA0;
+  --role-guardian:#0F6E56; --role-therapist:#E04545; --role-teacher:#4377C0;
+  --role-social:#3EA673; --role-supporter:#E8991E; --role-person:#FAC775;
+  --hh:56px; --sw:220px;
+  --br-sm:6px; --br-md:10px; --br-lg:14px; --br-xl:20px;
+  --bd:#E5E7EB; --txt:#1F2430; --muted:#6B7280; --bg:#F7F8FA;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif;color:var(--txt);background:var(--bg);font-size:14px;line-height:1.5;}
+button{font-family:inherit;cursor:pointer;}
+:focus-visible{outline:2px solid var(--primary-600);outline-offset:2px;}
+a{color:var(--primary-700);}
+
+/* Prototype nav */
+.proto-nav{position:fixed;top:0;left:0;right:0;height:40px;background:var(--accent-stone);color:#fff;display:flex;align-items:center;gap:6px;padding:0 12px;z-index:200;overflow-x:auto;}
+.proto-nav b{font-size:12px;margin-right:8px;color:var(--accent-amber);white-space:nowrap;}
+.proto-nav button{background:rgba(255,255,255,.12);color:#fff;border:none;border-radius:var(--br-sm);padding:5px 10px;font-size:12px;white-space:nowrap;}
+.proto-nav button.active{background:var(--accent-amber);color:var(--primary-900);font-weight:700;}
+
+/* Global header */
+.gheader{position:fixed;top:40px;left:0;right:0;height:var(--hh);background:var(--primary-800);color:#fff;display:flex;align-items:center;padding:0 18px;z-index:150;gap:16px;}
+.brand{display:flex;align-items:center;gap:8px;}
+.wm-on{color:#7CE7C1;font-weight:800;}.wm-gil{color:#fff;font-weight:800;}
+.brand .wm{font-size:20px;letter-spacing:-.02em;}
+.person-select{margin-left:18px;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border-radius:var(--br-md);padding:5px 10px;}
+.person-select select{background:transparent;border:none;color:#fff;font-size:14px;font-weight:600;font-family:inherit;}
+.person-select select option{color:#1F2430;}
+.gheader .spacer{flex:1;}
+.gheader .icon-btn{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:16px;position:relative;}
+.gheader .dot{position:absolute;top:7px;right:8px;width:8px;height:8px;background:var(--accent-amber);border-radius:50%;}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--accent-amber);color:var(--primary-900);display:flex;align-items:center;justify-content:center;font-weight:700;}
+
+/* Sidebar */
+.sidebar{position:fixed;top:calc(40px + var(--hh));left:0;bottom:0;width:var(--sw);background:#fff;border-right:1px solid var(--bd);padding:14px 10px;overflow-y:auto;}
+.side-person{font-size:12px;color:var(--muted);padding:4px 10px 10px;border-bottom:1px solid var(--bd);margin-bottom:8px;}
+.side-person b{color:var(--txt);font-size:14px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--br-md);border:none;background:transparent;width:100%;text-align:left;font-size:14px;color:var(--txt);}
+.nav-item .ic{width:20px;text-align:center;}
+.nav-item:hover{background:var(--primary-50);}
+.nav-item.active{background:var(--primary-100);color:var(--primary-800);font-weight:700;box-shadow:inset 3px 0 0 var(--role-guardian);}
+
+/* Main */
+.main{margin-left:var(--sw);padding:calc(40px + var(--hh) + 16px) 24px 48px;max-width:1400px;}
+.screen{display:none;}
+.screen.active{display:block;}
+.ia-badge{display:inline-flex;align-items:center;gap:6px;background:var(--primary-900);color:#fff;font-size:11px;font-weight:700;padding:4px 9px;border-radius:var(--br-sm);margin-bottom:14px;}
+.ia-badge .proto{background:var(--accent-amber);color:var(--primary-900);border-radius:3px;padding:1px 5px;font-size:10px;}
+h1.page{font-size:24px;font-weight:800;margin:0 0 4px;}
+.page-sub{color:var(--muted);margin:0 0 20px;}
+
+/* Cards & chips */
+.card{background:#fff;border:1px solid var(--bd);border-radius:var(--br-md);padding:16px;}
+.grid{display:grid;gap:16px;}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;}
+.d-MED{background:var(--med-bg);color:var(--med-text);}
+.d-EDU{background:var(--edu-bg);color:var(--edu-text);}
+.d-WEL{background:var(--wel-bg);color:var(--wel-text);}
+.d-DAI{background:var(--dai-bg);color:var(--dai-text);}
+.d-TRA{background:var(--tra-bg);color:var(--tra-text);}
+.d-LEG{background:var(--leg-bg);color:var(--leg-text);}
+.btn{border:none;border-radius:var(--br-md);padding:9px 16px;font-size:14px;font-weight:600;}
+.btn-primary{background:var(--primary-600);color:#fff;}
+.btn-primary:hover{background:var(--primary-700);}
+.btn-amber{background:var(--accent-amber);color:var(--primary-900);}
+.btn-ghost{background:#fff;border:1px solid var(--bd);color:var(--txt);}
+.muted{color:var(--muted);}
+
+/* G-01 dashboard */
+.person-slider{display:flex;gap:14px;overflow-x:auto;padding-bottom:6px;margin-bottom:18px;}
+.person-card{min-width:320px;flex:0 0 auto;border:1px solid var(--bd);border-radius:var(--br-lg);padding:18px;background:#fff;position:relative;}
+.person-card.sel{border-color:var(--role-guardian);box-shadow:0 0 0 2px rgba(15,110,86,.18);}
+.person-card .pc-head{display:flex;align-items:center;gap:14px;margin-bottom:14px;}
+.person-avatar{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;background:var(--primary-100);}
+.person-card h3{margin:0;font-size:18px;}
+.person-card .pc-meta{color:var(--muted);font-size:13px;}
+.pc-stats{display:flex;gap:8px;}
+.pc-stat{flex:1;background:var(--bg);border-radius:var(--br-md);padding:8px;text-align:center;}
+.pc-stat b{display:block;font-size:18px;color:var(--primary-700);}
+.pc-stat span{font-size:11px;color:var(--muted);}
+.pinned{border:2px solid var(--med-accent);background:var(--med-bg);border-radius:var(--br-md);padding:16px;margin-bottom:18px;}
+.pinned h3{margin:0 0 10px;color:var(--med-text);display:flex;align-items:center;gap:8px;font-size:16px;}
+.pinned .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px 20px;font-size:13px;}
+.pinned .grid2 div span{color:var(--med-text);font-weight:700;margin-right:6px;}
+.dash-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:16px;}
+.card h3.ch{margin:0 0 12px;font-size:16px;}
+.rec-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd);}
+.rec-row:last-child{border-bottom:none;}
+.rec-row .rt{flex:1;}
+.rec-row .rt b{font-weight:600;}
+.rec-row .rd{font-size:12px;color:var(--muted);}
+.perm-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--bd);font-size:13px;}
+.perm-row:last-child{border-bottom:none;}
+.lvl{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;}
+.lvl.read{background:#DBEAFE;color:#1D4ED8;}.lvl.write{background:#D1FAE5;color:#047857;}.lvl.edit{background:#FEF3C7;color:#B45309;}
+
+/* Timeline G-10 */
+.tl-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.seg{display:inline-flex;background:#fff;border:1px solid var(--bd);border-radius:var(--br-md);overflow:hidden;}
+.seg button{background:#fff;border:none;padding:8px 16px;font-size:13px;font-weight:600;color:var(--muted);}
+.seg button.active{background:var(--primary-600);color:#fff;}
+.filter-chips{display:flex;gap:6px;flex-wrap:wrap;}
+.filter-chips .chip{cursor:pointer;border:1px solid transparent;}
+.filter-chips .chip.off{opacity:.35;}
+.stream .tl-card{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--bd);}
+.stream .tl-date{width:92px;flex:0 0 auto;font-size:12px;color:var(--muted);text-align:right;padding-top:2px;}
+.stream .tl-body{flex:1;}
+.stream .tl-body h4{margin:0 0 4px;font-size:15px;}
+.tl-card.milestone .tl-body{border-left:3px solid var(--accent-amber);padding-left:12px;background:#FFFBF0;border-radius:0 var(--br-md) var(--br-md) 0;}
+.tl-card.pinned-card .tl-body{border-left:3px solid var(--med-accent);padding-left:12px;background:var(--med-bg);border-radius:0 var(--br-md) var(--br-md) 0;}
+.lane{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;}
+.lane-col h5{margin:0 0 8px;font-size:12px;text-align:center;padding:6px;border-radius:var(--br-sm);}
+.lane-item{background:#fff;border:1px solid var(--bd);border-radius:var(--br-sm);padding:8px;font-size:12px;margin-bottom:8px;}
+.lane-item .ld{color:var(--muted);font-size:11px;}
+
+/* Split pane G-20 */
+.split{display:grid;grid-template-columns:320px 1fr;gap:0;border:1px solid var(--bd);border-radius:var(--br-md);overflow:hidden;background:#fff;min-height:520px;}
+.split .list{border-right:1px solid var(--bd);overflow-y:auto;max-height:640px;}
+.list-search{padding:12px;border-bottom:1px solid var(--bd);}
+.list-search input{width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:var(--br-md);font-size:13px;font-family:inherit;}
+.list-item{padding:12px 14px;border-bottom:1px solid var(--bd);border-left:3px solid transparent;}
+.list-item:hover{background:var(--primary-50);}
+.list-item.sel{background:var(--primary-50);border-left-color:var(--role-guardian);}
+.list-item h4{margin:0 0 4px;font-size:14px;display:flex;justify-content:space-between;align-items:center;}
+.list-item p{margin:4px 0 0;font-size:12px;color:var(--muted);}
+.detail{padding:22px;overflow-y:auto;max-height:640px;}
+.detail .d-meta{display:flex;gap:8px;align-items:center;margin:8px 0 18px;flex-wrap:wrap;color:var(--muted);font-size:13px;}
+.detail h2{margin:6px 0;font-size:20px;}
+.field-block{margin-bottom:16px;}
+.field-block label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;}
+.badge-draft{background:#FEF3C7;color:#B45309;font-size:11px;font-weight:700;padding:2px 7px;border-radius:var(--br-sm);}
+
+/* Matrix G-30 */
+.matrix-wrap{overflow-x:auto;border:1px solid var(--bd);border-radius:var(--br-md);background:#fff;}
+table.matrix{border-collapse:collapse;width:100%;min-width:820px;}
+table.matrix th,table.matrix td{border:1px solid var(--bd);padding:0;text-align:center;font-size:12px;}
+table.matrix thead th{background:var(--bg);padding:8px 6px;font-weight:700;}
+table.matrix .rowhead{text-align:left;padding:10px 12px;white-space:nowrap;background:#fff;}
+table.matrix .rowhead b{display:block;}
+table.matrix .rowhead small{color:var(--muted);}
+.pcell{width:100%;height:44px;border:none;background:#F3F4F6;font-size:11px;font-weight:700;color:#9CA3AF;}
+.pcell[data-lvl="read"]{background:#3B82F6;color:#fff;}
+.pcell[data-lvl="write"]{background:#10B981;color:#fff;}
+.pcell[data-lvl="edit"]{background:#F59E0B;color:#fff;}
+.legend{display:flex;gap:14px;margin:14px 0;flex-wrap:wrap;font-size:12px;}
+.legend span{display:inline-flex;align-items:center;gap:6px;}
+.legend i{width:14px;height:14px;border-radius:3px;display:inline-block;}
+
+/* Wizard G-32 */
+.stepper{display:flex;gap:0;margin-bottom:26px;}
+.stepper .st{flex:1;text-align:center;position:relative;font-size:12px;color:var(--muted);}
+.stepper .st .num{width:30px;height:30px;border-radius:50%;background:#fff;border:2px solid var(--bd);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-weight:700;color:var(--muted);}
+.stepper .st.active .num{background:var(--primary-600);border-color:var(--primary-600);color:#fff;}
+.stepper .st.done .num{background:var(--primary-100);border-color:var(--primary-600);color:var(--primary-700);}
+.stepper .st.active{color:var(--primary-700);font-weight:700;}
+.stepper .st::before{content:'';position:absolute;top:15px;left:-50%;width:100%;height:2px;background:var(--bd);z-index:0;}
+.stepper .st:first-child::before{display:none;}
+.wizard-panel{max-width:720px;margin:0 auto;}
+.wstep{display:none;}.wstep.active{display:block;}
+.opt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:10px 0;}
+.opt{border:2px solid var(--bd);border-radius:var(--br-md);padding:14px;text-align:center;background:#fff;font-weight:600;}
+.opt.sel{border-color:var(--primary-600);background:var(--primary-50);}
+.opt small{display:block;color:var(--muted);font-weight:400;margin-top:4px;}
+.wnav{display:flex;justify-content:space-between;margin-top:26px;}
+.confirm-list{list-style:none;padding:0;margin:0;}
+.confirm-list li{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--bd);}
+.confirm-list li span{color:var(--muted);}
+.radio-row{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0;}
+.radio-row label{border:1px solid var(--bd);border-radius:var(--br-md);padding:10px 16px;cursor:pointer;}
+input[type=date],input[type=text]{padding:8px 10px;border:1px solid var(--bd);border-radius:var(--br-md);font-family:inherit;font-size:14px;}
+
+/* Record form G-21 */
+.rform .fg{margin-bottom:18px;}
+.rform .fg > label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;}
+.rform input[type=text],.rform textarea{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:var(--br-md);font-family:inherit;font-size:14px;}
+.rform textarea{min-height:120px;resize:vertical;}
+.rform input[type=text]:focus,.rform textarea:focus{outline:2px solid var(--primary-600);border-color:transparent;}
+.guardian-note{background:var(--primary-50);border:1px solid var(--primary-100);border-radius:var(--br-md);padding:10px 14px;font-size:12.5px;color:var(--primary-700);margin-bottom:18px;}
+
+/* Confirm (확인) — 승인 아님 */
+.confirm-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;}
+.confirm-badge.pending{background:#F3F4F6;color:#6B7280;}
+.confirm-badge.done{background:var(--primary-50);color:var(--primary-700);}
+.pending-confirm-card{background:#fff;border:1px solid var(--bd);border-left:3px solid var(--accent-amber);border-radius:var(--br-md);padding:16px;margin-top:16px;}
+.pending-confirm-card h3{margin:0 0 10px;font-size:14px;}
+.confirm-cta-box{background:var(--primary-50);border:1px solid var(--primary-100);border-radius:var(--br-md);padding:14px;margin:16px 0;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
+.confirm-cta-box.done{background:#fff;border-color:var(--bd);}
+.confirm-cta-box p{margin:0;font-size:13px;color:var(--primary-700);}
+.confirm-cta-box.done p{color:var(--muted);}
+
+/* Access log G-40 */
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+.filters select,.filters input{padding:8px 10px;border:1px solid var(--bd);border-radius:var(--br-md);font-family:inherit;font-size:13px;}
+table.log{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--bd);border-radius:var(--br-md);overflow:hidden;font-size:13px;}
+table.log th,table.log td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--bd);}
+table.log th{background:var(--bg);font-size:12px;}
+table.log tr:last-child td{border-bottom:none;}
+.act-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;}
+.act-view{background:#DBEAFE;color:#1D4ED8;}.act-edit{background:#FEF3C7;color:#B45309;}.act-create{background:#D1FAE5;color:#047857;}.act-deny{background:#FEE2E2;color:#B91C1C;}
+
+/* Consent G-65 */
+.consent-item{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:16px;border:1px solid var(--bd);border-radius:var(--br-md);margin-bottom:12px;background:#fff;}
+.consent-item .ci-info h4{margin:0 0 4px;font-size:15px;display:flex;align-items:center;gap:8px;}
+.req-tag{font-size:10px;font-weight:700;padding:2px 6px;border-radius:var(--br-sm);}
+.req-tag.req{background:var(--med-bg);color:var(--med-text);}
+.req-tag.opt{background:var(--bg);color:var(--muted);}
+.consent-item p{margin:4px 0 0;font-size:12px;color:var(--muted);}
+.switch{position:relative;width:46px;height:26px;flex:0 0 auto;}
+.switch input{opacity:0;width:0;height:0;}
+.slider{position:absolute;inset:0;background:#CBD5E1;border-radius:999px;transition:.2s;}
+.slider::before{content:'';position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;}
+.switch input:checked + .slider{background:var(--primary-600);}
+.switch input:checked + .slider::before{transform:translateX(20px);}
+.settings-section{margin-bottom:24px;}
+.settings-section > h3{font-size:14px;color:var(--muted);margin:0 0 10px;text-transform:uppercase;letter-spacing:.03em;}
+</style>
+</head>
+<body>
+
+<div class="proto-nav" role="tablist" aria-label="화면 전환">
+  <b>PROTOTYPE · 보호자(웹)</b>
+  <button class="active" data-go="G-01">G-01 대시보드</button>
+  <button data-go="G-10">G-10 타임라인</button>
+  <button data-go="G-20">G-20 기록관리</button>
+  <button data-go="G-21">G-21 기록작성</button>
+  <button data-go="G-30">G-30 권한매트릭스</button>
+  <button data-go="G-32">G-32 권한부여</button>
+  <button data-go="G-40">G-40 접근로그</button>
+  <button data-go="G-65">G-65 동의·권리</button>
+</div>
+
+<header class="gheader">
+  <div class="brand">
+    <svg class="ongil-mark" viewBox="0 0 90 100" width="34" height="38" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="온길 로고">
+      <path d="M20 25 H55" stroke="#4377C0" stroke-width="9" stroke-linecap="round"/>
+      <path d="M55 25 Q68 25 68 38 V50" stroke="#3EA673" stroke-width="9" stroke-linecap="round"/>
+      <path d="M20 25 V70" stroke="#E04545" stroke-width="9" stroke-linecap="round"/>
+      <path d="M20 70 Q35 82 70 78" stroke="#0F6E56" stroke-width="9" stroke-linecap="round"/>
+      <circle cx="42" cy="50" r="14" fill="#FAC775"/>
+      <path d="M56 50 H66" stroke="#E8991E" stroke-width="9" stroke-linecap="round"/>
+    </svg>
+    <span class="wm"><span class="wm-on">온</span><span class="wm-gil">길</span></span>
+  </div>
+  <div class="person-select">
+    <span aria-hidden="true">👤</span>
+    <label for="hdr-person" class="sr-only" style="position:absolute;left:-9999px;">당사자 선택</label>
+    <select id="hdr-person" onchange="setPerson(this.value)">
+      <option value="0">홍길동 (16세)</option>
+      <option value="1">홍영희 (9세)</option>
+    </select>
+  </div>
+  <div class="spacer"></div>
+  <button class="icon-btn" aria-label="알림 3건">🔔<span class="dot"></span></button>
+  <div class="avatar" aria-label="김보호 프로필">김</div>
+</header>
+
+<nav class="sidebar" aria-label="보호자 메뉴">
+  <div class="side-person">현재 당사자<br><b id="side-person-name">홍길동</b> · 보호자 김보호</div>
+  <button class="nav-item active" data-go="G-01"><span class="ic">🏠</span> 대시보드</button>
+  <button class="nav-item" data-go="G-10"><span class="ic">📈</span> 생애주기 타임라인</button>
+  <button class="nav-item" data-go="G-20"><span class="ic">📁</span> 기록 관리</button>
+  <button class="nav-item" data-go="G-30"><span class="ic">🔐</span> 권한 관리</button>
+  <button class="nav-item" data-go="G-40"><span class="ic">📜</span> 접근 로그</button>
+  <button class="nav-item" data-go="G-65"><span class="ic">⚙️</span> 동의·권리 관리</button>
+</nav>
+
+<main class="main">
+
+  <!-- ============ G-01 대시보드 ============ -->
+  <section class="screen active" data-screen="G-01">
+    <span class="ia-badge"><span class="proto">PROTO</span> [G-01] 대시보드</span>
+    <h1 class="page">대시보드</h1>
+    <p class="page-sub">피보호자 현황을 한눈에 확인하세요.</p>
+
+    <div class="person-slider" aria-label="당사자 슬라이더">
+      <article class="person-card sel">
+        <div class="pc-head">
+          <div class="person-avatar" aria-hidden="true">🧑</div>
+          <div>
+            <h3>홍길동</h3>
+            <div class="pc-meta">2008-03-15 · 만 16세 · 지적장애 3급</div>
+          </div>
+        </div>
+        <div class="pc-stats">
+          <div class="pc-stat"><b>12</b><span>이번주 기록</span></div>
+          <div class="pc-stat"><b>4</b><span>권한 부여</span></div>
+          <div class="pc-stat"><b>D-14</b><span>IEP 점검</span></div>
+        </div>
+      </article>
+      <article class="person-card">
+        <div class="pc-head">
+          <div class="person-avatar" aria-hidden="true">🧒</div>
+          <div>
+            <h3>홍영희</h3>
+            <div class="pc-meta">2015-07-22 · 만 9세 · 자폐성장애 2급</div>
+          </div>
+        </div>
+        <div class="pc-stats">
+          <div class="pc-stat"><b>8</b><span>이번주 기록</span></div>
+          <div class="pc-stat"><b>3</b><span>권한 부여</span></div>
+          <div class="pc-stat"><b>D-3</b><span>치료 회기</span></div>
+        </div>
+      </article>
+    </div>
+
+    <div class="pinned" role="region" aria-label="응급 정보">
+      <h3>🚨 응급 대응 정보 — 홍길동</h3>
+      <div class="grid2">
+        <div><span>혈액형</span>B형 Rh+</div>
+        <div><span>알레르기</span>땅콩, 페니실린</div>
+        <div><span>복용약</span>발프로산(항경련) 아침·저녁</div>
+        <div><span>발작 이력</span>있음 · 최근 2026-05</div>
+        <div><span>주치의</span>서울재활의학과 이재활 02-123-4567</div>
+        <div><span>비상연락</span>보호자 김보호 010-1234-5678</div>
+      </div>
+    </div>
+
+    <div class="dash-grid">
+      <div class="card">
+        <h3 class="ch">최근 기록</h3>
+        <div class="rec-row"><span class="chip d-MED">의료</span><div class="rt"><b>재활의학과 정기 진료</b><div class="rd">이재활 · 오늘 10:30</div></div></div>
+        <div class="rec-row"><span class="chip d-EDU">교육</span><div class="rt"><b>관찰기록 — 수업 집중도</b><div class="rd">김교사 · 어제</div></div></div>
+        <div class="rec-row"><span class="chip d-DAI">일상</span><div class="rt"><b>활동지원 일지</b><div class="rd">박지원 · 어제</div></div></div>
+        <div class="rec-row"><span class="chip d-WEL">복지</span><div class="rt"><b>ISP 3분기 점검</b><div class="rd">최복지 · 2일 전</div></div></div>
+        <button class="btn btn-ghost" style="margin-top:12px;width:100%" data-go="G-20">전체 기록 보기</button>
+      </div>
+      <div class="card">
+        <h3 class="ch">권한 현황</h3>
+        <div class="perm-row"><span>김교사 · 특수교사</span><span class="lvl edit">편집</span></div>
+        <div class="perm-row"><span>박지원 · 치료사</span><span class="lvl write">작성</span></div>
+        <div class="perm-row"><span>최복지 · 사회복지사</span><span class="lvl read">읽기</span></div>
+        <div class="perm-row"><span>정활동 · 활동지원사</span><span class="lvl write">작성</span></div>
+        <button class="btn btn-ghost" style="margin-top:12px;width:100%" data-go="G-30">권한 매트릭스</button>
+      </div>
+      <div class="card">
+        <h3 class="ch">알림</h3>
+        <div class="rec-row"><div class="rt"><b>권한 만료 임박</b><div class="rd">최복지 읽기권한 D-7</div></div></div>
+        <div class="rec-row"><div class="rt"><b>새 기록 등록</b><div class="rd">치료계획서 초안</div></div></div>
+        <div class="rec-row"><div class="rt"><b>이정표 추가됨</b><div class="rd">고등학교 입학</div></div></div>
+        <button class="btn btn-amber" style="margin-top:12px;width:100%" data-go="G-32">권한 부여하기</button>
+      </div>
+    </div>
+
+    <div class="pending-confirm-card">
+      <h3>⏳ 확인 대기 기록 <span class="confirm-badge pending">2건</span></h3>
+      <div class="rec-row"><span class="chip d-MED">의료</span><div class="rt"><b>치료계획서 — 2026년 3분기</b><div class="rd">이재활 · 어제 제출 · <span class="confirm-badge pending">확인 대기</span></div></div></div>
+      <div class="rec-row"><span class="chip d-EDU">교육</span><div class="rt"><b>IEP — 2026학년도 1학기</b><div class="rd">김교사 · 3일 전 제출 · <span class="confirm-badge pending">확인 대기</span></div></div></div>
+      <p class="muted" style="font-size:12px;margin:10px 0 0;">IEP·ISP·치료계획서 등 공식 문서는 제출 시 보호자(또는 성년 당사자)의 확인이 필요합니다. 승인·반려가 아닌 "내용을 확인했음"을 남기는 절차입니다.</p>
+      <button class="btn btn-ghost" style="margin-top:12px;width:100%" data-go="G-20">기록 관리에서 확인하기</button>
+    </div>
+  </section>
+
+  <!-- ============ G-10 타임라인 ============ -->
+  <section class="screen" data-screen="G-10">
+    <span class="ia-badge"><span class="proto">PROTO</span> [G-10] 생애주기 타임라인</span>
+    <h1 class="page">생애주기 타임라인</h1>
+    <p class="page-sub">홍길동 · 의료·교육·복지·일상·전환·법률 기록을 시간순으로 확인합니다.</p>
+
+    <div class="tl-toolbar">
+      <div class="seg" role="tablist">
+        <button class="active" id="btn-stream" onclick="tlView('stream')">스트림 뷰</button>
+        <button id="btn-lane" onclick="tlView('lane')">레인 뷰</button>
+      </div>
+      <div class="filter-chips" aria-label="도메인 필터">
+        <span class="chip d-MED" onclick="this.classList.toggle('off')">의료</span>
+        <span class="chip d-EDU" onclick="this.classList.toggle('off')">교육</span>
+        <span class="chip d-WEL" onclick="this.classList.toggle('off')">복지</span>
+        <span class="chip d-DAI" onclick="this.classList.toggle('off')">일상</span>
+        <span class="chip d-TRA" onclick="this.classList.toggle('off')">전환</span>
+        <span class="chip d-LEG" onclick="this.classList.toggle('off')">법률</span>
+      </div>
+    </div>
+
+    <div class="card" id="tl-stream">
+      <div class="stream">
+        <div class="tl-card pinned-card">
+          <div class="tl-date">고정</div>
+          <div class="tl-body"><h4>🚨 응급 대응 정보</h4><span class="chip d-MED">의료</span> <span class="muted">발작 이력·알레르기(땅콩)·발프로산 복용 — 항상 최상단 고정</span></div>
+        </div>
+        <div class="tl-card milestone">
+          <div class="tl-date">2026-03-02</div>
+          <div class="tl-body"><h4>🏅 고등학교 입학</h4><span class="chip d-EDU">교육</span> <span class="muted">이정표 · 특수학급 배정, 전환교육 계획 수립 시작</span></div>
+        </div>
+        <div class="tl-card">
+          <div class="tl-date">오늘 10:30</div>
+          <div class="tl-body"><h4>재활의학과 정기 진료</h4><span class="chip d-MED">의료</span> <span class="muted">이재활 · 경직도 평가, 보톡스 주사 일정 조정</span></div>
+        </div>
+        <div class="tl-card">
+          <div class="tl-date">어제</div>
+          <div class="tl-body"><h4>관찰기록 — 수업 집중도 향상</h4><span class="chip d-EDU">교육</span> <span class="muted">김교사 · 국어 시간 착석 지속 20분 달성</span></div>
+        </div>
+        <div class="tl-card">
+          <div class="tl-date">어제</div>
+          <div class="tl-body"><h4>활동지원 일지</h4><span class="chip d-DAI">일상</span> <span class="muted">박지원 · 지역사회 이동훈련, 버스 승하차 연습</span></div>
+        </div>
+        <div class="tl-card">
+          <div class="tl-date">2일 전</div>
+          <div class="tl-body"><h4>ISP 3분기 점검</h4><span class="chip d-WEL">복지</span> <span class="muted">최복지 · 자립생활 목표 60% 달성</span></div>
+        </div>
+        <div class="tl-card">
+          <div class="tl-date">2026-06-10</div>
+          <div class="tl-body"><h4>전환교육 계획 — 직업탐색 단계</h4><span class="chip d-TRA">전환</span> <span class="muted">바리스타 직무체험 신청</span></div>
+        </div>
+        <div class="tl-card">
+          <div class="tl-date">2026-05-20</div>
+          <div class="tl-body"><h4>성년후견 상담 기록</h4><span class="chip d-LEG">법률</span> <span class="muted">한정후견 검토, 다음 상담 예약</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="tl-lane" style="display:none">
+      <div class="lane">
+        <div class="lane-col"><h5 class="d-MED">의료</h5>
+          <div class="lane-item">정기 진료<div class="ld">오늘</div></div>
+          <div class="lane-item">언어치료 회기<div class="ld">06-28</div></div>
+        </div>
+        <div class="lane-col"><h5 class="d-EDU">교육</h5>
+          <div class="lane-item" style="border-color:var(--accent-amber)">🏅 고교 입학<div class="ld">03-02</div></div>
+          <div class="lane-item">관찰기록<div class="ld">어제</div></div>
+        </div>
+        <div class="lane-col"><h5 class="d-WEL">복지</h5>
+          <div class="lane-item">ISP 점검<div class="ld">2일 전</div></div>
+        </div>
+        <div class="lane-col"><h5 class="d-DAI">일상</h5>
+          <div class="lane-item">활동 일지<div class="ld">어제</div></div>
+          <div class="lane-item">이동훈련<div class="ld">06-25</div></div>
+        </div>
+        <div class="lane-col"><h5 class="d-TRA">전환</h5>
+          <div class="lane-item">직업탐색<div class="ld">06-10</div></div>
+        </div>
+        <div class="lane-col"><h5 class="d-LEG">법률</h5>
+          <div class="lane-item">후견 상담<div class="ld">05-20</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ G-20 기록 관리 ============ -->
+  <section class="screen" data-screen="G-20">
+    <span class="ia-badge"><span class="proto">PROTO</span> [G-20] 기록 관리</span>
+    <h1 class="page">기록 관리</h1>
+    <p class="page-sub">홍길동 · 목록에서 기록을 선택하면 우측에 상세가 표시됩니다. 보호자는 모든 도메인의 기록을 직접 작성·수정할 수 있습니다.</p>
+    <button class="btn btn-amber" style="margin-bottom:14px;" onclick="openRecordForm('new')">＋ 새 기록 작성</button>
+
+    <div class="split">
+      <div class="list">
+        <div class="list-search"><input type="text" aria-label="기록 검색" placeholder="🔍 기록 검색 (제목·작성자)"></div>
+        <div class="list-item">
+          <h4>재활의학과 정기 진료 <span class="chip d-MED">의료</span></h4>
+          <p>이재활 · 오늘 10:30</p>
+        </div>
+        <div class="list-item">
+          <h4>관찰기록 — 수업 집중도 <span class="chip d-EDU">교육</span></h4>
+          <p>김교사 · 어제</p>
+        </div>
+        <div class="list-item">
+          <h4>활동지원 일지 <span class="badge-draft">임시저장</span></h4>
+          <p>박지원 · 어제 · <span class="chip d-DAI">일상</span></p>
+        </div>
+        <div class="list-item sel">
+          <h4>ISP 3분기 점검 <span class="chip d-WEL">복지</span></h4>
+          <p>최복지 · 2일 전 · <span class="confirm-badge pending" id="list-confirm-badge">확인 대기</span></p>
+        </div>
+        <div class="list-item">
+          <h4>전환교육 계획 <span class="chip d-TRA">전환</span></h4>
+          <p>김교사 · 2026-06-10 · <span class="confirm-badge done">✓ 확인됨</span></p>
+        </div>
+      </div>
+      <div class="detail">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <span class="chip d-WEL">복지</span>
+            <h2>ISP 3분기 점검</h2>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost" onclick="openRecordForm('edit')">✎ 수정</button>
+            <button class="btn btn-ghost">⋯</button>
+          </div>
+        </div>
+        <div class="d-meta">
+          <span>👤 작성자 최복지 (사회복지사)</span> · <span>🗓 2026-07-06 14:20</span>
+        </div>
+
+        <div class="confirm-cta-box" id="confirm-box">
+          <p>🔑 이 기록은 공식 문서로 <b>확인</b>이 필요합니다. 승인·반려가 아니라 내용을 확인했음을 남기는 절차입니다.</p>
+          <button class="btn btn-primary" id="confirm-btn" onclick="confirmRecord()">확인했습니다</button>
+        </div>
+
+        <div class="field-block">
+          <label>목표 영역별 달성률</label>
+          <div>자립생활 60% · 사회참여 80% · 직업훈련 40% (재사정 D-30 ⚠️)</div>
+        </div>
+        <div class="field-block">
+          <label>3분기 종합 소견</label>
+          <div>사회참여 영역 목표 초과 달성. 직업훈련 영역은 실습기관 매칭 지연으로 진도 저조 — 4분기 집중 지원 필요.</div>
+        </div>
+        <div class="field-block">
+          <label>다음 재사정일</label>
+          <div>2026-08-07</div>
+        </div>
+        <div class="field-block">
+          <label>첨부</label>
+          <div class="muted">📎 ISP_3분기_점검표.pdf</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ G-21 기록 작성/수정 ============ -->
+  <section class="screen" data-screen="G-21">
+    <span class="ia-badge"><span class="proto">PROTO</span> [G-21] 기록 작성</span>
+    <h1 class="page" id="g21-title">새 기록 작성</h1>
+    <p class="page-sub">홍길동</p>
+
+    <div class="wizard-panel rform">
+      <div class="guardian-note">🔑 보호자는 <b>guardians</b> 관계로 도메인 제한 없이 모든 기록을 직접 작성·수정할 수 있습니다(권한 매트릭스의 read/write/edit 부여와 무관).</div>
+
+      <div class="fg">
+        <label id="g21-domain-label">도메인 선택</label>
+        <div class="opt-grid" role="radiogroup" aria-labelledby="g21-domain-label">
+          <div class="opt" onclick="pickOpt(this)"><span class="chip d-MED">의료</span></div>
+          <div class="opt" onclick="pickOpt(this)"><span class="chip d-EDU">교육</span></div>
+          <div class="opt sel" onclick="pickOpt(this)"><span class="chip d-WEL">복지</span></div>
+          <div class="opt" onclick="pickOpt(this)"><span class="chip d-DAI">일상</span></div>
+          <div class="opt" onclick="pickOpt(this)"><span class="chip d-TRA">전환</span></div>
+          <div class="opt" onclick="pickOpt(this)"><span class="chip d-LEG">법률</span></div>
+        </div>
+      </div>
+      <div class="fg">
+        <label for="g21-title-input">제목</label>
+        <input type="text" id="g21-title-input" value="ISP 3분기 점검">
+      </div>
+      <div class="fg">
+        <label for="g21-body">내용</label>
+        <textarea id="g21-body" placeholder="기록 내용을 입력하세요">사회참여 영역 목표 초과 달성. 직업훈련 영역은 실습기관 매칭 지연으로 진도 저조.</textarea>
+      </div>
+      <div class="fg">
+        <label>첨부파일</label>
+        <button class="btn btn-ghost">📎 파일 첨부</button>
+      </div>
+
+      <div class="wnav">
+        <button class="btn btn-ghost" data-go="G-20">취소</button>
+        <div>
+          <button class="btn btn-ghost">임시저장</button>
+          <button class="btn btn-primary" onclick="saveRecord()">저장</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ G-30 권한 매트릭스 ============ -->
+  <section class="screen" data-screen="G-30">
+    <span class="ia-badge"><span class="proto">PROTO</span> [G-30] 권한 매트릭스</span>
+    <h1 class="page">권한 관리</h1>
+    <p class="page-sub">홍길동 · 셀을 클릭하면 회색 → 읽기 → 작성 → 편집 순으로 순환합니다.</p>
+
+    <div class="legend">
+      <span><i style="background:#F3F4F6"></i> 없음</span>
+      <span><i style="background:#3B82F6"></i> 읽기(read)</span>
+      <span><i style="background:#10B981"></i> 작성(write)</span>
+      <span><i style="background:#F59E0B"></i> 편집(edit)</span>
+    </div>
+
+    <div class="matrix-wrap">
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th class="rowhead">이해관계자</th>
+            <th>의료</th><th>교육</th><th>복지</th><th>일상</th><th>전환</th><th>법률</th>
+          </tr>
+        </thead>
+        <tbody id="matrix-body">
+          <!-- filled by JS -->
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:16px;">
+      <button class="btn btn-amber" data-go="G-32">＋ 새 권한 부여</button>
+      <button class="btn btn-ghost">변경사항 저장</button>
+    </div>
+  </section>
+
+  <!-- ============ G-32 권한 부여 위자드 ============ -->
+  <section class="screen" data-screen="G-32">
+    <span class="ia-badge"><span class="proto">PROTO</span> [G-32] 권한 부여 위자드</span>
+    <h1 class="page">권한 부여</h1>
+    <p class="page-sub">홍길동에 대한 접근 권한을 4단계로 부여합니다.</p>
+
+    <div class="wizard-panel">
+      <div class="stepper">
+        <div class="st active" data-s="1"><div class="num">1</div>대상자</div>
+        <div class="st" data-s="2"><div class="num">2</div>도메인</div>
+        <div class="st" data-s="3"><div class="num">3</div>수준·기간</div>
+        <div class="st" data-s="4"><div class="num">4</div>확인</div>
+      </div>
+
+      <div class="wstep active" data-w="1">
+        <h3>누구에게 권한을 부여하나요?</h3>
+        <div class="opt-grid">
+          <div class="opt sel" onclick="pickOpt(this)">김교사<small>특수교사</small></div>
+          <div class="opt" onclick="pickOpt(this)">박지원<small>치료사</small></div>
+          <div class="opt" onclick="pickOpt(this)">최복지<small>사회복지사</small></div>
+          <div class="opt" onclick="pickOpt(this)">정활동<small>활동지원사</small></div>
+        </div>
+        <p class="muted">초대 링크로 새 이해관계자를 추가할 수도 있습니다.</p>
+      </div>
+
+      <div class="wstep" data-w="2">
+        <h3>어떤 도메인에 접근하나요? <span class="muted">(복수 선택)</span></h3>
+        <div class="opt-grid">
+          <div class="opt sel" onclick="this.classList.toggle('sel')"><span class="chip d-MED">의료</span></div>
+          <div class="opt sel" onclick="this.classList.toggle('sel')"><span class="chip d-EDU">교육</span></div>
+          <div class="opt" onclick="this.classList.toggle('sel')"><span class="chip d-WEL">복지</span></div>
+          <div class="opt" onclick="this.classList.toggle('sel')"><span class="chip d-DAI">일상</span></div>
+          <div class="opt" onclick="this.classList.toggle('sel')"><span class="chip d-TRA">전환</span></div>
+          <div class="opt" onclick="this.classList.toggle('sel')"><span class="chip d-LEG">법률</span></div>
+        </div>
+      </div>
+
+      <div class="wstep" data-w="3">
+        <h3>권한 수준과 유효 기간</h3>
+        <label class="muted" style="display:block;margin:14px 0 4px;">권한 수준</label>
+        <div class="radio-row">
+          <label><input type="radio" name="lvl" checked> 읽기 (read)</label>
+          <label><input type="radio" name="lvl"> 작성 (write)</label>
+          <label><input type="radio" name="lvl"> 편집 (edit)</label>
+        </div>
+        <label class="muted" style="display:block;margin:14px 0 4px;">유효 기간</label>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <input type="date" value="2026-07-08">
+          <span>~</span>
+          <input type="date" value="2026-12-31">
+          <label style="margin-left:6px;"><input type="checkbox"> 무기한</label>
+        </div>
+      </div>
+
+      <div class="wstep" data-w="4">
+        <h3>부여 내용 확인</h3>
+        <ul class="confirm-list">
+          <li><span>당사자</span><b>홍길동</b></li>
+          <li><span>대상자</span><b>김교사 (특수교사)</b></li>
+          <li><span>도메인</span><b><span class="chip d-MED">의료</span> <span class="chip d-EDU">교육</span></b></li>
+          <li><span>권한 수준</span><b>읽기(read)</b></li>
+          <li><span>유효 기간</span><b>2026-07-08 ~ 2026-12-31</b></li>
+        </ul>
+        <p class="muted" style="margin-top:14px;">부여 시 대상자에게 알림이 전송되며, 모든 접근은 접근 로그(G-40)에 기록됩니다.</p>
+      </div>
+
+      <div class="wnav">
+        <button class="btn btn-ghost" id="w-prev" onclick="wizStep(-1)" disabled>이전</button>
+        <div>
+          <button class="btn btn-ghost">임시저장</button>
+          <button class="btn btn-primary" id="w-next" onclick="wizStep(1)">다음</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ G-40 접근 로그 ============ -->
+  <section class="screen" data-screen="G-40">
+    <span class="ia-badge"><span class="proto">PROTO</span> [G-40] 접근 로그</span>
+    <h1 class="page">접근 로그</h1>
+    <p class="page-sub">홍길동 · 누가, 언제, 어떤 기록에 접근했는지 확인합니다.</p>
+
+    <div class="filters">
+      <select aria-label="역할 필터"><option>전체 역할</option><option>특수교사</option><option>치료사</option><option>사회복지사</option><option>활동지원사</option></select>
+      <select aria-label="도메인 필터"><option>전체 도메인</option><option>의료</option><option>교육</option><option>복지</option><option>일상</option><option>전환</option><option>법률</option></select>
+      <input type="date" aria-label="조회 시작일" value="2026-07-01"><span style="align-self:center">~</span><input type="date" aria-label="조회 종료일" value="2026-07-08">
+      <button class="btn btn-primary">조회</button>
+    </div>
+
+    <table class="log">
+      <thead><tr><th>일시</th><th>이해관계자</th><th>도메인</th><th>동작</th><th>대상 기록</th></tr></thead>
+      <tbody>
+        <tr><td>07-08 10:32</td><td>이재활 (치료사)</td><td><span class="chip d-MED">의료</span></td><td><span class="act-badge act-create">작성</span></td><td>재활의학과 정기 진료</td></tr>
+        <tr><td>07-08 09:15</td><td>김교사 (특수교사)</td><td><span class="chip d-EDU">교육</span></td><td><span class="act-badge act-view">열람</span></td><td>관찰기록 목록</td></tr>
+        <tr><td>07-07 16:40</td><td>박지원 (치료사)</td><td><span class="chip d-DAI">일상</span></td><td><span class="act-badge act-edit">수정</span></td><td>활동지원 일지</td></tr>
+        <tr><td>07-07 14:02</td><td>최복지 (사회복지사)</td><td><span class="chip d-WEL">복지</span></td><td><span class="act-badge act-view">열람</span></td><td>ISP 3분기 점검</td></tr>
+        <tr><td>07-06 11:20</td><td>정활동 (활동지원사)</td><td><span class="chip d-LEG">법률</span></td><td><span class="act-badge act-deny">거부됨</span></td><td>후견 상담 기록 (권한없음)</td></tr>
+        <tr><td>07-05 09:50</td><td>김교사 (특수교사)</td><td><span class="chip d-TRA">전환</span></td><td><span class="act-badge act-view">열람</span></td><td>전환교육 계획</td></tr>
+      </tbody>
+    </table>
+    <p class="muted" style="margin-top:12px;">＋ 스크롤 시 이전 로그가 계속 로드됩니다.</p>
+  </section>
+
+  <!-- ============ G-65 동의·권리 관리 ============ -->
+  <section class="screen" data-screen="G-65">
+    <span class="ia-badge"><span class="proto">PROTO</span> [G-65] 동의·권리 관리</span>
+    <h1 class="page">동의·권리 관리</h1>
+    <p class="page-sub">개인정보보호법(PIPA)에 따라 수집·이용 동의를 관리하고 언제든 철회할 수 있습니다.</p>
+
+    <div class="settings-section">
+      <h3>필수 동의</h3>
+      <div class="consent-item">
+        <div class="ci-info">
+          <h4>서비스 이용약관 <span class="req-tag req">필수</span></h4>
+          <p>온길 플랫폼 이용을 위한 기본 약관 · 2026-03-01 동의 · <a href="#">전문 보기</a></p>
+        </div>
+        <label class="switch"><input type="checkbox" checked disabled><span class="slider"></span></label>
+      </div>
+      <div class="consent-item">
+        <div class="ci-info">
+          <h4>민감정보 처리 동의 <span class="req-tag req">필수</span></h4>
+          <p>건강·장애 정보 등 민감정보 수집·이용 (PIPA §23) · 2026-03-01 동의 · <a href="#">전문 보기</a></p>
+        </div>
+        <label class="switch"><input type="checkbox" checked disabled><span class="slider"></span></label>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>선택 동의</h3>
+      <div class="consent-item">
+        <div class="ci-info">
+          <h4>제3자 정보 제공 <span class="req-tag opt">선택</span></h4>
+          <p>연계 복지기관에 기록 공유 · 2026-04-10 동의 · <a href="#">전문 보기</a></p>
+        </div>
+        <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+      </div>
+      <div class="consent-item">
+        <div class="ci-info">
+          <h4>서비스 개선 통계 활용 <span class="req-tag opt">선택</span></h4>
+          <p>비식별 통계 분석 목적 이용 · <a href="#">전문 보기</a></p>
+        </div>
+        <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+      </div>
+      <div class="consent-item">
+        <div class="ci-info">
+          <h4>알림·소식 수신 <span class="req-tag opt">선택</span></h4>
+          <p>이메일·푸시 알림 수신 동의 · <a href="#">전문 보기</a></p>
+        </div>
+        <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>정보주체 권리</h3>
+      <div class="card" style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-ghost">📄 내 정보 열람 요청</button>
+        <button class="btn btn-ghost">✏️ 정정·삭제 요청</button>
+        <button class="btn btn-ghost">📦 데이터 내려받기</button>
+        <button class="btn btn-ghost" style="color:var(--med-text);border-color:var(--med-accent)">⚠️ 회원 탈퇴·전체 철회</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+// ---- 화면 전환 ----
+function goScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.dataset.screen===id));
+  document.querySelectorAll('.proto-nav button').forEach(b=>b.classList.toggle('active',b.dataset.go===id));
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.go===id));
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>goScreen(b.dataset.go)));
+
+// ---- 당사자 선택 ----
+const PERSONS=['홍길동','홍영희'];
+function setPerson(i){
+  document.getElementById('side-person-name').textContent=PERSONS[i];
+  document.querySelectorAll('.person-card').forEach((c,idx)=>c.classList.toggle('sel',idx==i));
+}
+
+// ---- 타임라인 뷰 토글 ----
+function tlView(v){
+  document.getElementById('tl-stream').style.display=v==='stream'?'block':'none';
+  document.getElementById('tl-lane').style.display=v==='lane'?'block':'none';
+  document.getElementById('btn-stream').classList.toggle('active',v==='stream');
+  document.getElementById('btn-lane').classList.toggle('active',v==='lane');
+}
+
+// ---- 권한 매트릭스 생성 + 클릭 사이클 ----
+const CYCLE=['','read','write','edit'];
+const STAKEHOLDERS=[
+  {n:'김교사',r:'특수교사',lv:['', 'read','read','write','','']},
+  {n:'박지원',r:'치료사',lv:['edit','', '','read','','']},
+  {n:'최복지',r:'사회복지사',lv:['read','','edit','','write','read']},
+  {n:'정활동',r:'활동지원사',lv:['','','read','write','','']},
+];
+const LABEL={'':'없음',read:'R',write:'W',edit:'E'};
+(function buildMatrix(){
+  const body=document.getElementById('matrix-body');
+  STAKEHOLDERS.forEach(s=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML='<td class="rowhead"><b>'+s.n+'</b><small>'+s.r+'</small></td>';
+    s.lv.forEach(lv=>{
+      const td=document.createElement('td');
+      const btn=document.createElement('button');
+      btn.className='pcell';
+      if(lv){btn.dataset.lvl=lv;}
+      btn.textContent=LABEL[lv];
+      btn.setAttribute('aria-label','권한 셀, 현재 '+(lv?lv:'없음')+', 클릭하여 변경');
+      btn.onclick=()=>{
+        const cur=btn.dataset.lvl||'';
+        const next=CYCLE[(CYCLE.indexOf(cur)+1)%CYCLE.length];
+        if(next){btn.dataset.lvl=next;}else{delete btn.dataset.lvl;}
+        btn.textContent=LABEL[next];
+      };
+      td.appendChild(btn);
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
+})();
+
+// ---- 위자드 ----
+let wstep=1;
+function wizStep(d){
+  const total=4;
+  wstep=Math.min(total,Math.max(1,wstep+d));
+  document.querySelectorAll('.wstep').forEach(w=>w.classList.toggle('active',+w.dataset.w===wstep));
+  document.querySelectorAll('.stepper .st').forEach(st=>{
+    const n=+st.dataset.s;
+    st.classList.toggle('active',n===wstep);
+    st.classList.toggle('done',n<wstep);
+  });
+  document.getElementById('w-prev').disabled=wstep===1;
+  document.getElementById('w-next').textContent=wstep===total?'권한 부여 완료':'다음';
+}
+function pickOpt(el){
+  el.parentElement.querySelectorAll('.opt').forEach(o=>o.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+// ---- G-21 기록 작성/수정 ----
+function openRecordForm(mode){
+  document.getElementById('g21-title').textContent = mode==='edit' ? '기록 수정' : '새 기록 작성';
+  if(mode==='new'){
+    document.getElementById('g21-title-input').value='';
+    document.getElementById('g21-body').value='';
+  }
+  goScreen('G-21');
+}
+function saveRecord(){
+  alert('저장되었습니다. (프로토타입 — 실제 저장은 이루어지지 않습니다)');
+  goScreen('G-20');
+}
+
+// ---- 기록 확인 (승인 아님) ----
+function confirmRecord(){
+  const box=document.getElementById('confirm-box');
+  box.classList.add('done');
+  box.querySelector('p').innerHTML='✓ <b>김보호</b>님이 2026-07-08 확인했습니다.';
+  document.getElementById('confirm-btn').remove();
+  const listBadge=document.getElementById('list-confirm-badge');
+  listBadge.className='confirm-badge done';
+  listBadge.textContent='✓ 확인됨';
+}
+</script>
+</body>
+</html>

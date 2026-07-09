@@ -1,0 +1,19 @@
+# bkit local tool state (session/runtime data, not project source)
+.bkit/
+.claude/scheduled_tasks.lock
+
+# Node / future app code
+node_modules/
+.next/
+dist/
+build/
+.turbo/
+
+# Env & secrets
+.env
+.env.local
+.env.*.local
+
+# OS/editor
+.DS_Store
+Thumbs.db

@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>온길 · 치료사 (앱)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<style>
+:root{
+  --primary-50:#F0FDF9;--primary-100:#E1F5EE;--primary-400:#5DCAA5;
+  --primary-600:#1D9E75;--primary-700:#0F6E56;--primary-800:#065F46;--primary-900:#064E3B;
+  --accent-amber:#FAC775;--accent-coral:#F5C4B3;--accent-stone:#444441;--accent-pebble:#B4B2A9;
+  --med-bg:#FEF0F0;--med-text:#BF3030;--med-accent:#E04545;
+  --edu-bg:#EEF4FD;--edu-text:#2E5FA8;--wel-bg:#EDFAF3;--wel-text:#276B4C;
+  --dai-text:#B56F10;--dai-accent:#E8991E;
+  --br-sm:6px;--br-md:10px;--br-lg:14px;--br-xl:20px;
+  --line:#E7E5E1;--muted:#8A887F;--ink:#2A2A28;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif;background:#DED9D0;color:var(--ink);font-size:14px;line-height:1.5;padding:24px 12px;display:flex;flex-direction:column;align-items:center;gap:14px}
+button{font-family:inherit;cursor:pointer}
+.proto-badge{background:var(--med-bg);color:var(--med-text);border:1px solid var(--med-accent);font-size:11px;font-weight:700;padding:4px 12px;border-radius:999px}
+.proto-nav{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:420px}
+.proto-nav button{background:#fff;border:1px solid #cbc7bf;color:#555;padding:6px 11px;border-radius:999px;font-size:11.5px;font-weight:600}
+.proto-nav button.on{background:var(--med-accent);color:#fff;border-color:var(--med-accent)}
+/* phone frame */
+.phone{width:390px;max-width:100%;height:800px;background:#fff;border-radius:30px;box-shadow:0 20px 60px rgba(0,0,0,.28);overflow:hidden;display:flex;flex-direction:column;position:relative;border:1px solid #ccc}
+.statusbar{height:26px;background:var(--primary-900);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:11px;font-weight:600;flex-shrink:0}
+.navbar{height:50px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 14px;gap:10px;flex-shrink:0}
+.navbar .back{font-size:19px;color:#555;width:26px}
+.navbar .ttl{font-weight:800;font-size:16px;flex:1}
+.navbar .act{color:var(--med-text);font-weight:700;font-size:13px}
+.navbar .brand{display:flex;align-items:center;gap:6px}
+.wm-on{color:var(--primary-600);font-weight:800;letter-spacing:-.02em}
+.wm-gil{color:var(--ink);font-weight:800;letter-spacing:-.02em}
+.content{flex:1;overflow-y:auto;background:#F7F6F3;padding:14px}
+.scr-label{font-size:10.5px;font-weight:700;color:var(--med-text);background:var(--med-bg);display:inline-block;padding:2px 8px;border-radius:5px;margin-bottom:10px}
+.screen{display:none}
+.screen.active{display:block}
+.tabbar{height:58px;background:#fff;border-top:1px solid var(--line);display:flex;flex-shrink:0}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#9b998f;font-size:10.5px;font-weight:600}
+.tab .ti{font-size:18px}
+.tab.on{color:var(--med-text)}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--br-lg);padding:14px;margin-bottom:12px}
+.h2{font-size:17px;font-weight:800;margin-bottom:3px}
+.sub{color:var(--muted);font-size:12px;margin-bottom:14px}
+.chip{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--med-bg);color:var(--med-text)}
+.chip.g{background:var(--primary-100);color:var(--primary-700)}
+.chip.amber{background:#FFF3DC;color:var(--dai-text)}
+.chip.wait{background:#F0EFEC;color:#77756d}
+.btn{border:none;border-radius:var(--br-md);padding:12px;font-weight:700;font-size:14px;width:100%}
+.btn-pri{background:var(--med-accent);color:#fff}
+.btn-ghost{background:#fff;border:1px solid var(--line);color:#444}
+.row{display:flex;align-items:center;gap:10px}
+.between{display:flex;align-items:center;justify-content:space-between}
+.mb10{margin-bottom:10px}.mb14{margin-bottom:14px}.mt10{margin-top:10px}
+.hint{font-size:11px;color:var(--muted)}
+/* home sessions */
+.statrow{display:flex;gap:8px;margin-bottom:12px}
+.statc{flex:1;background:#fff;border:1px solid var(--line);border-radius:var(--br-md);padding:10px;text-align:center}
+.statc .n{font-size:20px;font-weight:800;color:var(--med-text)}
+.statc .l{font-size:10.5px;color:var(--muted)}
+.sess{display:flex;align-items:center;gap:10px;padding:11px;border:1px solid var(--line);border-radius:var(--br-md);margin-bottom:8px;background:#fff}
+.sess .bar{width:4px;align-self:stretch;border-radius:3px;background:var(--med-accent)}
+.sess .time{font-weight:800;color:var(--med-text);width:42px;font-size:13px}
+.sess .who{font-weight:700;font-size:13.5px}
+.sess .meta{color:var(--muted);font-size:11px}
+.sess .st{margin-left:auto}
+/* steps */
+.steps{display:flex;gap:5px;margin-bottom:14px}
+.stp{flex:1;height:5px;border-radius:3px;background:#E3E0DA}
+.stp.on{background:var(--med-accent)}
+.stp.done{background:var(--primary-600)}
+.stepno{font-size:11.5px;color:var(--med-text);font-weight:700;margin-bottom:12px}
+.field{margin-bottom:14px}
+label.fl{display:block;font-weight:700;font-size:12.5px;margin-bottom:6px}
+input.ti2,textarea.ti2,select.ti2{width:100%;border:1px solid var(--line);border-radius:var(--br-md);padding:10px 12px;font-family:inherit;font-size:13px}
+textarea.ti2{min-height:64px;resize:vertical}
+input.ti2:focus,textarea.ti2:focus{outline:2px solid var(--primary-600);border-color:transparent}
+/* goal panel */
+.goalbox{background:var(--med-bg);border:1px solid #F3D2D2;border-radius:var(--br-md);padding:12px;margin-bottom:12px}
+.goalbox h3{font-size:12px;color:var(--med-text);margin-bottom:9px}
+.goal-item{background:#fff;border-radius:8px;padding:8px 10px;margin-bottom:6px;border:1px solid #F3DADA}
+.goal-item .gt{font-weight:700;font-size:11.5px;margin-bottom:5px}
+.mini-bar{height:6px;background:#F0DADA;border-radius:3px;overflow:hidden}
+.mini-bar span{display:block;height:100%;background:var(--med-accent)}
+.pill-plan{font-size:10.5px;color:var(--muted);margin-top:5px}
+/* 달성도 */
+.ach{border:1px solid var(--line);border-radius:var(--br-md);padding:11px;margin-bottom:9px}
+.ach .lab{font-weight:700;font-size:13px;margin-bottom:9px;display:flex;justify-content:space-between;align-items:center}
+.dots{display:flex;gap:7px;justify-content:space-between}
+.dot{flex:1;aspect-ratio:1;max-width:46px;border-radius:50%;border:2px solid #E3E0DA;background:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#b3b1a9}
+.dot.sel{background:var(--med-accent);border-color:var(--med-accent);color:#fff}
+.rangewrap{display:flex;align-items:center;gap:10px}
+.rangewrap input[type=range]{flex:1;accent-color:var(--med-accent)}
+.rangewrap .rv{font-weight:800;color:var(--med-text);width:40px;text-align:right}
+/* compare */
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}
+.cmp .box{border-radius:var(--br-md);padding:10px}
+.cmp .box.plan{background:var(--edu-bg)}
+.cmp .box.real{background:var(--wel-bg)}
+.cmp .box h5{font-size:10px;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;color:var(--muted)}
+.cmp .box div{font-size:12px;line-height:1.7}
+/* eval 3col */
+.eval-head{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;gap:0;background:#FAFAF8;border-radius:8px 8px 0 0;border:1px solid var(--line);border-bottom:none}
+.eval-head div{padding:8px 6px;text-align:center;font-size:10.5px;font-weight:700;color:#666}
+.eval-head div.a{text-align:left}
+.eval-row{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;border:1px solid var(--line);border-bottom:none;background:#fff}
+.eval-row:last-of-type{border-radius:0 0 8px 8px;border-bottom:1px solid var(--line)}
+.eval-row.total{background:var(--med-bg)}
+.eval-row > div{padding:11px 6px;text-align:center;border-left:1px solid #f0efec}
+.eval-row .a{text-align:left;font-weight:700;font-size:12px;border-left:none}
+.sc{font-size:15px;font-weight:800}
+.col-init{color:#8a887f}.col-mid{color:var(--dai-text)}.col-final{color:var(--med-text)}
+.delta{color:var(--primary-600);font-weight:800;font-size:12px}
+.setrow{display:flex;align-items:center;gap:12px;padding:14px 2px;border-bottom:1px solid var(--line);}
+.setrow .si{font-size:18px;}
+.setrow .flex{flex:1;font-size:14px;font-weight:600;}
+.setrow .ar{color:var(--muted);}
+.prof-hd{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+.pav{width:44px;height:44px;border-radius:50%;background:var(--med-accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex:0 0 44px;}
+.pn{font-size:15px;font-weight:800;}
+.pr{font-size:12px;color:var(--muted);}
+/* detail */
+.dl{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;font-size:12.5px}
+.dl dt{color:var(--muted);font-weight:600}
+.dl dd{font-weight:700;text-align:right}
+.sect-h{font-size:13px;font-weight:800;margin:0 0 10px;padding-bottom:6px;border-bottom:2px solid var(--med-bg)}
+/* timeline */
+.tl{position:relative;padding-left:22px}
+.tl::before{content:"";position:absolute;left:6px;top:4px;bottom:4px;width:2px;background:var(--line)}
+.tl-node{position:relative;margin-bottom:12px}
+.tl-node::before{content:"";position:absolute;left:-20px;top:4px;width:10px;height:10px;border-radius:50%;background:var(--med-accent);border:2px solid #fff;box-shadow:0 0 0 2px var(--med-accent)}
+.tl-card{background:#fff;border:1px solid var(--line);border-radius:var(--br-md);padding:11px 12px}
+.tl-card.pinned{border:2px solid var(--med-accent);background:var(--med-bg)}
+.tl-card.milestone{border:2px solid var(--accent-amber)}
+.tl-date{font-size:10.5px;color:var(--muted);margin-bottom:4px;font-weight:600}
+.tl-ttl{font-weight:700;font-size:12.5px;margin-bottom:3px}
+.tlt-tabs{display:flex;gap:5px;margin-bottom:12px}
+.tlt{flex:1;text-align:center;padding:6px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:11px;font-weight:600;color:#666}
+.tlt.on{background:var(--med-accent);color:#fff;border-color:var(--med-accent)}
+</style>
+</head>
+<body>
+<div class="proto-badge">PROTOTYPE · 치료사 앱 (390px)</div>
+<div class="proto-nav">
+  <button data-go="TH-01" class="on">TH-01 홈</button>
+  <button data-go="TH-13">TH-13 계획위자드</button>
+  <button data-go="TH-14">TH-14 계획상세</button>
+  <button data-go="TH-15">TH-15 회기일지</button>
+  <button data-go="TH-17">TH-17 평가</button>
+  <button data-go="TH-20">TH-20 타임라인</button>
+  <button data-go="settings">설정</button>
+</div>
+
+<div class="phone">
+  <div class="statusbar"><span>9:41</span><span>온길 · 치료사</span><span>📶 100%</span></div>
+
+  <!-- NAV BAR (dynamic per screen via JS) -->
+  <div class="navbar" id="navbar">
+    <div class="brand">
+      <svg viewBox="0 0 90 100" width="24" height="27" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="온길 로고">
+        <path d="M20 25 H55" stroke="#4377C0" stroke-width="9" stroke-linecap="round"/>
+        <path d="M55 25 Q68 25 68 38 V50" stroke="#3EA673" stroke-width="9" stroke-linecap="round"/>
+        <path d="M20 25 V70" stroke="#E04545" stroke-width="9" stroke-linecap="round"/>
+        <path d="M20 70 Q35 82 70 78" stroke="#0F6E56" stroke-width="9" stroke-linecap="round"/>
+        <circle cx="42" cy="50" r="14" fill="#FAC775"/>
+        <path d="M56 50 H66" stroke="#E8991E" stroke-width="9" stroke-linecap="round"/>
+      </svg>
+      <span style="font-size:15px"><span class="wm-on">온</span><span class="wm-gil">길</span></span>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- TH-01 -->
+    <section class="screen active" data-screen="TH-01" data-nav="home">
+      <span class="scr-label">[TH-01] 홈</span>
+      <div class="h2">오늘의 회기</div>
+      <div class="sub">7월 8일 (수) · 5회기</div>
+      <div class="statrow">
+        <div class="statc"><div class="n">5</div><div class="l">오늘</div></div>
+        <div class="statc"><div class="n">2</div><div class="l">완료</div></div>
+        <div class="statc"><div class="n">1</div><div class="l">진행</div></div>
+        <div class="statc"><div class="n">12</div><div class="l">담당</div></div>
+      </div>
+      <div class="card">
+        <div class="sect-h">회기 일정</div>
+        <div class="sess"><div class="bar"></div><div class="time">09:00</div><div><div class="who">김하준 (7세)</div><div class="meta">조음·음운 12회기</div></div><span class="chip g st">완료</span></div>
+        <div class="sess"><div class="bar"></div><div class="time">10:00</div><div><div class="who">이서윤 (5세)</div><div class="meta">표현언어 8회기</div></div><span class="chip g st">완료</span></div>
+        <div class="sess" style="border-color:var(--med-accent);border-width:2px" data-go="TH-15"><div class="bar"></div><div class="time">11:00</div><div><div class="who">박도윤 (6세)</div><div class="meta">수용언어 5회기</div></div><span class="chip st">진행중</span></div>
+        <div class="sess"><div class="bar" style="background:var(--accent-pebble)"></div><div class="time">14:00</div><div><div class="who">최지우 (8세)</div><div class="meta">화용언어 3회기</div></div><span class="chip wait st">예정</span></div>
+      </div>
+      <button class="btn btn-pri" data-go="TH-15">＋ 회기 일지 작성</button>
+      <button class="btn btn-ghost mt10" data-go="TH-20">🕒 생애주기 타임라인 보기</button>
+    </section>
+
+    <!-- TH-13 -->
+    <section class="screen" data-screen="TH-13" data-nav="치료계획서 작성|치료계획">
+      <span class="scr-label">[TH-13] 치료계획서 5단계</span>
+      <div class="steps"><div class="stp done"></div><div class="stp done"></div><div class="stp on"></div><div class="stp"></div><div class="stp"></div></div>
+      <div class="stepno">STEP 3 / 5 · 치료 목표</div>
+      <div class="card">
+        <div class="sect-h">영역별 치료 목표</div>
+        <div class="field"><label class="fl" for="ath13-period">치료 기간</label><input class="ti2" id="ath13-period" type="text" value="2026-07-08 ~ 10-08 (12주)"></div>
+        <div class="field"><label class="fl" for="ath13-body">🖐 신체 (구강운동)</label><textarea class="ti2" id="ath13-body">조음 정확도 60%→80%</textarea></div>
+        <div class="field"><label class="fl" for="ath13-lang">💬 언어 <span class="chip">핵심</span></label><textarea class="ti2" id="ath13-lang">2어절 자발 산출 회기당 10회</textarea></div>
+        <div class="field"><label class="fl" for="ath13-cog">🧠 인지</label><textarea class="ti2" id="ath13-cog">범주화 개념 5종 습득</textarea></div>
+        <div class="field"><label class="fl" for="ath13-soc">🤝 사회성</label><textarea class="ti2" id="ath13-soc">차례 지키기 3회 유지</textarea></div>
+      </div>
+      <button class="btn btn-pri mb10" data-go="TH-14">다음 →</button>
+      <button class="btn btn-ghost" data-go="TH-01">이전</button>
+    </section>
+
+    <!-- TH-14 -->
+    <section class="screen" data-screen="TH-14" data-nav="치료계획서 상세|치료계획">
+      <span class="scr-label">[TH-14] 계획서 상세</span>
+      <div class="card">
+        <div class="between mb10"><b style="font-size:15px">언어치료 · 박도윤</b><span class="chip">확정</span></div>
+        <dl class="dl">
+          <dt>기간</dt><dd>07-08 ~ 10-08 (12주)</dd>
+          <dt>주기</dt><dd>주 2회</dd>
+          <dt>진단</dt><dd>표현·수용 언어지연</dd>
+          <dt>진행</dt><dd>5 / 24 회기</dd>
+        </dl>
+      </div>
+      <div class="card">
+        <div class="sect-h">영역별 달성도</div>
+        <div class="ach"><div class="lab"><span>🖐 신체</span><span class="chip g">72%</span></div><div class="mini-bar"><span style="width:72%"></span></div></div>
+        <div class="ach"><div class="lab"><span>💬 언어</span><span class="chip g">58%</span></div><div class="mini-bar"><span style="width:58%"></span></div></div>
+        <div class="ach"><div class="lab"><span>🧠 인지</span><span class="chip g">65%</span></div><div class="mini-bar"><span style="width:65%"></span></div></div>
+        <div class="ach"><div class="lab"><span>🤝 사회성</span><span class="chip amber">40% ⚠️</span></div><div class="mini-bar"><span style="width:40%;background:var(--dai-accent)"></span></div></div>
+      </div>
+      <button class="btn btn-pri" data-go="TH-15">회기 일지 작성 →</button>
+    </section>
+
+    <!-- TH-15 -->
+    <section class="screen" data-screen="TH-15" data-nav="회기 일지|회기일지">
+      <span class="scr-label">[TH-15] 회기일지 · 계획연동</span>
+      <div class="between mb10"><b style="font-size:14px">박도윤 · 6회기</b><span class="chip">THP-0142 연동</span></div>
+
+      <div class="goalbox">
+        <h3>🎯 치료 목표 (계획 연동)</h3>
+        <div class="goal-item"><div class="gt">🖐 조음 정확도</div><div class="mini-bar"><span style="width:72%"></span></div><div class="pill-plan">목표 80% · 현재 72%</div></div>
+        <div class="goal-item"><div class="gt">💬 2어절 산출</div><div class="mini-bar"><span style="width:58%"></span></div><div class="pill-plan">목표 10회 · 현재 6회</div></div>
+        <div class="goal-item"><div class="gt">🤝 차례 지키기</div><div class="mini-bar"><span style="width:40%;background:var(--dai-accent)"></span></div><div class="pill-plan">목표 3회 · 현재 1회 ⚠️</div></div>
+      </div>
+
+      <div class="card">
+        <div class="sect-h">활동 기록</div>
+        <div class="field"><label class="fl" for="ath15-activity">주요 활동</label><textarea class="ti2" id="ath15-activity">그림카드로 2어절 표현 유도, 범주화 놀이 진행</textarea></div>
+      </div>
+
+      <div class="card">
+        <div class="sect-h">계획 vs 실제</div>
+        <div class="cmp">
+          <div class="box plan"><h5>계획</h5><div>산출 10회<br>범주화 5종<br>차례 3회</div></div>
+          <div class="box real"><h5>실제</h5><div>산출 <b>8회</b><br>범주화 <b>4종</b><br>차례 <b>2회</b></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="sect-h">영역별 달성도 체크</div>
+        <div class="ach"><div class="lab"><span>🖐 신체</span></div><div class="dots"><span class="dot">1</span><span class="dot">2</span><span class="dot">3</span><span class="dot sel">4</span><span class="dot">5</span></div></div>
+        <div class="ach"><div class="lab"><span>💬 언어</span></div><div class="dots"><span class="dot">1</span><span class="dot">2</span><span class="dot">3</span><span class="dot sel">4</span><span class="dot">5</span></div></div>
+        <div class="ach"><div class="lab"><span>🧠 인지</span></div><div class="dots"><span class="dot">1</span><span class="dot">2</span><span class="dot">3</span><span class="dot sel">4</span><span class="dot">5</span></div></div>
+        <div class="ach"><div class="lab"><span>🤝 사회성</span><span class="hint">낮음</span></div><div class="rangewrap"><input type="range" min="0" max="100" value="40"><span class="rv">40%</span></div></div>
+      </div>
+      <button class="btn btn-pri" data-go="TH-01">회기 일지 저장</button>
+    </section>
+
+    <!-- TH-17 -->
+    <section class="screen" data-screen="TH-17" data-nav="평가보고서|평가">
+      <span class="scr-label">[TH-17] 평가보고서 4단계</span>
+      <div class="steps"><div class="stp done"></div><div class="stp done"></div><div class="stp on"></div><div class="stp"></div></div>
+      <div class="stepno">STEP 3 / 4 · 3열 비교 분석</div>
+      <div class="card">
+        <div class="sect-h">초기 · 중간 · 최종 비교</div>
+        <div class="eval-head"><div class="a">영역</div><div>초기</div><div>중간</div><div>최종 ↑</div></div>
+        <div class="eval-row"><div class="a">💬 언어</div><div><span class="sc col-init">60</span></div><div><span class="sc col-mid">72</span></div><div><span class="sc col-final">85</span><br><span class="delta">+25▲</span></div></div>
+        <div class="eval-row"><div class="a">🧠 인지</div><div><span class="sc col-init">55</span></div><div><span class="sc col-mid">60</span></div><div><span class="sc col-final">68</span><br><span class="delta">+13▲</span></div></div>
+        <div class="eval-row"><div class="a">🖐 신체</div><div><span class="sc col-init">50</span></div><div><span class="sc col-mid">64</span></div><div><span class="sc col-final">78</span><br><span class="delta">+28▲</span></div></div>
+        <div class="eval-row"><div class="a">🤝 사회성</div><div><span class="sc col-init">48</span></div><div><span class="sc col-mid">52</span></div><div><span class="sc col-final">58</span><br><span class="delta">+10▲</span></div></div>
+        <div class="eval-row total"><div class="a">종합</div><div><span class="sc col-init">53</span></div><div><span class="sc col-mid">62</span></div><div><span class="sc col-final">72</span><br><span class="delta">+19▲</span></div></div>
+        <div class="hint mt10">▲ 초록 = 향상 · 전 영역 개선 관찰</div>
+      </div>
+      <button class="btn btn-pri" data-go="TH-01">평가보고서 저장</button>
+    </section>
+
+    <!-- TH-20 -->
+    <section class="screen" data-screen="TH-20" data-nav="타임라인|home">
+      <span class="scr-label">[TH-20] 타임라인 (의료)</span>
+      <div class="between mb10"><b style="font-size:15px">박도윤 치료 흐름</b><span class="chip">의료</span></div>
+      <div class="tlt-tabs"><div class="tlt on">전체</div><div class="tlt">계획서</div><div class="tlt">회기</div><div class="tlt">평가</div></div>
+      <div class="tl">
+        <div class="tl-node"><div class="tl-card pinned"><div class="tl-date">📌 2026-07-08</div><div class="tl-ttl">최종 평가 — 종합 +19점 향상</div><div class="hint">언어85·인지68·신체78·사회58</div></div></div>
+        <div class="tl-node"><div class="tl-card"><div class="tl-date">2026-07-08 · 회기</div><div class="tl-ttl">6회기 — 2어절 산출 8회</div><div class="hint">달성도 신체4 언어4 인지4</div></div></div>
+        <div class="tl-node"><div class="tl-card milestone"><div class="tl-date">⭐ 2026-04-10</div><div class="tl-ttl">중간 평가 — 62점 (+9)</div><div class="hint">치료 목표 재설정</div></div></div>
+        <div class="tl-node"><div class="tl-card"><div class="tl-date">2026-01-15 · 계획서</div><div class="tl-ttl">계획서 확정 THP-0142</div><div class="hint">12주 · 주2회 · 4영역</div></div></div>
+        <div class="tl-node"><div class="tl-card"><div class="tl-date">2026-01-10 · 평가</div><div class="tl-ttl">초기 평가 — 53점</div><div class="hint">표현·수용 언어지연</div></div></div>
+      </div>
+    </section>
+
+    <!-- 설정 -->
+    <section class="screen" data-screen="settings" data-nav="설정|설정">
+      <span class="scr-label">[설정]</span>
+      <div class="prof-hd"><div class="pav">이</div><div><div class="pn">이재활</div><div class="pr">치료사 · 서울재활의학과</div></div></div>
+      <div class="setrow"><span class="si">🔔</span><span class="flex">알림 받기</span><span class="ar">›</span></div>
+      <div class="setrow"><span class="si">📋</span><span class="flex">담당 아동 관리</span><span class="ar">›</span></div>
+      <div class="setrow"><span class="si">🔒</span><span class="flex">개인정보·동의 관리</span><span class="ar">›</span></div>
+      <div class="setrow"><span class="si">❓</span><span class="flex">도움말</span><span class="ar">›</span></div>
+      <div class="setrow" style="color:var(--med-text)"><span class="si">🚪</span><span class="flex">로그아웃</span><span class="ar">›</span></div>
+    </section>
+  </div>
+
+  <!-- BOTTOM TAB (5개) -->
+  <nav class="tabbar">
+    <div class="tab on" data-tab="home" data-go="TH-01"><span class="ti">🏠</span>홈</div>
+    <div class="tab" data-tab="치료계획" data-go="TH-14"><span class="ti">📋</span>치료계획</div>
+    <div class="tab" data-tab="회기일지" data-go="TH-15"><span class="ti">📝</span>회기일지</div>
+    <div class="tab" data-tab="평가" data-go="TH-17"><span class="ti">📊</span>평가</div>
+    <div class="tab" data-tab="설정" data-go="settings"><span class="ti">⚙️</span>설정</div>
+  </nav>
+</div>
+
+<script>
+const HOME_NAV = `<div class="brand"><svg viewBox="0 0 90 100" width="24" height="27" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="온길 로고"><path d="M20 25 H55" stroke="#4377C0" stroke-width="9" stroke-linecap="round"/><path d="M55 25 Q68 25 68 38 V50" stroke="#3EA673" stroke-width="9" stroke-linecap="round"/><path d="M20 25 V70" stroke="#E04545" stroke-width="9" stroke-linecap="round"/><path d="M20 70 Q35 82 70 78" stroke="#0F6E56" stroke-width="9" stroke-linecap="round"/><circle cx="42" cy="50" r="14" fill="#FAC775"/><path d="M56 50 H66" stroke="#E8991E" stroke-width="9" stroke-linecap="round"/></svg><span style="font-size:15px"><span class="wm-on">온</span><span class="wm-gil">길</span></span></div>`;
+function goScreen(id){
+  const scr = document.querySelector('.screen[data-screen="'+id+'"]');
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  scr.classList.add('active');
+  const nav = scr.dataset.nav||'home';
+  const navbar = document.getElementById('navbar');
+  if(nav==='home'){ navbar.innerHTML = HOME_NAV; }
+  else {
+    const [title,tab] = nav.split('|');
+    navbar.innerHTML = '<span class="back">←</span><span class="ttl">'+title+'</span><span class="act">저장</span>';
+    navbar.querySelector('.back').addEventListener('click',()=>goScreen('TH-01'));
+  }
+  const tabKey = scr.dataset.nav && scr.dataset.nav!=='home' ? scr.dataset.nav.split('|')[1] : 'home';
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===tabKey));
+  document.querySelectorAll('.proto-nav button').forEach(b=>b.classList.toggle('on',b.dataset.go===id));
+  document.querySelector('.content').scrollTop=0;
+}
+document.querySelectorAll('[data-go]').forEach(el=>el.addEventListener('click',()=>goScreen(el.dataset.go)));
+document.querySelectorAll('.dots').forEach(g=>{
+  g.querySelectorAll('.dot').forEach((d,i,arr)=>d.addEventListener('click',()=>arr.forEach((x,j)=>x.classList.toggle('sel',j===i))));
+});
+document.querySelectorAll('.rangewrap input').forEach(r=>r.addEventListener('input',()=>r.nextElementSibling.textContent=r.value+'%'));
+</script>
+</body>
+</html>

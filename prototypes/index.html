@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>온길 프로토타입 허브</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<style>
+:root {
+  --primary-50:#F0FDF9; --primary-100:#E1F5EE; --primary-400:#5DCAA5;
+  --primary-600:#1D9E75; --primary-700:#0F6E56; --primary-800:#065F46; --primary-900:#064E3B;
+  --accent-amber:#FAC775; --accent-coral:#F5C4B3; --accent-stone:#444441; --accent-pebble:#B4B2A9;
+  --role-guardian:#0F6E56; --role-therapist:#E04545; --role-teacher:#4377C0;
+  --role-social:#3EA673; --role-supporter:#E8991E; --role-person:#FAC775; --role-common:#065F46;
+  --br-sm:6px; --br-md:10px; --br-lg:14px; --br-xl:20px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif;background:#F7F8F9;color:#1a1f24}
+a{color:inherit;text-decoration:none}
+
+/* header */
+.hero{background:linear-gradient(135deg,#064E3B,#0F6E56,#1D9E75);color:#fff;padding:56px 24px 64px}
+.hero-inner{max-width:1100px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:28px}
+.brand .wm{font-size:20px;font-weight:800;letter-spacing:-0.02em}
+.brand .wm .on{color:var(--accent-amber)}
+.hero h1{font-size:34px;font-weight:800;margin:0 0 10px;line-height:1.3}
+.hero p{font-size:15px;color:#d7ede4;max-width:640px;line-height:1.6;margin:0}
+.hero .meta{margin-top:22px;display:flex;gap:10px;flex-wrap:wrap}
+.meta-chip{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);padding:6px 14px;border-radius:999px;font-size:12.5px;font-weight:600}
+
+/* body */
+.wrap{max-width:1100px;margin:-32px auto 80px;padding:0 24px}
+.toolbar{display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #e6e8eb;border-radius:var(--br-lg);padding:14px 18px;margin-bottom:28px;box-shadow:0 8px 24px rgba(6,78,59,.08)}
+.toolbar .tabs{display:flex;gap:6px;background:#F0F2F3;padding:4px;border-radius:999px}
+.toolbar .tabs button{border:0;background:transparent;padding:8px 18px;border-radius:999px;font-size:13.5px;font-weight:700;color:#6b7480;cursor:pointer;font-family:inherit}
+.toolbar .tabs button.on{background:var(--primary-700);color:#fff}
+.toolbar .count{font-size:12.5px;color:#8a94a0}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+.card{background:#fff;border:1px solid #e6e8eb;border-radius:var(--br-lg);padding:20px;position:relative;overflow:hidden;transition:box-shadow .15s,transform .15s}
+.card:hover{box-shadow:0 10px 28px rgba(6,78,59,.12);transform:translateY(-2px)}
+.card .bar{position:absolute;left:0;top:0;bottom:0;width:5px}
+.card-head{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.role-dot{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;color:#fff;font-weight:800}
+.card-title{font-size:16.5px;font-weight:800}
+.card-sub{font-size:12px;color:#8a94a0;margin-top:2px}
+.card-desc{font-size:13px;color:#555d66;line-height:1.55;margin:12px 0 16px;min-height:40px}
+.screen-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:16px}
+.screen-tags span{font-size:10.5px;font-weight:700;padding:3px 7px;border-radius:6px;background:#F0F2F3;color:#5a6470}
+.card-links{display:flex;gap:8px}
+.card-links a{flex:1;text-align:center;padding:10px 0;border-radius:var(--br-md);font-size:13px;font-weight:700;border:1px solid #d5dae0}
+.card-links a.primary{background:var(--primary-700);border-color:var(--primary-700);color:#fff}
+.card-links a.primary:hover{background:var(--primary-800)}
+.card-links a.ghost:hover{background:#F7F8F9}
+
+.section-title{font-size:13px;font-weight:800;color:#8a94a0;letter-spacing:.04em;margin:36px 0 14px;text-transform:uppercase}
+
+footer{max-width:1100px;margin:0 auto;padding:0 24px 60px;color:#9aa3ad;font-size:12px;line-height:1.8}
+footer b{color:#5a6470}
+
+@media (prefers-color-scheme: dark){
+  body{background:#0e1512;color:#eef2ef}
+  .toolbar,.card{background:#141d19;border-color:#233128}
+  .card-desc{color:#aab5ae}
+  .toolbar .tabs{background:#0e1512}
+  .toolbar .tabs button{color:#8fa198}
+  .screen-tags span{background:#1c2620;color:#a9b6ad}
+  .card-links a{border-color:#2a382f;color:#eef2ef}
+  .card-links a.ghost:hover{background:#1c2620}
+  footer{color:#7c8b81}
+  footer b{color:#c3cec7}
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="brand">
+      <svg viewBox="0 0 90 100" width="30" height="34" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="온길 로고">
+        <path d="M20 25 H55" stroke="#4377C0" stroke-width="9" stroke-linecap="round"/>
+        <path d="M55 25 Q68 25 68 38 V50" stroke="#3EA673" stroke-width="9" stroke-linecap="round"/>
+        <path d="M20 25 V70" stroke="#E04545" stroke-width="9" stroke-linecap="round"/>
+        <path d="M20 70 Q35 82 70 78" stroke="#0F6E56" stroke-width="9" stroke-linecap="round"/>
+        <circle cx="42" cy="50" r="14" fill="#FAC775"/>
+        <path d="M56 50 H66" stroke="#E8991E" stroke-width="9" stroke-linecap="round"/>
+      </svg>
+      <span class="wm"><span class="on">온</span>길 <span style="font-weight:400;font-size:12px;opacity:.7;letter-spacing:3px">PROTOTYPE HUB</span></span>
+    </div>
+    <h1>UI/UX 프로토타입 허브</h1>
+    <p>장애인 생애주기 기록 플랫폼 온길 — IA·UIUX·BI 디자인 가이드 기반으로 제작한 웹/앱 정적 프로토타입 모음입니다. 역할별 카드를 눌러 화면을 확인하세요.</p>
+    <div class="meta">
+      <span class="meta-chip">웹 7개 파일</span>
+      <span class="meta-chip">앱 7개 파일</span>
+      <span class="meta-chip">공통·인증 + 6개 역할</span>
+      <span class="meta-chip">docs/02-ia.md · 03-uiux.md 기준</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="toolbar">
+    <div class="tabs" role="tablist" aria-label="플랫폼 선택">
+      <button id="tabAll" class="on" onclick="setPlatform('all')">전체</button>
+      <button id="tabWeb" onclick="setPlatform('web')">웹</button>
+      <button id="tabApp" onclick="setPlatform('app')">앱</button>
+    </div>
+    <span class="count" id="cardCount"></span>
+  </div>
+
+  <div class="section-title">공통</div>
+  <div class="grid" id="grid-common"></div>
+
+  <div class="section-title">역할별</div>
+  <div class="grid" id="grid-roles"></div>
+</div>
+
+<footer>
+  <p><b>구성 안내</b> — 각 카드는 해당 역할의 웹/앱 프로토타입 HTML 파일로 연결됩니다. 화면 내부에서는 상단(웹) 또는 프레임 밖(앱) 내비게이션으로 개별 화면(IA 코드 배지 표시)을 전환할 수 있습니다.</p>
+  <p><b>디자인 시스템</b> — 모든 파일은 온길 BI 로고 SVG(5역할 컬러 곡선 + 당사자 앰버 도착점), 공통 컬러/타이포/레이아웃 토큰(<code>docs/03-uiux.md</code>)을 공유합니다. 로고 색상·회전·비율은 BI 가이드 규정에 따라 변경하지 않습니다.</p>
+  <p>정적 목업(빌드 도구 없음, 인터랙션은 순수 JS)이며 실제 데이터/백엔드 연동은 포함되어 있지 않습니다.</p>
+</footer>
+
+<script>
+const ROLES = [
+  {
+    key:'common', name:'공통 · 랜딩 · 인증', sub:'A-01 ~ A-10', color:'var(--role-common)', icon:'🏠',
+    desc:'랜딩페이지 9섹션, 로그인/회원가입/역할선택/동의수집/약관 등 인증 플로우 전체',
+    tags:['랜딩','로그인','회원가입','동의수집(PIPA)','약관'],
+    web:'web/web-common.html', app:'app/app-common.html', group:'common'
+  },
+  {
+    key:'guardian', name:'보호자', sub:'Guardian · G-', color:'var(--role-guardian)', icon:'🧑‍🤝‍🧑',
+    desc:'PersonCard 슬라이더 대시보드, 생애주기 타임라인, 권한 매트릭스·부여 위자드, 접근 로그',
+    tags:['대시보드','타임라인','기록관리','권한매트릭스','접근로그'],
+    web:'web/web-guardian.html', app:'app/app-guardian.html', group:'role'
+  },
+  {
+    key:'person', name:'당사자', sub:'Person · P- · 접근성 최우선', color:'var(--role-person)', icon:'😊',
+    desc:'오늘 기록 홈, 자기표현 4단계 위자드(아이콘 72px), 기록 보기, 동의·권리 관리(쉬운 언어)',
+    tags:['오늘기록','자기표현 4단계','기록보기','WCAG AAA'],
+    web:'web/web-person.html', app:'app/app-person.html', group:'role'
+  },
+  {
+    key:'supporter', name:'활동지원사', sub:'Supporter · S-', color:'var(--role-supporter)', icon:'🤲',
+    desc:'오늘 업무 홈, 일지 작성 5단계 위자드, 일지 상세, 인수인계 목록·작성',
+    tags:['홈','일지 5단계','일지상세','인수인계'],
+    web:'web/web-supporter.html', app:'app/app-supporter.html', group:'role'
+  },
+  {
+    key:'teacher', name:'특수교사', sub:'Teacher · T-', color:'var(--role-teacher)', icon:'📘',
+    desc:'담당 학생 홈, IEP 작성 6단계 위자드, IEP 점검(Split Pane), 관찰기록, 교육 타임라인',
+    tags:['학생카드','IEP 6단계','IEP점검','관찰기록','타임라인'],
+    web:'web/web-teacher.html', app:'app/app-teacher.html', group:'role'
+  },
+  {
+    key:'social_worker', name:'사회복지사', sub:'Social Worker · W-', color:'var(--role-social)', icon:'🤝',
+    desc:'담당 당사자 홈, ISP 작성 5단계, ISP 점검·달성률, 전환계획 로드맵, 서비스 이용현황',
+    tags:['홈','ISP 5단계','ISP점검','전환로드맵','서비스현황'],
+    web:'web/web-social-worker.html', app:'app/app-social-worker.html', group:'role'
+  },
+  {
+    key:'therapist', name:'치료사', sub:'Therapist · TH-', color:'var(--role-therapist)', icon:'🩺',
+    desc:'오늘 회기 홈, 치료계획서 작성 5단계, 회기 일지(달성도 체크), 평가보고서 3열 비교',
+    tags:['홈','치료계획 5단계','회기일지','평가보고서'],
+    web:'web/web-therapist.html', app:'app/app-therapist.html', group:'role'
+  }
+];
+
+function card(r){
+  return `<div class="card">
+    <div class="bar" style="background:${r.color}"></div>
+    <div class="card-head">
+      <div class="role-dot" style="background:${r.color}">${r.icon}</div>
+      <div><div class="card-title">${r.name}</div><div class="card-sub">${r.sub}</div></div>
+    </div>
+    <div class="card-desc">${r.desc}</div>
+    <div class="screen-tags">${r.tags.map(t=>`<span>${t}</span>`).join('')}</div>
+    <div class="card-links" data-links>
+      <a class="ghost" data-platform="web" href="${r.web}">🖥 웹 보기</a>
+      <a class="primary" data-platform="app" href="${r.app}">📱 앱 보기</a>
+    </div>
+  </div>`;
+}
+
+document.getElementById('grid-common').innerHTML = ROLES.filter(r=>r.group==='common').map(card).join('');
+document.getElementById('grid-roles').innerHTML = ROLES.filter(r=>r.group==='role').map(card).join('');
+
+function setPlatform(p){
+  ['tabAll','tabWeb','tabApp'].forEach(id=>document.getElementById(id).classList.remove('on'));
+  document.getElementById('tab'+p.charAt(0).toUpperCase()+p.slice(1)).classList.add('on');
+  document.querySelectorAll('[data-links] a').forEach(a=>{
+    const show = p==='all' || a.dataset.platform===p;
+    a.style.display = show ? 'block' : 'none';
+  });
+  const n = ROLES.length;
+  const label = p==='all' ? `${n*2}개 파일 (웹 ${n} · 앱 ${n})` : `${n}개 파일 (${p==='web'?'웹':'앱'})`;
+  document.getElementById('cardCount').textContent = label;
+}
+setPlatform('all');
+</script>
+</body>
+</html>

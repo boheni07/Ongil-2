@@ -1,0 +1,2087 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>온길 — 기록 연속성·연계 프로토타입 v5</title>
+<style>
+:root{
+  --p50:#F0FDF9;--p100:#E1F5EE;--p200:#9FE1CB;--p400:#5DCAA5;
+  --p600:#1D9E75;--p700:#0F6E56;--p800:#065F46;--p900:#064E3B;
+  --amber:#FAC775;--amber-dk:#B56F10;
+  --med:#E04545;--med-bg:#FEF0F0;--med-txt:#BF3030;
+  --edu:#4377C0;--edu-bg:#EEF4FD;--edu-txt:#2E5FA8;
+  --wel:#3EA673;--wel-bg:#EDFAF3;--wel-txt:#276B4C;
+  --dai:#E8991E;--dai-bg:#FFF5E6;--dai-txt:#B56F10;
+  --tra:#8A5DC6;--tra-bg:#F4EFFB;--tra-txt:#6A43A8;
+  --leg:#5A7FA0;--leg-bg:#EEF2F7;--leg-txt:#3E5E7A;
+  --g50:#F9FAFB;--g100:#F3F4F6;--g200:#E5E7EB;--g300:#D1D5DB;
+  --g400:#9CA3AF;--g500:#6B7280;--g600:#4B5563;--g700:#374151;--g800:#1F2937;
+  --tnav:52px;--hh:56px;--sw:220px;
+  --sh1:0 1px 3px rgba(0,0,0,.08);--sh2:0 4px 16px rgba(0,0,0,.10);--sh3:0 8px 32px rgba(0,0,0,.14);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Apple SD Gothic Neo,Malgun Gothic,sans-serif;font-size:14px;color:var(--g800);background:#fff}
+button,a{cursor:pointer;border:none;background:none;font-family:inherit;text-decoration:none;color:inherit}
+input,textarea,select{font-family:inherit;font-size:13px;color:var(--g800);outline:none}
+
+/* ===== PROTO NAV ===== */
+#pnav{position:fixed;top:0;left:0;right:0;height:var(--tnav);background:#0a0a14;display:flex;align-items:center;gap:2px;z-index:9999;overflow-x:auto;padding:0 10px;scrollbar-width:none}
+#pnav::-webkit-scrollbar{display:none}
+.pns{width:1px;height:28px;background:rgba(255,255,255,.15);margin:0 6px;flex-shrink:0}
+.pnl{font-size:9px;color:rgba(255,255,255,.4);padding:0 4px;flex-shrink:0;letter-spacing:.5px;text-transform:uppercase}
+.pnb{padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;color:rgba(255,255,255,.6);flex-shrink:0;border:none;background:none;cursor:pointer}
+.pnb:hover{background:rgba(255,255,255,.1);color:#fff}
+.pnb.on{background:var(--p600);color:#fff}
+.pnb.land{background:var(--amber);color:var(--p900)}
+.pnb.land.on{background:var(--amber);opacity:.85}
+
+/* ===== SECTIONS ===== */
+.sec{display:none;min-height:calc(100vh - var(--tnav));margin-top:var(--tnav)}
+.sec.on{display:block}
+.sec.flex-sec.on{display:flex}
+
+/* ===== WEB LAYOUT ===== */
+.web-sec{height:calc(100vh - var(--tnav));overflow:hidden;display:flex;flex-direction:column}
+.wh{height:var(--hh);background:var(--p800);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 14px;flex-shrink:0;gap:10px}
+.w-logo{font-size:17px;font-weight:900}
+.w-logo em{color:var(--amber);font-style:normal}
+.w-psw{padding:5px 11px;background:rgba(255,255,255,.12);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px}
+.w-right{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.w-hbtn{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.1);color:#fff;font-size:15px;display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer}
+.w-badge{position:absolute;top:-2px;right:-2px;width:14px;height:14px;border-radius:50%;background:var(--med);color:#fff;font-size:8px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid var(--p800)}
+.w-avatar{width:32px;height:32px;border-radius:50%;background:var(--p600);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.wb{flex:1;display:flex;overflow:hidden}
+.wsb{width:var(--sw);background:#fff;border-right:1px solid var(--g200);overflow-y:auto;padding:10px 7px;flex-shrink:0}
+.sm{display:flex;align-items:center;gap:7px;padding:8px 9px;border-radius:6px;font-size:12px;font-weight:600;color:var(--g600);cursor:pointer;margin-bottom:1px}
+.sm:hover,.sm.on{background:var(--p50);color:var(--p700)}
+.sm.on{background:var(--p100)}
+.sm-ico{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+.sm-badge{margin-left:auto;padding:1px 5px;background:var(--med);color:#fff;border-radius:99px;font-size:9px;font-weight:700}
+.sm-div{height:1px;background:var(--g100);margin:6px 3px}
+.wmain{flex:1;overflow-y:auto;background:var(--g50);padding:18px 20px}
+.wmain::-webkit-scrollbar{width:4px}
+.wmain::-webkit-scrollbar-thumb{background:var(--g300);border-radius:2px}
+.ws{display:none}
+.ws.on{display:block}
+.pt{font-size:18px;font-weight:800;color:var(--g800);margin-bottom:16px}
+
+/* ===== COMMON COMPONENTS ===== */
+.card{background:#fff;border-radius:10px;padding:16px;border:1px solid var(--g200);box-shadow:var(--sh1);margin-bottom:12px}
+.card h3{font-size:13px;font-weight:700;color:var(--g700);margin-bottom:8px}
+.banner{padding:9px 12px;border-radius:6px;font-size:12px;font-weight:600;margin-bottom:12px}
+.banner.info{background:var(--edu-bg);color:var(--edu-txt)}
+.banner.warn{background:var(--med-bg);color:var(--med-txt)}
+.banner.ok{background:var(--wel-bg);color:var(--wel-txt)}
+.banner.amber{background:#FFF8E1;border-left:3px solid var(--amber);color:var(--amber-dk)}
+.flex-bet{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.btn-p{padding:7px 14px;background:var(--p600);color:#fff;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer}
+.btn-s{padding:7px 14px;background:var(--g100);color:var(--g700);border-radius:6px;font-size:12px;font-weight:600;border:1px solid var(--g200);cursor:pointer}
+.btn-ghost{padding:5px 10px;border-radius:5px;font-size:11px;font-weight:600;color:var(--p600);border:1px solid var(--p200);cursor:pointer}
+.chip{display:inline-flex;align-items:center;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700}
+
+/* ===== TABS ===== */
+.tab-bar{display:flex;border-bottom:2px solid var(--g200);margin-bottom:16px}
+.tb{padding:9px 14px;font-size:12px;font-weight:600;color:var(--g500);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer}
+.tb.on{color:var(--p600);border-bottom-color:var(--p600)}
+.tab-panel{display:none}
+.tab-panel.on{display:block}
+
+/* ===== TIMELINE (base) ===== */
+.tl-ctrl{display:flex;gap:7px;margin-bottom:14px;align-items:center;flex-wrap:wrap}
+.tl-tab{padding:5px 11px;border-radius:5px;font-size:11px;font-weight:600;color:var(--g500);border:1px solid var(--g200);cursor:pointer}
+.tl-tab.on{background:var(--p600);color:#fff;border-color:var(--p600)}
+
+/* Timeline item */
+.tl-row{display:flex;gap:10px;margin-bottom:10px;align-items:flex-start}
+.tl-dot-w{display:flex;flex-direction:column;align-items:center}
+.tl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:3px;border:2px solid #fff;box-shadow:0 0 0 2px currentColor}
+.tl-vline{width:2px;flex:1;background:var(--g200);min-height:18px;margin-top:3px}
+.tl-c{flex:1;background:#fff;border-radius:9px;padding:10px 12px;border:1px solid var(--g200);box-shadow:var(--sh1)}
+.tl-c.pinned{border-left:3px solid var(--med);background:var(--med-bg)}
+.tl-c.milestone{border:2px solid var(--amber);background:#fffbf0}
+.tl-c.linked{border-left:3px solid var(--tra);cursor:pointer}
+.tl-c.linked:hover{background:var(--tra-bg)}
+.tl-dt{font-size:10px;color:var(--g400);margin-bottom:3px}
+.tl-title{font-size:13px;font-weight:700;color:var(--g700)}
+.tl-desc{font-size:11px;color:var(--g500);margin-top:3px;line-height:1.5}
+.tl-chip{display:inline-flex;padding:2px 6px;border-radius:99px;font-size:9px;font-weight:700;margin-top:4px}
+
+/* ===== RECORD CHAIN (new in v5) ===== */
+/* Horizontal chain flow */
+.chain-flow{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding-bottom:8px;margin-bottom:16px}
+.chain-flow::-webkit-scrollbar{height:4px}
+.chain-flow::-webkit-scrollbar-thumb{background:var(--g300);border-radius:2px}
+.chain-node{flex-shrink:0;width:200px;background:#fff;border-radius:10px;border:2px solid var(--g200);padding:12px;position:relative;transition:all .15s;cursor:pointer}
+.chain-node:hover{box-shadow:var(--sh2)}
+.chain-node.active{border-color:var(--p600);background:var(--p50)}
+.chain-node.med{border-color:var(--med);background:var(--med-bg)}
+.chain-node.edu{border-color:var(--edu);background:var(--edu-bg)}
+.chain-node.wel{border-color:var(--wel);background:var(--wel-bg)}
+.chain-node.dai{border-color:var(--dai);background:var(--dai-bg)}
+.cn-type{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;color:var(--g400)}
+.cn-title{font-size:12px;font-weight:800;color:var(--g800);margin-bottom:4px;line-height:1.35}
+.cn-date{font-size:10px;color:var(--g400);margin-bottom:6px}
+.cn-badge{display:inline-flex;padding:2px 7px;border-radius:99px;font-size:9px;font-weight:700}
+.cn-arrow{position:absolute;right:-22px;top:50%;transform:translateY(-50%);width:22px;height:22px;background:#fff;border:2px solid var(--g300);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--g400);z-index:1;flex-shrink:0}
+.chain-connector{width:24px;flex-shrink:0;display:flex;align-items:center;justify-content:center;position:relative}
+.chain-connector::after{content:'';position:absolute;left:0;right:0;top:50%;height:2px;background:var(--g300);transform:translateY(-50%)}
+.chain-connector .arr{font-size:12px;color:var(--g400);position:relative;z-index:1;background:#fff;padding:0 2px}
+.chain-connector.linked::after{background:var(--p400);background:linear-gradient(90deg,var(--p400),var(--p600))}
+.chain-connector.linked .arr{color:var(--p600)}
+
+/* Linked records sidebar */
+.linked-panel{background:var(--g50);border-left:3px solid var(--p300,#a8d9c8);border-radius:0 8px 8px 0;padding:12px;margin-top:10px;font-size:11px}
+.linked-panel h4{font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.lk{display:flex;align-items:center;gap:7px;padding:6px 8px;background:#fff;border-radius:6px;border:1px solid var(--g200);margin-bottom:5px;cursor:pointer}
+.lk:hover{border-color:var(--p400);background:var(--p50)}
+.lk-ico{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.lk-title{font-size:11px;font-weight:700;color:var(--g700)}
+.lk-sub{font-size:10px;color:var(--g400)}
+.lk-dir{font-size:10px;padding:2px 5px;border-radius:4px;font-weight:700;margin-left:auto;flex-shrink:0}
+.lk-dir.src{background:var(--edu-bg);color:var(--edu-txt)}
+.lk-dir.dst{background:var(--p100);color:var(--p700)}
+
+/* Record context mini-timeline */
+.ctx-tl{margin-top:14px;padding-top:14px;border-top:1px dashed var(--g200)}
+.ctx-tl h4{font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.ctx-strip{display:flex;align-items:center;gap:0;overflow-x:auto;padding-bottom:6px}
+.ctx-strip::-webkit-scrollbar{height:3px}
+.ctx-strip::-webkit-scrollbar-thumb{background:var(--g300);border-radius:2px}
+.ctx-item{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+.ctx-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;border:2px solid var(--g200);background:#fff;transition:all .15s}
+.ctx-dot.current{border-color:var(--p600);background:var(--p600);color:#fff;box-shadow:0 0 0 4px var(--p100)}
+.ctx-dot:hover{border-color:var(--p400);background:var(--p50)}
+.ctx-lbl{font-size:9px;color:var(--g400);text-align:center;max-width:44px;line-height:1.3}
+.ctx-lbl.current{color:var(--p600);font-weight:700}
+.ctx-line{width:28px;height:2px;background:var(--g200);flex-shrink:0;margin-bottom:20px}
+.ctx-line.done{background:var(--p400)}
+
+/* Inline expand timeline */
+.tl-expand{display:none;margin-top:10px;padding:10px;background:var(--g50);border-radius:7px;border:1px solid var(--g200)}
+.tl-expand.on{display:block}
+.tl-c.expandable{cursor:pointer}
+.tl-c.expandable .tl-title::after{content:' \25BE';font-size:10px;color:var(--g400)}
+.tl-c.expandable.open .tl-title::after{content:' \25B4';color:var(--p600)}
+
+/* IEP Chain (Teacher) */
+.iep-chain{display:grid;grid-template-columns:220px 1fr;gap:14px}
+.iep-goal-list{background:#fff;border-radius:10px;border:1px solid var(--g200);overflow:hidden}
+.iep-goal-item{padding:10px 12px;border-bottom:1px solid var(--g100);cursor:pointer}
+.iep-goal-item.on{background:var(--edu-bg);border-left:3px solid var(--edu)}
+.iep-goal-item:last-child{border-bottom:none}
+.igi-name{font-size:12px;font-weight:700;color:var(--g700)}
+.igi-pct{font-size:10px;color:var(--g400);margin-top:2px}
+.igi-bar{height:4px;background:var(--g200);border-radius:2px;margin-top:5px}
+.igi-bar-f{height:100%;border-radius:2px}
+.iep-detail{background:#fff;border-radius:10px;border:1px solid var(--g200);padding:16px;overflow-y:auto}
+/* linked observations */
+.obs-card{padding:10px;background:var(--g50);border-radius:8px;border:1px solid var(--g200);margin-bottom:7px;cursor:pointer;transition:all .15s}
+.obs-card:hover{background:var(--edu-bg);border-color:var(--edu)}
+.obs-card.linked{border-left:3px solid var(--edu)}
+.obs-card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.obs-card-title{font-size:12px;font-weight:700;color:var(--g700)}
+.obs-card-body{font-size:11px;color:var(--g500);line-height:1.45}
+.obs-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.obs-tag{padding:3px 7px;border-radius:99px;font-size:10px;font-weight:600;cursor:pointer;border:1.5px solid var(--g200);color:var(--g600);background:#fff}
+.obs-tag.on{background:var(--p100);border-color:var(--p600);color:var(--p700)}
+
+/* Therapist session thread */
+.session-thread{display:flex;gap:0;overflow-x:auto;padding-bottom:8px}
+.session-thread::-webkit-scrollbar{height:4px}
+.session-thread::-webkit-scrollbar-thumb{background:var(--g300);border-radius:2px}
+.st-col{flex-shrink:0;width:220px;margin-right:16px}
+.st-col:last-child{margin-right:0}
+.st-col-hdr{padding:10px 12px;border-radius:10px 10px 0 0;font-size:12px;font-weight:800;color:#fff;text-align:center}
+.st-col-body{background:#fff;border:1px solid var(--g200);border-radius:0 0 10px 10px;border-top:none;padding:10px;display:flex;flex-direction:column;gap:7px}
+.st-item{padding:9px;background:var(--g50);border-radius:7px;cursor:pointer;transition:all .15s;border:1.5px solid var(--g200)}
+.st-item:hover{background:#fff;border-color:var(--p400);box-shadow:var(--sh1)}
+.st-item.active{background:var(--p50);border-color:var(--p600)}
+.st-item.current{background:var(--med-bg);border-color:var(--med)}
+.st-item-title{font-size:11px;font-weight:700;color:var(--g700)}
+.st-item-date{font-size:10px;color:var(--g400)}
+.st-item-pct{display:flex;align-items:center;gap:5px;margin-top:4px}
+.st-pbar{flex:1;height:4px;background:var(--g200);border-radius:2px}
+.st-pbar-f{height:100%;border-radius:2px}
+.st-pct-val{font-size:10px;font-weight:700;color:var(--g600)}
+.st-link-arrow{display:flex;align-items:center;justify-content:center;padding:6px 0;font-size:20px;color:var(--g300)}
+
+/* Session detail panel */
+.sd-panel{background:#fff;border-radius:10px;border:1px solid var(--g200);padding:16px}
+.sd-hdr{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--g100)}
+.sd-back{font-size:18px;color:var(--p600);cursor:pointer}
+.sd-breadcrumb{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--g400)}
+.sd-breadcrumb .sep{color:var(--g300)}
+.sd-breadcrumb .cur{color:var(--p600);font-weight:700}
+.sd-goal-row{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--g50);border-radius:7px;margin-bottom:6px;border:1px solid var(--g200)}
+.sd-goal-name{font-size:12px;font-weight:600;color:var(--g700)}
+.sd-goal-status{padding:3px 8px;border-radius:5px;font-size:10px;font-weight:700}
+.sd-goal-status.done{background:var(--wel-bg);color:var(--wel-txt)}
+.sd-goal-status.part{background:var(--amber);color:var(--p900)}
+.sd-goal-status.none{background:var(--g100);color:var(--g500)}
+
+/* Supporter continuity */
+.journal-month{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:14px}
+.jm-hdr{text-align:center;font-size:9px;font-weight:700;color:var(--g400);padding:3px}
+.jm-day{text-align:center;padding:6px 3px;border-radius:5px;font-size:11px;cursor:pointer;transition:all .15s}
+.jm-day.has{background:var(--p100);color:var(--p700);font-weight:700}
+.jm-day.has:hover{background:var(--p200)}
+.jm-day.today{background:var(--p600);color:#fff;font-weight:800}
+.jm-day.empty{color:var(--g300)}
+.jm-day.other{color:var(--g200)}
+/* trend bars */
+.trend-row{display:flex;align-items:flex-end;gap:4px;height:60px;margin-bottom:4px}
+.tr-bar{flex:1;border-radius:3px 3px 0 0;transition:height .3s;position:relative;cursor:pointer}
+.tr-bar:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);background:var(--g800);color:#fff;padding:3px 7px;border-radius:4px;font-size:10px;white-space:nowrap;pointer-events:none}
+.trend-labels{display:flex;gap:4px}
+.tr-lbl{flex:1;text-align:center;font-size:9px;color:var(--g400)}
+
+/* Continuation reference panel */
+.cont-ref{background:var(--tra-bg);border:1px solid rgba(138,93,198,.2);border-radius:8px;padding:12px;margin-bottom:12px}
+.cont-ref-hdr{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--tra-txt);margin-bottom:8px}
+.cont-ref-item{padding:7px 9px;background:#fff;border-radius:6px;margin-bottom:5px;border:1px solid rgba(138,93,198,.15);cursor:pointer;display:flex;align-items:center;gap:7px}
+.cont-ref-item:hover{border-color:var(--tra)}
+.cri-date{font-size:10px;color:var(--g400);min-width:70px}
+.cri-text{font-size:11px;color:var(--g600);flex:1}
+.cri-link{font-size:10px;color:var(--tra-txt);font-weight:700}
+
+/* Split pane */
+.sp{display:grid;grid-template-columns:280px 1fr;overflow:hidden;height:calc(100vh - var(--tnav) - var(--hh) - 80px)}
+.sp-l{border-right:1px solid var(--g200);overflow-y:auto;background:#fff}
+.sp-r{overflow-y:auto;padding:16px;background:var(--g50)}
+.sp-item{padding:11px 14px;border-bottom:1px solid var(--g100);cursor:pointer}
+.sp-item:hover,.sp-item.on{background:var(--p50)}
+.sp-ti{font-size:12px;font-weight:600;color:var(--g700)}
+.sp-sb{font-size:10px;color:var(--g400);margin-top:2px}
+.sp-chip{display:inline-flex;padding:1px 5px;border-radius:99px;font-size:9px;font-weight:700;margin-top:3px}
+/* linked indicator in list */
+.sp-link-dot{width:6px;height:6px;border-radius:50%;background:var(--tra);flex-shrink:0}
+
+/* Notifications */
+.ni{display:flex;gap:8px;padding:10px;border-radius:7px;margin-bottom:5px;background:#fff;border:1px solid var(--g200)}
+.ni.u{border-left:3px solid var(--p600);background:var(--p50)}
+.ni-dot{width:7px;height:7px;border-radius:50%;background:var(--p600);flex-shrink:0;margin-top:3px}
+.ni-dot.r{background:var(--g300)}
+.ni-t{font-size:12px;font-weight:700;color:var(--g700)}
+.ni-d{font-size:11px;color:var(--g500);margin-top:2px;line-height:1.4}
+.ni-time{font-size:10px;color:var(--g400);margin-top:3px}
+
+/* Settings */
+.set-sec{background:#fff;border-radius:8px;margin-bottom:10px;border:1px solid var(--g200);overflow:hidden}
+.set-sec h3{font-size:10px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;padding:10px 14px;background:var(--g50);border-bottom:1px solid var(--g100)}
+.sr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--g100);cursor:pointer}
+.sr:last-child{border-bottom:none}
+.sr-lbl{font-size:12px;font-weight:600;color:var(--g700)}
+.sr-sub{font-size:10px;color:var(--g400);margin-top:1px}
+.sr-val{font-size:11px;font-weight:600;color:var(--p600)}
+
+/* Permission matrix */
+.ptable{width:100%;border-collapse:collapse;font-size:11px}
+.ptable th{padding:7px 8px;text-align:left;font-size:10px;font-weight:700;color:var(--g500);background:var(--g50);border-bottom:2px solid var(--g200)}
+.ptable td{padding:9px 8px;border-bottom:1px solid var(--g100);vertical-align:middle}
+.pc{display:flex;align-items:center;justify-content:center;width:52px;height:22px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;border:1.5px solid var(--g200);color:var(--g400)}
+.pc.r{background:var(--edu-bg);color:var(--edu-txt);border-color:var(--edu)}
+.pc.w{background:var(--wel-bg);color:var(--wel-txt);border-color:var(--wel)}
+.pc.e{background:var(--dai-bg);color:var(--dai-txt);border-color:var(--dai)}
+
+/* Hub cards */
+.hub-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.hc{background:#fff;border-radius:10px;padding:14px;border:1px solid var(--g200);box-shadow:var(--sh1)}
+.hc-ico{font-size:22px;margin-bottom:7px}
+.hc-lbl{font-size:10px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.5px}
+.hc-val{font-size:20px;font-weight:800;color:var(--g800);margin:3px 0}
+.hc-sub{font-size:11px;color:var(--g400);margin-bottom:9px}
+.hc-btn{padding:5px 9px;background:var(--p600);color:#fff;border-radius:5px;font-size:11px;font-weight:600;width:100%;text-align:center;cursor:pointer}
+
+/* Wizard */
+.wiz{background:#fff;border-radius:10px;padding:18px;border:1px solid var(--g200);box-shadow:var(--sh1)}
+.wiz-ind{display:flex;align-items:center;gap:0;margin-bottom:16px}
+.wiz-step{display:flex;flex-direction:column;align-items:center;gap:3px}
+.wn{width:22px;height:22px;border-radius:50%;border:2px solid var(--g300);background:#fff;color:var(--g400);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.wn.c{border-color:var(--p600);background:var(--p600);color:#fff}
+.wn.d{border-color:var(--p400);background:var(--p400);color:#fff}
+.wl{font-size:9px;color:var(--g400);font-weight:600;text-align:center}
+.wl.c{color:var(--p600)}
+.wiz-line{flex:1;height:2px;background:var(--g200);margin:0 3px;margin-bottom:12px}
+.wiz-line.d{background:var(--p400)}
+.wf{margin-bottom:10px}
+.wf label{display:block;font-size:11px;font-weight:600;color:var(--g700);margin-bottom:4px}
+.wf input,.wf textarea,.wf select{width:100%;padding:7px 10px;border:1.5px solid var(--g200);border-radius:6px;font-size:12px;resize:none}
+.wf textarea{height:72px}
+.wf input:focus,.wf textarea:focus,.wf select:focus{border-color:var(--p600)}
+.wiz-foot{display:flex;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--g100)}
+.btn-nx{padding:7px 18px;background:var(--p600);color:#fff;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer}
+.btn-bk{padding:7px 14px;background:var(--g50);color:var(--g600);border-radius:6px;font-size:12px;font-weight:600;border:1px solid var(--g200);cursor:pointer}
+
+/* Infobox */
+.infobox{padding:10px 12px;border-radius:8px;font-size:11px;line-height:1.6;margin-bottom:10px}
+.infobox.p{background:var(--p50);border-left:3px solid var(--p600);color:var(--p800)}
+.infobox.med{background:var(--med-bg);border-left:3px solid var(--med);color:var(--med-txt)}
+.infobox.edu{background:var(--edu-bg);border-left:3px solid var(--edu);color:var(--edu-txt)}
+.infobox.tra{background:var(--tra-bg);border-left:3px solid var(--tra);color:var(--tra-txt)}
+
+/* Mobile */
+.mob-sec{min-height:calc(100vh - var(--tnav));background:var(--g100);display:flex;flex-direction:column;align-items:center;padding:20px}
+.phones-row{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+.ph{width:300px;height:620px;background:#111;border-radius:38px;padding:8px;box-shadow:0 24px 60px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.05);flex-shrink:0}
+.ph-screen{width:100%;height:100%;background:#fff;border-radius:32px;overflow:hidden;display:flex;flex-direction:column}
+.ph-status{height:26px;background:var(--p900);display:flex;align-items:center;justify-content:space-between;padding:0 14px;flex-shrink:0}
+.ph-status span{font-size:9px;color:rgba(255,255,255,.6);font-weight:600}
+.ph-content{flex:1;overflow-y:auto;overflow-x:hidden}
+.ph-content::-webkit-scrollbar{display:none}
+.ph-tabs{height:56px;background:#fff;border-top:1px solid var(--g200);display:flex;align-items:center;justify-content:space-around;flex-shrink:0}
+.pht{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;cursor:pointer}
+.pht-ico{font-size:18px}
+.pht-lbl{font-size:9px;font-weight:600;color:var(--g400)}
+.pht.on .pht-lbl{color:var(--p600)}
+.m-navb{height:46px;display:flex;align-items:center;padding:0 12px;background:#fff;border-bottom:1px solid var(--g100);flex-shrink:0;position:sticky;top:0;z-index:5}
+.m-back{font-size:17px;color:var(--p600);margin-right:7px;cursor:pointer}
+.m-navb-t{font-size:14px;font-weight:700;color:var(--g800);flex:1}
+.mc{background:#fff;border-radius:11px;padding:12px;margin-bottom:8px;border:1px solid var(--g100);box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.mc-t{font-size:13px;font-weight:700;color:var(--g800);margin-bottom:4px}
+.mc-s{font-size:11px;color:var(--g500);line-height:1.4}
+.m-sec-lbl{font-size:10px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;padding:10px 0 5px}
+.mli{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--g100)}
+.mli:last-child{border-bottom:none}
+.mli-ico{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.mli-t{font-size:12px;font-weight:600;color:var(--g700)}
+.mli-s{font-size:10px;color:var(--g400)}
+.mli-r{margin-left:auto;font-size:11px;font-weight:600}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--p900);color:#fff;padding:9px 18px;border-radius:8px;font-size:12px;font-weight:600;z-index:99999;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;box-shadow:var(--sh2)}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- ===== PROTO NAV ===== -->
+<div id="pnav">
+  <button class="pnb land on" data-s="landing" onclick="showSec('landing')">&#127968; 랜딩</button>
+  <button class="pnb" data-s="auth" onclick="showSec('auth')">&#128274; 로그인/가입</button>
+  <div class="pns"></div>
+  <span class="pnl">웹앱</span>
+  <button class="pnb" data-s="guardian" onclick="showSec('guardian')">보호자</button>
+  <button class="pnb" data-s="therapist" onclick="showSec('therapist')">치료사</button>
+  <button class="pnb" data-s="teacher" onclick="showSec('teacher')">특수교사</button>
+  <button class="pnb" data-s="supporter" onclick="showSec('supporter')">활동지원사</button>
+  <button class="pnb" data-s="social" onclick="showSec('social')">사회복지사</button>
+  <button class="pnb" data-s="person-web" onclick="showSec('person-web')">당사자</button>
+  <div class="pns"></div>
+  <span class="pnl">&#128241; 앱</span>
+  <button class="pnb" data-s="m-guardian" onclick="showSec('m-guardian')">보호자</button>
+  <button class="pnb" data-s="m-person" onclick="showSec('m-person')">당사자</button>
+  <button class="pnb" data-s="m-supporter" onclick="showSec('m-supporter')">활동지원사</button>
+  <button class="pnb" data-s="m-teacher" onclick="showSec('m-teacher')">특수교사</button>
+</div>
+
+<!-- ===== LANDING ===== -->
+<section id="landing" class="sec on" style="padding-top:0">
+  <div style="background:linear-gradient(135deg,var(--p900) 0%,var(--p700) 60%,var(--p600) 100%);color:#fff;padding:60px 40px 50px;text-align:center">
+    <div style="font-size:11px;font-weight:700;letter-spacing:2px;color:var(--amber);margin-bottom:12px;text-transform:uppercase">장애인 생애주기 기록 플랫폼</div>
+    <h1 style="font-size:38px;font-weight:900;margin-bottom:10px">온<em style="color:var(--amber);font-style:normal">길</em></h1>
+    <p style="font-size:15px;opacity:.8;margin-bottom:6px">기록이 이어지고, 연결이 삶을 지원합니다</p>
+    <p style="font-size:12px;opacity:.55;margin-bottom:32px">치료계획 - 회기 - 평가 - IEP - 일지 - 타임라인이 모두 연결됩니다</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="btn-nx" onclick="showSec('auth')" style="padding:11px 28px;font-size:14px">시작하기</button>
+      <button onclick="showSec('guardian')" style="padding:11px 22px;background:rgba(255,255,255,.12);color:#fff;border-radius:6px;font-size:14px;font-weight:600;border:1px solid rgba(255,255,255,.25)">프로토타입 탐색</button>
+    </div>
+  </div>
+
+  <!-- Key feature: Record Linkage -->
+  <div style="max-width:900px;margin:36px auto;padding:0 24px">
+    <div style="text-align:center;margin-bottom:28px">
+      <h2 style="font-size:22px;font-weight:800;color:var(--g800)">기록이 연결되는 방식</h2>
+      <p style="font-size:13px;color:var(--g500);margin-top:6px">단순 목록이 아닌 — 기록 간 맥락과 흐름을 가시화합니다</p>
+    </div>
+    <!-- Flow diagram -->
+    <div style="background:#fff;border-radius:14px;border:1px solid var(--g200);padding:24px;box-shadow:var(--sh2);margin-bottom:24px">
+      <div style="font-size:11px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;text-align:center">치료사 - 기록 연계 흐름 예시</div>
+      <div style="display:flex;align-items:center;gap:0;overflow-x:auto;padding:8px 0">
+        <div style="flex-shrink:0;width:160px;background:var(--med-bg);border:2px solid var(--med);border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:9px;font-weight:700;color:var(--med);text-transform:uppercase;margin-bottom:4px">MED-003</div>
+          <div style="font-size:13px;font-weight:800;color:var(--g800);margin-bottom:4px">치료계획서</div>
+          <div style="font-size:10px;color:var(--g500)">목표 4개 설정</div>
+          <div style="margin-top:8px;padding:3px 8px;background:var(--med);color:#fff;border-radius:4px;font-size:10px;font-weight:700;display:inline-block">기준 문서</div>
+        </div>
+        <div style="flex-shrink:0;width:60px;display:flex;flex-direction:column;align-items:center;gap:2px">
+          <div style="width:100%;height:2px;background:linear-gradient(90deg,var(--med),var(--p600))"></div>
+          <div style="font-size:10px;color:var(--g400);white-space:nowrap">목표 참조</div>
+        </div>
+        <div style="flex-shrink:0;width:140px;background:var(--p50);border:2px solid var(--p400);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:9px;font-weight:700;color:var(--p600);margin-bottom:4px">MED-006 x44</div>
+          <div style="font-size:13px;font-weight:800;color:var(--g800);margin-bottom:4px">회기일지</div>
+          <div style="font-size:10px;color:var(--g500)">#1 ~ #44 누적</div>
+          <div style="margin-top:6px;display:flex;gap:2px;justify-content:center">
+            <div style="width:8px;height:20px;background:var(--p600);border-radius:2px"></div>
+            <div style="width:8px;height:16px;background:var(--p400);border-radius:2px"></div>
+            <div style="width:8px;height:18px;background:var(--p600);border-radius:2px"></div>
+            <div style="width:8px;height:14px;background:var(--p200);border-radius:2px"></div>
+            <div style="width:8px;height:12px;background:var(--g200);border-radius:2px;border:1px dashed var(--g300)"></div>
+          </div>
+        </div>
+        <div style="flex-shrink:0;width:60px;display:flex;flex-direction:column;align-items:center;gap:2px">
+          <div style="width:100%;height:2px;background:linear-gradient(90deg,var(--p600),var(--tra))"></div>
+          <div style="font-size:10px;color:var(--g400);white-space:nowrap">집계 반영</div>
+        </div>
+        <div style="flex-shrink:0;width:150px;background:var(--tra-bg);border:2px solid var(--tra);border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:9px;font-weight:700;color:var(--tra-txt);text-transform:uppercase;margin-bottom:4px">MED-009</div>
+          <div style="font-size:13px;font-weight:800;color:var(--g800);margin-bottom:4px">평가보고서</div>
+          <div style="font-size:10px;color:var(--g500)">44회기 달성률</div>
+          <div style="margin-top:8px;padding:3px 8px;background:var(--tra);color:#fff;border-radius:4px;font-size:10px;font-weight:700;display:inline-block">자동 집계</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3 feature cards -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px">
+      <div style="background:#fff;border-radius:12px;padding:18px;border:1px solid var(--g200);box-shadow:var(--sh1)">
+        <div style="font-size:28px;margin-bottom:10px">&#128279;</div>
+        <h3 style="font-size:14px;font-weight:800;color:var(--g800);margin-bottom:6px">기록 간 연계</h3>
+        <p style="font-size:12px;color:var(--g500);line-height:1.6">치료계획서가 회기일지와 연결되고, 회기일지가 평가보고서의 근거가 됩니다. 기록 하나가 전체 맥락 위에 놓입니다.</p>
+      </div>
+      <div style="background:#fff;border-radius:12px;padding:18px;border:1px solid var(--g200);box-shadow:var(--sh1)">
+        <div style="font-size:28px;margin-bottom:10px">&#128196;</div>
+        <h3 style="font-size:14px;font-weight:800;color:var(--g800);margin-bottom:6px">기록의 연속성</h3>
+        <p style="font-size:12px;color:var(--g500);line-height:1.6">새 기록을 작성할 때, 이전 기록을 참고 패널로 열어볼 수 있습니다. 연속성을 유지하며 더 정확한 기록을 남깁니다.</p>
+      </div>
+      <div style="background:#fff;border-radius:12px;padding:18px;border:1px solid var(--g200);box-shadow:var(--sh1)">
+        <div style="font-size:28px;margin-bottom:10px">&#128337;</div>
+        <h3 style="font-size:14px;font-weight:800;color:var(--g800);margin-bottom:6px">타임라인과 기록</h3>
+        <p style="font-size:12px;color:var(--g500);line-height:1.6">타임라인 항목을 클릭하면 연관 기록이 펼쳐집니다. 기록에서는 타임라인 위의 현재 위치가 표시됩니다.</p>
+      </div>
+    </div>
+
+    <!-- Role tabs -->
+    <div style="text-align:center;margin-bottom:20px">
+      <h2 style="font-size:18px;font-weight:800;color:var(--g800);margin-bottom:8px">역할별 플랫폼</h2>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:16px">
+      <button class="rt on" onclick="switchRole(this,'rp-guardian')" style="padding:8px 14px;border-radius:6px;font-size:12px;font-weight:700;border:2px solid var(--p600);background:var(--p600);color:#fff;cursor:pointer">보호자</button>
+      <button class="rt" onclick="switchRole(this,'rp-therapist')" style="padding:8px 14px;border-radius:6px;font-size:12px;font-weight:700;border:2px solid var(--g200);background:#fff;color:var(--g600);cursor:pointer">치료사</button>
+      <button class="rt" onclick="switchRole(this,'rp-teacher')" style="padding:8px 14px;border-radius:6px;font-size:12px;font-weight:700;border:2px solid var(--g200);background:#fff;color:var(--g600);cursor:pointer">특수교사</button>
+      <button class="rt" onclick="switchRole(this,'rp-supporter')" style="padding:8px 14px;border-radius:6px;font-size:12px;font-weight:700;border:2px solid var(--g200);background:#fff;color:var(--g600);cursor:pointer">활동지원사</button>
+      <button class="rt" onclick="switchRole(this,'rp-person')" style="padding:8px 14px;border-radius:6px;font-size:12px;font-weight:700;border:2px solid var(--g200);background:#fff;color:var(--g600);cursor:pointer">당사자</button>
+    </div>
+    <div id="rp-guardian" class="rp on" style="background:#fff;border-radius:10px;padding:16px;border:1px solid var(--g200)">
+      <p style="font-size:12px;color:var(--g600);line-height:1.7">보호자는 <strong>6개 분야 통합 타임라인</strong>에서 자녀의 전체 기록 흐름을 확인합니다. 타임라인의 각 항목을 클릭하면 연관 기록(치료계획, 회기, 평가)이 인라인으로 펼쳐집니다. 이해관계자별 권한을 직접 관리합니다.</p>
+    </div>
+    <div id="rp-therapist" class="rp" style="background:#fff;border-radius:10px;padding:16px;border:1px solid var(--g200);display:none">
+      <p style="font-size:12px;color:var(--g600);line-height:1.7">치료사는 <strong>치료계획서 - 회기일지 - 평가보고서</strong>를 하나의 흐름으로 관리합니다. 회기일지를 작성할 때 치료계획서의 목표가 옆에 열리고, 이번 회기에서 다룬 목표를 체크합니다. 평가보고서는 모든 회기의 달성률을 자동 집계합니다.</p>
+    </div>
+    <div id="rp-teacher" class="rp" style="background:#fff;border-radius:10px;padding:16px;border:1px solid var(--g200);display:none">
+      <p style="font-size:12px;color:var(--g600);line-height:1.7">특수교사는 <strong>IEP 목표 - 수업 관찰기록 - IEP 점검</strong> 체인을 관리합니다. 각 관찰기록은 어떤 IEP 목표를 다루었는지 태그하고, IEP 점검 시 모든 관찰기록의 달성 현황이 자동 집계됩니다.</p>
+    </div>
+    <div id="rp-supporter" class="rp" style="background:#fff;border-radius:10px;padding:16px;border:1px solid var(--g200);display:none">
+      <p style="font-size:12px;color:var(--g600);line-height:1.7">활동지원사는 <strong>일지의 연속성</strong>에 집중합니다. 새 일지를 작성할 때 이전 일지의 특이사항이 상단에 표시되고, 월별 트렌드(건강 상태, 활동 참여도)를 한눈에 볼 수 있습니다.</p>
+    </div>
+    <div id="rp-person" class="rp" style="background:#fff;border-radius:10px;padding:16px;border:1px solid var(--g200);display:none">
+      <p style="font-size:12px;color:var(--g600);line-height:1.7">당사자는 <strong>나의 이야기 타임라인</strong>에서 자신의 기록 전체를 볼 수 있습니다. 큰 아이콘과 쉬운 언어로 기록을 열람하고, 자기표현 기록을 직접 작성합니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== AUTH ===== -->
+<section id="auth" class="sec" style="min-height:calc(100vh - var(--tnav));background:var(--g50);display:flex;align-items:center;justify-content:center;padding:40px 20px">
+  <div style="background:#fff;border-radius:14px;padding:28px;width:100%;max-width:400px;box-shadow:var(--sh2)">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:32px;font-weight:900;color:var(--p800)">온<span style="color:var(--amber)">길</span></div>
+      <div style="font-size:13px;color:var(--g500);margin-top:4px">로그인</div>
+    </div>
+    <div class="wf"><label for="a-email">이메일</label><input id="a-email" type="email" placeholder="email@example.com" value="guardian@example.com"></div>
+    <div class="wf"><label for="a-pw">비밀번호</label><input id="a-pw" type="password" placeholder="8자 이상" value="••••••••"></div>
+    <button onclick="toast('로그인 중...');setTimeout(()=>showSec('guardian'),800)" class="btn-nx" style="width:100%;text-align:center;padding:10px;font-size:14px;margin-bottom:12px">로그인</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+      <button onclick="showSec('therapist')" class="btn-s" style="font-size:11px">치료사로 입장</button>
+      <button onclick="showSec('teacher')" class="btn-s" style="font-size:11px">특수교사로 입장</button>
+      <button onclick="showSec('supporter')" class="btn-s" style="font-size:11px">활동지원사로 입장</button>
+      <button onclick="showSec('person-web')" class="btn-s" style="font-size:11px">당사자로 입장</button>
+    </div>
+    <div style="text-align:center;font-size:11px;color:var(--g400)">계정이 없으신가요? <a href="#" style="color:var(--p600);font-weight:700">회원가입</a></div>
+  </div>
+</section>
+
+<!-- ===== GUARDIAN WEB ===== -->
+<section id="guardian" class="sec web-sec">
+  <div class="wh">
+    <div class="w-logo">온<em>길</em></div>
+    <div class="w-psw">&#128100; 김민준 (보호자)</div>
+    <div class="w-right">
+      <div class="w-hbtn" onclick="toast('알림 3건')">&#128276;<span class="w-badge">3</span></div>
+      <div class="w-avatar">김</div>
+    </div>
+  </div>
+  <div class="wb">
+    <div class="wsb">
+      <div class="sm on" data-nav="timeline" onclick="wNav('guardian','timeline')"><span class="sm-ico">&#128337;</span>통합 타임라인</div>
+      <div class="sm" data-nav="chain" onclick="wNav('guardian','chain')"><span class="sm-ico">&#128279;</span>기록 연계도</div>
+      <div class="sm" data-nav="records" onclick="wNav('guardian','records')"><span class="sm-ico">&#128196;</span>기록 목록</div>
+      <div class="sm" data-nav="permissions" onclick="wNav('guardian','permissions')"><span class="sm-ico">&#128274;</span>권한 관리</div>
+      <div class="sm" data-nav="notify" onclick="wNav('guardian','notify')"><span class="sm-ico">&#128276;</span>알림<span class="sm-badge">3</span></div>
+      <div class="sm-div"></div>
+      <div class="sm" data-nav="settings" onclick="wNav('guardian','settings')"><span class="sm-ico">&#9881;</span>설정</div>
+    </div>
+    <div class="wmain">
+
+      <!-- TIMELINE (expanded entries) -->
+      <div id="g-timeline" class="ws on">
+        <div class="flex-bet">
+          <div class="pt">통합 생애주기 타임라인</div>
+          <div style="display:flex;gap:6px">
+            <div class="tl-tab on">전체</div>
+            <div class="tl-tab" style="background:var(--med-bg);color:var(--med-txt);border-color:var(--med)">의료</div>
+            <div class="tl-tab" style="background:var(--edu-bg);color:var(--edu-txt);border-color:var(--edu)">교육</div>
+            <div class="tl-tab" style="background:var(--tra-bg);color:var(--tra-txt);border-color:var(--tra)">전환</div>
+          </div>
+        </div>
+        <div class="banner info">&#128161; 타임라인 항목을 클릭하면 연관 기록이 펼쳐집니다.</div>
+
+        <!-- Milestone: expandable -->
+        <div class="tl-row">
+          <div class="tl-dot-w"><div class="tl-dot" style="color:var(--amber);background:var(--amber)"></div><div class="tl-vline"></div></div>
+          <div class="tl-c milestone expandable" onclick="toggleExpand(this)">
+            <div class="tl-dt">2024-09 — 마일스톤</div>
+            <div class="tl-title">&#127775; 성인전환기 전환 계획 수립</div>
+            <div class="tl-desc">직업재활 + 자립생활 + 의료 연속성 종합 계획 수립</div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
+              <span class="tl-chip" style="background:var(--tra-bg);color:var(--tra-txt)">&#128279; 연관 기록 5건</span>
+              <span class="tl-chip" style="background:var(--edu-bg);color:var(--edu-txt)">EDU</span>
+              <span class="tl-chip" style="background:var(--wel-bg);color:var(--wel-txt)">WEL</span>
+              <span class="tl-chip" style="background:var(--tra-bg);color:var(--tra-txt)">TRA</span>
+            </div>
+            <!-- Expanded content -->
+            <div class="tl-expand" id="tl-expand-milestone">
+              <div style="font-size:11px;font-weight:700;color:var(--g500);margin-bottom:8px">이 마일스톤에 연결된 기록</div>
+              <div class="lk" onclick="toast('전환계획서 열기')">
+                <div class="lk-ico" style="background:var(--tra-bg)">&#128196;</div>
+                <div><div class="lk-title">전환교육 실행계획서</div><div class="lk-sub">TRA-001 | 2024-09-01 | 특수교사 박선생</div></div>
+                <span class="lk-dir src">참조</span>
+              </div>
+              <div class="lk" onclick="toast('ISP 목표 열기')">
+                <div class="lk-ico" style="background:var(--wel-bg)">&#128221;</div>
+                <div><div class="lk-title">개인별 지원계획(ISP) — 전환기</div><div class="lk-sub">WEL-001 | 2024-09-05 | 사회복지사 이선생</div></div>
+                <span class="lk-dir src">참조</span>
+              </div>
+              <div class="lk" onclick="toast('치료계획서 열기')">
+                <div class="lk-ico" style="background:var(--med-bg)">&#128138;</div>
+                <div><div class="lk-title">성인기 치료계획서 (연간)</div><div class="lk-sub">MED-003 | 2024-09-10 | 치료사 최선생</div></div>
+                <span class="lk-dir src">참조</span>
+              </div>
+              <div style="margin-top:10px;padding:8px;background:var(--tra-bg);border-radius:6px;font-size:11px;color:var(--tra-txt)">
+                &#128161; 이 마일스톤은 3개 분야의 기록이 동시에 생성되며 연결되었습니다.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MED entry: linked to chain -->
+        <div class="tl-row">
+          <div class="tl-dot-w"><div class="tl-dot" style="color:var(--med);background:var(--med)"></div><div class="tl-vline"></div></div>
+          <div class="tl-c linked expandable" onclick="toggleExpand(this)">
+            <div class="tl-dt">2025-03-15 — 의료</div>
+            <div class="tl-title">&#128138; 회기일지 #44 — 언어재활</div>
+            <div class="tl-desc">이중모음 발화 정확도 향상 훈련. 치료목표 2번 진척도 72%.</div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
+              <span class="tl-chip" style="background:var(--med-bg);color:var(--med-txt)">MED-006</span>
+              <span class="tl-chip" style="background:var(--p100);color:var(--p700)">&#128279; 치료계획서 연결</span>
+            </div>
+            <div class="tl-expand">
+              <div style="font-size:11px;font-weight:700;color:var(--g500);margin-bottom:8px">기록 체인 위치</div>
+              <!-- mini chain in timeline -->
+              <div style="display:flex;align-items:center;gap:6px;overflow-x:auto;padding:4px 0">
+                <div style="flex-shrink:0;padding:6px 10px;background:var(--med-bg);border:1.5px solid var(--med);border-radius:7px;font-size:10px;font-weight:700;color:var(--med-txt);white-space:nowrap">치료계획서</div>
+                <div style="color:var(--g300);font-size:12px">&#8594;</div>
+                <div style="flex-shrink:0;padding:6px 10px;background:var(--p100);border:2px solid var(--p600);border-radius:7px;font-size:10px;font-weight:800;color:var(--p700);white-space:nowrap">&#9658; 회기 #44 (현재)</div>
+                <div style="color:var(--g300);font-size:12px">&#8594;</div>
+                <div style="flex-shrink:0;padding:6px 10px;background:var(--g100);border:1.5px dashed var(--g300);border-radius:7px;font-size:10px;font-weight:600;color:var(--g400);white-space:nowrap">평가보고서 (예정)</div>
+              </div>
+              <div style="margin-top:8px">
+                <div style="font-size:11px;font-weight:700;color:var(--g500);margin-bottom:6px">치료계획서 목표 진척도</div>
+                <div style="display:flex;flex-direction:column;gap:5px">
+                  <div>
+                    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--g600);margin-bottom:2px"><span>목표 1: 어휘 이해력 향상</span><span style="font-weight:700;color:var(--p600)">85%</span></div>
+                    <div style="height:5px;background:var(--g200);border-radius:3px"><div style="height:100%;width:85%;background:var(--p600);border-radius:3px"></div></div>
+                  </div>
+                  <div>
+                    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--g600);margin-bottom:2px"><span>목표 2: 이중모음 발화</span><span style="font-weight:700;color:var(--amber-dk)">72%</span></div>
+                    <div style="height:5px;background:var(--g200);border-radius:3px"><div style="height:100%;width:72%;background:var(--amber);border-radius:3px"></div></div>
+                  </div>
+                  <div>
+                    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--g600);margin-bottom:2px"><span>목표 3: 문장 구성</span><span style="font-weight:700;color:var(--g500)">45%</span></div>
+                    <div style="height:5px;background:var(--g200);border-radius:3px"><div style="height:100%;width:45%;background:var(--g400);border-radius:3px"></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- EDU entry -->
+        <div class="tl-row">
+          <div class="tl-dot-w"><div class="tl-dot" style="color:var(--edu);background:var(--edu)"></div><div class="tl-vline"></div></div>
+          <div class="tl-c linked expandable" onclick="toggleExpand(this)">
+            <div class="tl-dt">2025-03-10 — 교육</div>
+            <div class="tl-title">&#128218; IEP 1분기 점검</div>
+            <div class="tl-desc">수업 관찰기록 12건 분석. 수학 영역 목표 초과 달성.</div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
+              <span class="tl-chip" style="background:var(--edu-bg);color:var(--edu-txt)">EDU-001</span>
+              <span class="tl-chip" style="background:var(--p100);color:var(--p700)">&#128279; 관찰기록 12건 연결</span>
+            </div>
+            <div class="tl-expand">
+              <div style="font-size:11px;font-weight:700;color:var(--g500);margin-bottom:8px">IEP 점검 - 연결된 관찰기록</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                <div onclick="toast('관찰기록 열기')" style="padding:7px;background:var(--edu-bg);border-radius:6px;border:1px solid rgba(67,119,192,.2);cursor:pointer;font-size:10px">
+                  <div style="font-weight:700;color:var(--edu-txt)">관찰기록 #12</div>
+                  <div style="color:var(--g500);margin-top:2px">3/8 수학 — 목표 달성</div>
+                </div>
+                <div onclick="toast('관찰기록 열기')" style="padding:7px;background:var(--edu-bg);border-radius:6px;border:1px solid rgba(67,119,192,.2);cursor:pointer;font-size:10px">
+                  <div style="font-weight:700;color:var(--edu-txt)">관찰기록 #11</div>
+                  <div style="color:var(--g500);margin-top:2px">3/5 국어 — 부분 달성</div>
+                </div>
+                <div onclick="toast('관찰기록 열기')" style="padding:7px;background:var(--edu-bg);border-radius:6px;border:1px solid rgba(67,119,192,.2);cursor:pointer;font-size:10px">
+                  <div style="font-weight:700;color:var(--edu-txt)">관찰기록 #10</div>
+                  <div style="color:var(--g500);margin-top:2px">3/3 체육 — 목표 달성</div>
+                </div>
+                <div style="padding:7px;background:var(--g50);border-radius:6px;border:1px dashed var(--g300);font-size:10px;color:var(--g400);display:flex;align-items:center;justify-content:center">+9건 더 보기</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DAI entry (no chain - simple) -->
+        <div class="tl-row">
+          <div class="tl-dot-w"><div class="tl-dot" style="color:var(--dai);background:var(--dai)"></div><div class="tl-vline"></div></div>
+          <div class="tl-c">
+            <div class="tl-dt">2025-03-08 — 일상</div>
+            <div class="tl-title">&#128196; 활동지원 일지 #89</div>
+            <div class="tl-desc">오전 수영 참여. 컨디션 양호. 특이사항 없음.</div>
+            <span class="tl-chip" style="background:var(--dai-bg);color:var(--dai-txt)">DAI-002</span>
+          </div>
+        </div>
+
+        <!-- WEL entry -->
+        <div class="tl-row">
+          <div class="tl-dot-w"><div class="tl-dot" style="color:var(--wel);background:var(--wel)"></div><div class="tl-vline"></div></div>
+          <div class="tl-c linked expandable" onclick="toggleExpand(this)">
+            <div class="tl-dt">2025-02-20 — 복지</div>
+            <div class="tl-title">&#128221; ISP 2025 상반기 서비스 이용기록</div>
+            <div class="tl-desc">발달장애인 주간활동서비스 12회 이용. ISP 목표 연결.</div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
+              <span class="tl-chip" style="background:var(--wel-bg);color:var(--wel-txt)">WEL-003</span>
+              <span class="tl-chip" style="background:var(--p100);color:var(--p700)">&#128279; ISP 목표 연결</span>
+            </div>
+            <div class="tl-expand">
+              <div style="font-size:11px;color:var(--g500);line-height:1.6">이 기록은 <strong>ISP 2025 목표 2번(지역사회 참여 확대)</strong>에 연결되어 있습니다. 서비스 이용 횟수가 누적되어 ISP 중간점검 보고서에 자동 반영됩니다.</div>
+              <div class="lk" style="margin-top:8px" onclick="toast('ISP 목표 열기')">
+                <div class="lk-ico" style="background:var(--wel-bg)">&#127919;</div>
+                <div><div class="lk-title">ISP 목표 2: 지역사회 참여 확대</div><div class="lk-sub">목표 이용횟수 20회 / 현재 12회</div></div>
+                <span class="lk-dir dst">근거</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECORD CHAIN MAP -->
+      <div id="g-chain" class="ws">
+        <div class="flex-bet">
+          <div class="pt">기록 연계도</div>
+          <button class="btn-ghost">&#128247; 인쇄</button>
+        </div>
+        <div class="banner amber">&#128279; 기록 간의 연결 관계를 한눈에 확인합니다. 각 카드를 클릭하면 해당 기록을 열 수 있습니다.</div>
+
+        <div class="card">
+          <h3>&#128138; 의료 — 언어재활 기록 체인</h3>
+          <div class="chain-flow">
+            <div class="chain-node med active" onclick="toast('치료계획서 열기')">
+              <div class="cn-type">MED-003 | 기준 문서</div>
+              <div class="cn-title">언어재활 치료계획서 2024</div>
+              <div class="cn-date">2024-09-10 ~ 2025-09-09</div>
+              <span class="cn-badge" style="background:var(--med-bg);color:var(--med-txt)">목표 4개</span>
+            </div>
+            <div class="chain-connector linked"><span class="arr">&#8594;</span></div>
+            <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;width:180px">
+              <div style="font-size:9px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;text-align:center">회기일지 (44건)</div>
+              <div class="chain-node" onclick="toast('회기 #44 열기')" style="border-color:var(--med);background:var(--med-bg)">
+                <div class="cn-type">MED-006 | 최근</div>
+                <div class="cn-title">회기일지 #44</div>
+                <div class="cn-date">2025-03-15</div>
+                <div style="margin-top:5px"><div style="height:4px;background:var(--g200);border-radius:2px"><div style="height:100%;width:72%;background:var(--p600);border-radius:2px"></div></div><div style="font-size:9px;color:var(--g400);margin-top:2px">목표2 72%</div></div>
+              </div>
+              <div class="chain-node" onclick="toast('회기 #43 열기')">
+                <div class="cn-type">MED-006</div>
+                <div class="cn-title">회기일지 #43</div>
+                <div class="cn-date">2025-03-08</div>
+              </div>
+              <div style="text-align:center;font-size:11px;color:var(--p600);font-weight:700;cursor:pointer" onclick="toast('전체 44건 보기')">... 42건 더 보기 &#8595;</div>
+            </div>
+            <div class="chain-connector linked"><span class="arr">&#8594;</span></div>
+            <div class="chain-node" onclick="toast('평가보고서 열기')" style="border-color:var(--tra);background:var(--tra-bg)">
+              <div class="cn-type">MED-009 | 집계</div>
+              <div class="cn-title">언어재활 평가보고서</div>
+              <div class="cn-date">예정: 2025-09-09</div>
+              <div style="margin-top:8px">
+                <div style="font-size:10px;color:var(--g500);margin-bottom:4px">44회기 달성률 자동 집계</div>
+                <div style="height:4px;background:var(--g200);border-radius:2px"><div style="height:100%;width:60%;background:var(--tra);border-radius:2px"></div></div>
+                <div style="font-size:9px;color:var(--g400);margin-top:2px">현재 60% 진행</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>&#128218; 교육 — IEP 기록 체인</h3>
+          <div class="chain-flow">
+            <div class="chain-node edu" onclick="toast('IEP 열기')">
+              <div class="cn-type">EDU-001 | 기준 문서</div>
+              <div class="cn-title">IEP 2024-2025 연간계획</div>
+              <div class="cn-date">2024-03-02 ~ 2025-02-28</div>
+              <span class="cn-badge" style="background:var(--edu-bg);color:var(--edu-txt)">목표 6개</span>
+            </div>
+            <div class="chain-connector linked"><span class="arr">&#8594;</span></div>
+            <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;width:180px">
+              <div style="font-size:9px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;text-align:center">수업관찰기록 (12건)</div>
+              <div class="chain-node" onclick="toast('관찰 #12 열기')" style="border-color:var(--edu);background:var(--edu-bg)">
+                <div class="cn-type">EDU-003 | 최근</div>
+                <div class="cn-title">수업관찰 #12</div>
+                <div class="cn-date">2025-03-08</div>
+              </div>
+              <div class="chain-node" onclick="toast('관찰 #11 열기')">
+                <div class="cn-type">EDU-003</div>
+                <div class="cn-title">수업관찰 #11</div>
+                <div class="cn-date">2025-03-05</div>
+              </div>
+              <div style="text-align:center;font-size:11px;color:var(--edu-txt);font-weight:700;cursor:pointer" onclick="toast('전체 12건 보기')">... 10건 더 보기 &#8595;</div>
+            </div>
+            <div class="chain-connector linked"><span class="arr">&#8594;</span></div>
+            <div class="chain-node" onclick="toast('IEP 점검 열기')" style="border-color:var(--tra);background:var(--tra-bg)">
+              <div class="cn-type">EDU-001 | 점검</div>
+              <div class="cn-title">IEP 1분기 점검</div>
+              <div class="cn-date">2025-03-10</div>
+              <div style="margin-top:6px;font-size:10px;color:var(--g500)">관찰기록 12건 집계 완료</div>
+              <div style="margin-top:4px"><div style="height:4px;background:var(--g200);border-radius:2px"><div style="height:100%;width:78%;background:var(--edu);border-radius:2px"></div></div><div style="font-size:9px;color:var(--g400);margin-top:2px">78% 달성</div></div>
+            </div>
+            <div class="chain-connector"><span class="arr">&#8594;</span></div>
+            <div class="chain-node" onclick="toast('전환교육 계획 열기')" style="border-color:var(--tra);border-style:dashed;background:#fff">
+              <div class="cn-type">TRA-001 | 후속</div>
+              <div class="cn-title">전환교육 계획</div>
+              <div class="cn-date">2025-03-20 (예정)</div>
+              <div style="margin-top:6px;font-size:10px;color:var(--tra-txt);font-weight:600">IEP 성과 기반 작성</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECORDS LIST -->
+      <div id="g-records" class="ws">
+        <div class="pt">기록 목록</div>
+        <div class="tab-bar">
+          <div class="tb on">전체</div><div class="tb">의료</div><div class="tb">교육</div><div class="tb">복지</div><div class="tb">일상</div>
+        </div>
+        <div class="sp" style="height:calc(100vh - var(--tnav) - var(--hh) - 120px)">
+          <div class="sp-l">
+            <div class="sp-item on" onclick="toast('기록 열기')"><div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><div class="sp-link-dot"></div><div class="sp-ti">회기일지 #44 — 언어재활</div></div><div class="sp-sb">2025-03-15 | 치료사 최선생</div><span class="sp-chip" style="background:var(--med-bg);color:var(--med-txt)">MED-006</span></div>
+            <div class="sp-item" onclick="toast('기록 열기')"><div class="sp-ti">IEP 1분기 점검</div><div class="sp-sb">2025-03-10 | 특수교사 박선생</div><span class="sp-chip" style="background:var(--edu-bg);color:var(--edu-txt)">EDU-001</span></div>
+            <div class="sp-item" onclick="toast('기록 열기')"><div class="sp-ti">활동지원 일지 #89</div><div class="sp-sb">2025-03-08 | 활동지원사 이선생</div><span class="sp-chip" style="background:var(--dai-bg);color:var(--dai-txt)">DAI-002</span></div>
+            <div class="sp-item" onclick="toast('기록 열기')"><div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><div class="sp-link-dot"></div><div class="sp-ti">ISP 서비스 이용기록</div></div><div class="sp-sb">2025-02-20 | 사회복지사 김선생</div><span class="sp-chip" style="background:var(--wel-bg);color:var(--wel-txt)">WEL-003</span></div>
+            <div class="sp-item" onclick="toast('기록 열기')"><div class="sp-ti">회기일지 #43 — 언어재활</div><div class="sp-sb">2025-03-08 | 치료사 최선생</div><span class="sp-chip" style="background:var(--med-bg);color:var(--med-txt)">MED-006</span></div>
+          </div>
+          <div class="sp-r">
+            <div class="card">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+                <span style="padding:3px 8px;background:var(--med-bg);color:var(--med-txt);border-radius:5px;font-size:11px;font-weight:700">MED-006</span>
+                <h2 style="font-size:15px;font-weight:800;color:var(--g800)">회기일지 #44 — 언어재활</h2>
+              </div>
+              <div style="font-size:11px;color:var(--g500);margin-bottom:12px">2025-03-15 | 치료사 최선생 | 50분</div>
+              <div style="font-size:12px;color:var(--g700);line-height:1.7;margin-bottom:12px">이중모음 /ㅔ/, /ㅐ/ 발화 정확도 향상 훈련 진행. 2음절 단어에서 3음절 단어로 점진적 복잡도 증가. 전반적으로 집중력 양호하였으나 후반부 피로도 관찰됨.</div>
+
+              <!-- Record context mini-timeline -->
+              <div class="ctx-tl">
+                <h4>기록 맥락 — 이 기록의 타임라인 위치</h4>
+                <div class="ctx-strip">
+                  <div class="ctx-item" onclick="toast('치료계획서 열기')"><div class="ctx-dot" style="border-color:var(--med);background:var(--med-bg)">&#128196;</div><div class="ctx-lbl">치료계획서</div></div>
+                  <div class="ctx-line done"></div>
+                  <div class="ctx-item" onclick="toast('#1 열기')"><div class="ctx-dot" style="border-color:var(--p400);background:var(--p50)">1</div><div class="ctx-lbl">회기 #1</div></div>
+                  <div class="ctx-line done"></div>
+                  <div class="ctx-item"><div class="ctx-dot" style="border-color:var(--g300);background:var(--g50);font-size:9px">...</div><div class="ctx-lbl">x42</div></div>
+                  <div class="ctx-line done"></div>
+                  <div class="ctx-item"><div class="ctx-dot current">44</div><div class="ctx-lbl current">지금</div></div>
+                  <div class="ctx-line"></div>
+                  <div class="ctx-item"><div class="ctx-dot" style="border-color:var(--tra);border-style:dashed">&#128196;</div><div class="ctx-lbl">평가 (예정)</div></div>
+                </div>
+              </div>
+
+              <!-- Related records -->
+              <div class="linked-panel" style="margin-top:12px">
+                <h4>연관 기록</h4>
+                <div class="lk" onclick="toast('치료계획서 열기')">
+                  <div class="lk-ico" style="background:var(--med-bg)">&#128138;</div>
+                  <div><div class="lk-title">언어재활 치료계획서 2024</div><div class="lk-sub">MED-003 | 이 기록이 참조하는 기준 문서</div></div>
+                  <span class="lk-dir src">참조함</span>
+                </div>
+                <div class="lk" onclick="toast('#43 열기')">
+                  <div class="lk-ico" style="background:var(--p50)">&#128196;</div>
+                  <div><div class="lk-title">회기일지 #43</div><div class="lk-sub">MED-006 | 이전 회기</div></div>
+                  <span class="lk-dir src">이전</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PERMISSIONS -->
+      <div id="g-permissions" class="ws">
+        <div class="flex-bet"><div class="pt">이해관계자 권한 관리</div><button class="btn-p" onclick="toast('권한 부여 마법사')">+ 권한 부여</button></div>
+        <div class="card">
+          <table class="ptable" style="width:100%">
+            <thead><tr><th>이해관계자</th><th>의료</th><th>교육</th><th>복지</th><th>일상</th><th>전환</th><th>법률</th><th>유효기간</th></tr></thead>
+            <tbody>
+              <tr><td style="font-size:12px;font-weight:600">치료사 최선생</td><td><div class="pc w">쓰기</div></td><td><div class="pc">-</div></td><td><div class="pc r">읽기</div></td><td><div class="pc r">읽기</div></td><td><div class="pc">-</div></td><td><div class="pc">-</div></td><td style="font-size:10px;color:var(--g400)">~2025-09</td></tr>
+              <tr><td style="font-size:12px;font-weight:600">특수교사 박선생</td><td><div class="pc r">읽기</div></td><td><div class="pc w">쓰기</div></td><td><div class="pc r">읽기</div></td><td><div class="pc r">읽기</div></td><td><div class="pc w">쓰기</div></td><td><div class="pc">-</div></td><td style="font-size:10px;color:var(--g400)">~2025-08</td></tr>
+              <tr><td style="font-size:12px;font-weight:600">활동지원사 이선생</td><td><div class="pc">-</div></td><td><div class="pc">-</div></td><td><div class="pc r">읽기</div></td><td><div class="pc w">쓰기</div></td><td><div class="pc">-</div></td><td><div class="pc">-</div></td><td style="font-size:10px;color:var(--g400)">~2025-12</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- NOTIFICATIONS -->
+      <div id="g-notify" class="ws">
+        <div class="pt">알림</div>
+        <div class="ni u"><div class="ni-dot"></div><div><div class="ni-t">회기일지 #44 작성 완료</div><div class="ni-d">치료사 최선생이 회기일지를 작성했습니다. 치료계획서 목표 2번 진척도: 72%</div><div class="ni-time">방금 전</div></div></div>
+        <div class="ni u"><div class="ni-dot"></div><div><div class="ni-t">IEP 1분기 점검 결과 공유</div><div class="ni-d">특수교사 박선생이 IEP 점검 결과를 공유했습니다. 전체 목표 달성률 78%</div><div class="ni-time">2시간 전</div></div></div>
+        <div class="ni u"><div class="ni-dot"></div><div><div class="ni-t">권한 만료 예정 안내</div><div class="ni-d">사회복지사 김선생의 복지 분야 권한이 30일 후 만료됩니다.</div><div class="ni-time">어제</div></div></div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div id="g-settings" class="ws">
+        <div class="pt">설정</div>
+        <div class="set-sec"><h3>계정</h3>
+          <div class="sr"><div><div class="sr-lbl">이름</div></div><div class="sr-val">김민준 (보호자)</div></div>
+          <div class="sr"><div><div class="sr-lbl">이메일</div></div><div class="sr-val">guardian@example.com</div></div>
+        </div>
+        <div class="set-sec"><h3>알림 설정</h3>
+          <div class="sr"><div><div class="sr-lbl">기록 작성 알림</div><div class="sr-sub">이해관계자가 새 기록을 작성하면 알림</div></div><div class="sr-val">켜짐</div></div>
+          <div class="sr"><div><div class="sr-lbl">권한 만료 알림</div><div class="sr-sub">만료 30일 전 사전 알림</div></div><div class="sr-val">켜짐</div></div>
+        </div>
+      </div>
+
+    </div><!-- wmain -->
+  </div><!-- wb -->
+</section>
+
+<!-- ===== THERAPIST WEB (Record Linkage centerpiece) ===== -->
+<section id="therapist" class="sec web-sec">
+  <div class="wh">
+    <div class="w-logo">온<em>길</em></div>
+    <div class="w-psw">&#128100; 최선생 (치료사)</div>
+    <div class="w-right">
+      <div class="w-hbtn">&#128276;</div>
+      <div class="w-avatar" style="background:var(--med)">치</div>
+    </div>
+  </div>
+  <div class="wb">
+    <div class="wsb">
+      <div class="sm on" data-nav="th-home" onclick="wNav('therapist','th-home')"><span class="sm-ico">&#127968;</span>홈</div>
+      <div class="sm" data-nav="th-chain" onclick="wNav('therapist','th-chain')"><span class="sm-ico">&#128279;</span>치료 기록 연계</div>
+      <div class="sm" data-nav="th-session" onclick="wNav('therapist','th-session')"><span class="sm-ico">&#128196;</span>회기 작성</div>
+      <div class="sm" data-nav="th-plan" onclick="wNav('therapist','th-plan')"><span class="sm-ico">&#128138;</span>치료계획서</div>
+      <div class="sm" data-nav="th-eval" onclick="wNav('therapist','th-eval')"><span class="sm-ico">&#128202;</span>평가보고서</div>
+      <div class="sm-div"></div>
+      <div class="sm" data-nav="th-settings" onclick="wNav('therapist','th-settings')"><span class="sm-ico">&#9881;</span>설정</div>
+    </div>
+    <div class="wmain">
+
+      <!-- HOME -->
+      <div id="th-th-home" class="ws on">
+        <div class="pt">안녕하세요, 최선생님</div>
+        <div class="banner info" style="border-left:3px solid var(--med)">&#128276; 김민준 회기일지 #44 — 오늘 작성 예정입니다.</div>
+        <div class="hub-row">
+          <div class="hc"><div class="hc-ico">&#128100;</div><div class="hc-lbl">담당 당사자</div><div class="hc-val">3</div><div class="hc-sub">활성 치료계획 3건</div><div class="hc-btn" onclick="toast('당사자 목록')">목록 보기</div></div>
+          <div class="hc"><div class="hc-ico">&#128196;</div><div class="hc-lbl">이번 주 회기</div><div class="hc-val">5</div><div class="hc-sub">작성 완료 3 / 예정 2</div><div class="hc-btn" onclick="wNav('therapist','th-session')">회기 작성</div></div>
+          <div class="hc"><div class="hc-ico">&#128202;</div><div class="hc-lbl">평가보고서</div><div class="hc-val">1</div><div class="hc-sub">9월 예정</div><div class="hc-btn" onclick="wNav('therapist','th-eval')">보고서 보기</div></div>
+        </div>
+        <div class="card">
+          <h3>&#128279; 기록 연계 현황</h3>
+          <div style="display:flex;gap:12px;overflow-x:auto;padding:8px 0">
+            <div style="flex-shrink:0;text-align:center;padding:10px 16px;background:var(--med-bg);border-radius:8px;border:1.5px solid var(--med)">
+              <div style="font-size:22px;font-weight:800;color:var(--med)">4</div>
+              <div style="font-size:10px;color:var(--g500)">치료계획서</div>
+            </div>
+            <div style="display:flex;align-items:center;font-size:20px;color:var(--g300)">&#8594;</div>
+            <div style="flex-shrink:0;text-align:center;padding:10px 16px;background:var(--p50);border-radius:8px;border:1.5px solid var(--p400)">
+              <div style="font-size:22px;font-weight:800;color:var(--p600)">132</div>
+              <div style="font-size:10px;color:var(--g500)">총 회기일지</div>
+            </div>
+            <div style="display:flex;align-items:center;font-size:20px;color:var(--g300)">&#8594;</div>
+            <div style="flex-shrink:0;text-align:center;padding:10px 16px;background:var(--tra-bg);border-radius:8px;border:1.5px solid var(--tra)">
+              <div style="font-size:22px;font-weight:800;color:var(--tra)">2</div>
+              <div style="font-size:10px;color:var(--g500)">평가보고서</div>
+            </div>
+          </div>
+          <div style="margin-top:12px"><button class="btn-ghost" onclick="wNav('therapist','th-chain')">연계 상세 보기 &#8594;</button></div>
+        </div>
+      </div>
+
+      <!-- CHAIN VIEW (핵심) -->
+      <div id="th-th-chain" class="ws">
+        <div class="flex-bet">
+          <div class="pt">치료 기록 연계 — 김민준</div>
+          <div style="display:flex;gap:6px">
+            <button class="btn-s" style="font-size:11px" onclick="toast('PDF 내보내기')">&#128247; 내보내기</button>
+            <button class="btn-p" onclick="wNav('therapist','th-session')">+ 회기 작성</button>
+          </div>
+        </div>
+
+        <div class="infobox p">&#128279; 치료계획서의 목표가 각 회기일지에 연결됩니다. 평가보고서는 모든 회기의 달성률을 자동 집계합니다.</div>
+
+        <!-- 3-column thread view -->
+        <div class="session-thread">
+          <!-- Column 1: 치료계획서 -->
+          <div class="st-col">
+            <div class="st-col-hdr" style="background:var(--med)">&#128138; 치료계획서</div>
+            <div class="st-col-body">
+              <div class="st-item active" onclick="toast('치료계획서 열기')">
+                <div class="st-item-title">언어재활 치료계획서 2024</div>
+                <div class="st-item-date">2024-09-10 ~ 2025-09-09</div>
+                <div style="margin-top:8px;font-size:10px;color:var(--g600);font-weight:600">치료 목표 4개</div>
+                <div style="margin-top:4px;display:flex;flex-direction:column;gap:3px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;font-size:10px">
+                    <span style="color:var(--g600)">1. 어휘 이해력</span><span style="font-weight:700;color:var(--p600)">85%</span>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;font-size:10px">
+                    <span style="color:var(--g600)">2. 이중모음 발화</span><span style="font-weight:700;color:var(--amber-dk)">72%</span>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;font-size:10px">
+                    <span style="color:var(--g600)">3. 문장 구성</span><span style="font-weight:700;color:var(--g500)">45%</span>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;font-size:10px">
+                    <span style="color:var(--g600)">4. 화용 능력</span><span style="font-weight:700;color:var(--g500)">38%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Arrow -->
+          <div style="display:flex;align-items:center;padding:0 4px;margin-top:36px">
+            <div style="font-size:22px;color:var(--p400)">&#8594;</div>
+          </div>
+
+          <!-- Column 2: 회기일지 -->
+          <div class="st-col" style="width:240px">
+            <div class="st-col-hdr" style="background:var(--p600)">&#128196; 회기일지 (44건)</div>
+            <div class="st-col-body" style="max-height:340px;overflow-y:auto">
+              <div class="st-item current" onclick="showSessionDetail()">
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                  <div class="st-item-title">#44 — 2025-03-15</div>
+                  <span style="font-size:9px;padding:2px 5px;background:var(--med);color:#fff;border-radius:3px;font-weight:700">최신</span>
+                </div>
+                <div class="st-item-date">목표1+2 집중</div>
+                <div style="margin-top:5px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;font-size:9px;color:var(--g500);margin-bottom:2px"><span>목표2 이중모음</span><span>72%</span></div>
+                  <div class="st-pbar"><div class="st-pbar-f" style="width:72%;background:var(--amber)"></div></div>
+                </div>
+              </div>
+              <div class="st-link-arrow">&#8595;</div>
+              <div class="st-item" onclick="toast('#43 열기')">
+                <div class="st-item-title">#43 — 2025-03-08</div>
+                <div class="st-item-date">목표1+3 집중</div>
+                <div style="margin-top:5px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;font-size:9px;color:var(--g500);margin-bottom:2px"><span>목표3 문장구성</span><span>42%</span></div>
+                  <div class="st-pbar"><div class="st-pbar-f" style="width:42%;background:var(--g400)"></div></div>
+                </div>
+              </div>
+              <div class="st-link-arrow">&#8595;</div>
+              <div class="st-item" onclick="toast('#42 열기')">
+                <div class="st-item-title">#42 — 2025-03-01</div>
+                <div class="st-item-date">목표2 집중</div>
+              </div>
+              <div class="st-link-arrow">&#8595;</div>
+              <div style="text-align:center;padding:6px;font-size:11px;color:var(--p600);font-weight:700;cursor:pointer" onclick="toast('전체 41건 더 보기')">&#8595; 41건 더 보기</div>
+            </div>
+          </div>
+
+          <!-- Arrow -->
+          <div style="display:flex;align-items:center;padding:0 4px;margin-top:36px">
+            <div style="font-size:22px;color:var(--p400)">&#8594;</div>
+          </div>
+
+          <!-- Column 3: 평가보고서 -->
+          <div class="st-col">
+            <div class="st-col-hdr" style="background:var(--tra)">&#128202; 평가보고서</div>
+            <div class="st-col-body">
+              <div class="st-item" onclick="toast('평가보고서 초안 보기')" style="border-style:dashed;border-color:var(--tra);background:var(--tra-bg)">
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                  <div class="st-item-title">언어재활 평가보고서</div>
+                  <span style="font-size:9px;padding:2px 5px;background:var(--tra);color:#fff;border-radius:3px;font-weight:700">예정</span>
+                </div>
+                <div class="st-item-date">예정: 2025-09-09</div>
+                <div style="margin-top:8px;font-size:10px;color:var(--tra-txt);font-weight:600">44회기 기반 자동 집계</div>
+                <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">
+                  <div style="display:flex;justify-content:space-between;font-size:10px">
+                    <span style="color:var(--g600)">목표1 예상 달성</span><span style="font-weight:700;color:var(--p600)">~90%</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;font-size:10px">
+                    <span style="color:var(--g600)">목표2 예상 달성</span><span style="font-weight:700;color:var(--amber-dk)">~75%</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;font-size:10px">
+                    <span style="color:var(--g600)">목표3 예상 달성</span><span style="font-weight:700;color:var(--g500)">~55%</span>
+                  </div>
+                </div>
+                <div style="margin-top:10px;padding:6px 8px;background:#fff;border-radius:5px;font-size:10px;color:var(--tra-txt)">
+                  &#128337; 회기가 추가될수록 예상 달성률이 업데이트됩니다
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Session detail panel (shown when clicking #44) -->
+        <div id="th-session-detail" class="sd-panel" style="display:none;margin-top:14px">
+          <div class="sd-hdr">
+            <span class="sd-back" onclick="document.getElementById('th-session-detail').style.display='none'">&#8592;</span>
+            <div class="sd-breadcrumb">
+              <span onclick="toast('치료계획서')">치료계획서</span><span class="sep">›</span>
+              <span class="cur">회기일지 #44</span><span class="sep">›</span>
+              <span>평가보고서 (예정)</span>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 280px;gap:14px">
+            <div>
+              <div style="font-size:15px;font-weight:800;color:var(--g800);margin-bottom:8px">회기일지 #44 — 2025-03-15 (50분)</div>
+              <div style="font-size:12px;color:var(--g600);line-height:1.7;margin-bottom:12px">이중모음 /ㅔ/, /ㅐ/ 발화 정확도 향상 훈련 진행. 2음절에서 3음절 단어로 점진적 복잡도 증가. 집중력 양호, 후반부 피로도 관찰됨.</div>
+              <div style="font-size:13px;font-weight:700;color:var(--g700);margin-bottom:8px">이번 회기에서 다룬 목표</div>
+              <div class="sd-goal-row"><span class="sd-goal-name">목표 1: 어휘 이해력 향상</span><span class="sd-goal-status done">달성</span></div>
+              <div class="sd-goal-row"><span class="sd-goal-name">목표 2: 이중모음 발화</span><span class="sd-goal-status part">부분 달성</span></div>
+              <div class="sd-goal-row"><span class="sd-goal-name">목표 3: 문장 구성</span><span class="sd-goal-status none">미진행</span></div>
+            </div>
+            <div>
+              <div class="cont-ref">
+                <div class="cont-ref-hdr">&#128196; 치료계획서 참조</div>
+                <div class="cont-ref-item" onclick="toast('목표 1 상세')"><span class="cri-date">목표 1</span><span class="cri-text">어휘 이해력 향상 (현재 85%)</span><span class="cri-link">보기</span></div>
+                <div class="cont-ref-item" onclick="toast('목표 2 상세')"><span class="cri-date">목표 2</span><span class="cri-text">이중모음 발화 (현재 72%)</span><span class="cri-link">보기</span></div>
+              </div>
+              <div class="cont-ref" style="margin-top:8px">
+                <div class="cont-ref-hdr">&#128196; 이전 회기 참조 (#43)</div>
+                <div class="cont-ref-item" onclick="toast('#43 특이사항')"><span class="cri-date">특이사항</span><span class="cri-text">문장구성 42% — 개선 중</span><span class="cri-link">보기</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SESSION WRITE (연속성 패널 포함) -->
+      <div id="th-th-session" class="ws">
+        <div class="flex-bet">
+          <div class="pt">회기일지 작성 — #45</div>
+          <div style="font-size:11px;color:var(--g400)">김민준 | 치료계획서: 언어재활 2024</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 260px;gap:14px;align-items:start">
+          <div>
+            <div class="infobox p">&#128196; 치료계획서의 목표를 참고하여 이번 회기에서 다룬 내용을 기록합니다.</div>
+            <div class="card">
+              <div class="wf"><label>회기 날짜</label><input type="date" value="2025-03-22"></div>
+              <div class="wf"><label>소요 시간</label><select><option>50분</option><option>40분</option></select></div>
+              <div class="wf"><label>전반적 상태</label><select><option>양호</option><option>보통</option><option>저조</option></select></div>
+              <div class="wf"><label>회기 내용</label><textarea placeholder="이번 회기에서 진행한 훈련 내용을 기술하세요..."></textarea></div>
+              <div style="margin-top:12px;margin-bottom:8px;font-size:12px;font-weight:700;color:var(--g700)">이번 회기에서 다룬 치료 목표</div>
+              <div style="display:flex;flex-direction:column;gap:7px">
+                <div style="padding:9px;background:var(--g50);border-radius:7px;border:1.5px solid var(--g200)">
+                  <div style="display:flex;align-items:center;gap:7px;margin-bottom:5px">
+                    <input type="checkbox" checked style="width:14px;height:14px;accent-color:var(--p600)">
+                    <span style="font-size:12px;font-weight:600;color:var(--g700)">목표 1: 어휘 이해력 향상</span>
+                    <span style="margin-left:auto;font-size:10px;padding:2px 6px;background:var(--p100);color:var(--p700);border-radius:4px;font-weight:700">현재 85%</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:6px;margin-left:21px">
+                    <span style="font-size:10px;color:var(--g500)">이번 회기 진척도:</span>
+                    <input type="range" value="87" min="0" max="100" style="flex:1;height:4px;accent-color:var(--p600)">
+                    <span style="font-size:11px;font-weight:700;color:var(--p600);min-width:28px">87%</span>
+                  </div>
+                </div>
+                <div style="padding:9px;background:var(--g50);border-radius:7px;border:1.5px solid var(--g200)">
+                  <div style="display:flex;align-items:center;gap:7px;margin-bottom:5px">
+                    <input type="checkbox" checked style="width:14px;height:14px;accent-color:var(--p600)">
+                    <span style="font-size:12px;font-weight:600;color:var(--g700)">목표 2: 이중모음 발화</span>
+                    <span style="margin-left:auto;font-size:10px;padding:2px 6px;background:var(--amber);color:var(--p900);border-radius:4px;font-weight:700">현재 72%</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:6px;margin-left:21px">
+                    <span style="font-size:10px;color:var(--g500)">이번 회기 진척도:</span>
+                    <input type="range" value="75" min="0" max="100" style="flex:1;height:4px;accent-color:var(--p600)">
+                    <span style="font-size:11px;font-weight:700;color:var(--amber-dk);min-width:28px">75%</span>
+                  </div>
+                </div>
+                <div style="padding:9px;background:var(--g50);border-radius:7px;border:1.5px solid var(--g200)">
+                  <div style="display:flex;align-items:center;gap:7px">
+                    <input type="checkbox" style="width:14px;height:14px;accent-color:var(--p600)">
+                    <span style="font-size:12px;font-weight:600;color:var(--g700)">목표 3: 문장 구성</span>
+                    <span style="margin-left:auto;font-size:10px;padding:2px 6px;background:var(--g100);color:var(--g500);border-radius:4px;font-weight:700">현재 45%</span>
+                  </div>
+                </div>
+              </div>
+              <div class="wf" style="margin-top:12px"><label>특이사항 / 다음 회기 계획</label><textarea placeholder="다음 회기에서 집중할 영역..."></textarea></div>
+              <div style="display:flex;gap:8px;margin-top:12px">
+                <button class="btn-p" onclick="toast('회기일지 저장 완료!')">저장 및 연계</button>
+                <button class="btn-s">임시저장</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Continuity reference panel -->
+          <div>
+            <div class="cont-ref">
+              <div class="cont-ref-hdr">&#128196; 치료계획서 목표 (참조)</div>
+              <div style="font-size:10px;color:var(--g400);margin-bottom:6px">클릭하면 목표 상세를 볼 수 있습니다</div>
+              <div class="cont-ref-item" onclick="toast('목표 1 상세')">
+                <span class="cri-date">목표 1</span><span class="cri-text">어휘 이해력 향상</span><span class="cri-link">85%</span>
+              </div>
+              <div class="cont-ref-item" onclick="toast('목표 2 상세')">
+                <span class="cri-date">목표 2</span><span class="cri-text">이중모음 발화 정확도</span><span class="cri-link">72%</span>
+              </div>
+              <div class="cont-ref-item" onclick="toast('목표 3 상세')">
+                <span class="cri-date">목표 3</span><span class="cri-text">문장 구성 능력</span><span class="cri-link">45%</span>
+              </div>
+              <div class="cont-ref-item" onclick="toast('목표 4 상세')">
+                <span class="cri-date">목표 4</span><span class="cri-text">화용 능력 (사회적 언어)</span><span class="cri-link">38%</span>
+              </div>
+            </div>
+
+            <div class="cont-ref" style="margin-top:8px">
+              <div class="cont-ref-hdr">&#128196; 이전 회기 참조 (#44)</div>
+              <div class="cont-ref-item" onclick="toast('#44 특이사항')">
+                <span class="cri-date">2025-03-15</span><span class="cri-text">후반부 피로도 관찰. 이중모음 72%.</span><span class="cri-link">열기</span>
+              </div>
+              <div class="cont-ref-item" onclick="toast('#43 보기')">
+                <span class="cri-date">2025-03-08</span><span class="cri-text">목표1+3. 문장구성 42%.</span><span class="cri-link">열기</span>
+              </div>
+            </div>
+
+            <div style="margin-top:8px;padding:10px;background:var(--p50);border-radius:7px;border:1px solid var(--p200)">
+              <div style="font-size:10px;font-weight:700;color:var(--p600);margin-bottom:6px">&#128201; 진척 추이 (최근 5회기)</div>
+              <div class="trend-row" style="height:50px">
+                <div class="tr-bar" style="height:60%;background:var(--p400)" data-tip="#40: 68%"></div>
+                <div class="tr-bar" style="height:65%;background:var(--p400)" data-tip="#41: 70%"></div>
+                <div class="tr-bar" style="height:70%;background:var(--p400)" data-tip="#42: 71%"></div>
+                <div class="tr-bar" style="height:72%;background:var(--p600)" data-tip="#43: 72%"></div>
+                <div class="tr-bar" style="height:72%;background:var(--p600)" data-tip="#44: 72%"></div>
+              </div>
+              <div class="trend-labels">
+                <div class="tr-lbl">#40</div><div class="tr-lbl">#41</div><div class="tr-lbl">#42</div><div class="tr-lbl">#43</div><div class="tr-lbl">#44</div>
+              </div>
+              <div style="font-size:10px;color:var(--g500);margin-top:6px">목표2 이중모음 발화 진척도</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PLAN -->
+      <div id="th-th-plan" class="ws">
+        <div class="flex-bet"><div class="pt">치료계획서</div><button class="btn-p" onclick="toast('신규 치료계획서')">+ 새 계획서</button></div>
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+            <span style="padding:3px 8px;background:var(--med-bg);color:var(--med-txt);border-radius:5px;font-size:11px;font-weight:700">MED-003</span>
+            <span style="font-size:14px;font-weight:800;color:var(--g800)">언어재활 치료계획서 2024</span>
+          </div>
+          <div style="font-size:11px;color:var(--g500);margin-bottom:12px">2024-09-10 ~ 2025-09-09 | 담당: 치료사 최선생</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="padding:10px;background:var(--g50);border-radius:7px;border:1px solid var(--g200)">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <span style="font-size:12px;font-weight:700;color:var(--g700)">목표 1: 어휘 이해력 향상</span>
+                <span style="font-size:11px;font-weight:700;color:var(--p600)">85% (44회기)</span>
+              </div>
+              <div style="height:6px;background:var(--g200);border-radius:3px"><div style="height:100%;width:85%;background:var(--p600);border-radius:3px"></div></div>
+              <div style="font-size:10px;color:var(--g400);margin-top:4px">연결된 회기: 32건</div>
+            </div>
+            <div style="padding:10px;background:var(--g50);border-radius:7px;border:1px solid var(--g200)">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <span style="font-size:12px;font-weight:700;color:var(--g700)">목표 2: 이중모음 발화</span>
+                <span style="font-size:11px;font-weight:700;color:var(--amber-dk)">72% (44회기)</span>
+              </div>
+              <div style="height:6px;background:var(--g200);border-radius:3px"><div style="height:100%;width:72%;background:var(--amber);border-radius:3px"></div></div>
+              <div style="font-size:10px;color:var(--g400);margin-top:4px">연결된 회기: 28건</div>
+            </div>
+          </div>
+          <div style="margin-top:12px"><button class="btn-ghost" onclick="wNav('therapist','th-chain')">연계 흐름 보기 &#8594;</button></div>
+        </div>
+      </div>
+
+      <!-- EVAL -->
+      <div id="th-th-eval" class="ws">
+        <div class="flex-bet"><div class="pt">평가보고서</div><button class="btn-p" onclick="toast('보고서 작성')">+ 보고서 작성</button></div>
+        <div class="card">
+          <div class="banner info">&#128202; 44회기의 데이터가 자동 집계되어 보고서 초안이 준비됩니다.</div>
+          <div style="padding:12px;background:var(--tra-bg);border-radius:8px;border:1.5px dashed var(--tra)">
+            <div style="font-size:13px;font-weight:800;color:var(--tra-txt);margin-bottom:4px">언어재활 평가보고서 (초안)</div>
+            <div style="font-size:11px;color:var(--g500);margin-bottom:12px">예정: 2025-09-09 | 근거: 44회기 회기일지</div>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span style="font-weight:600">목표1 어휘이해력</span><span style="font-weight:700;color:var(--p600)">85% → 예상 90%</span></div>
+                <div style="height:5px;background:var(--g200);border-radius:3px"><div style="height:100%;width:85%;background:var(--p600);border-radius:3px"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span style="font-weight:600">목표2 이중모음</span><span style="font-weight:700;color:var(--amber-dk)">72% → 예상 75%</span></div>
+                <div style="height:5px;background:var(--g200);border-radius:3px"><div style="height:100%;width:72%;background:var(--amber);border-radius:3px"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span style="font-weight:600">목표3 문장구성</span><span style="font-weight:700;color:var(--g500)">45% → 예상 55%</span></div>
+                <div style="height:5px;background:var(--g200);border-radius:3px"><div style="height:100%;width:45%;background:var(--g400);border-radius:3px"></div></div>
+              </div>
+            </div>
+            <div style="margin-top:10px;padding:8px;background:#fff;border-radius:5px;font-size:11px;color:var(--tra-txt)">&#128337; 회기가 추가될수록 예상치가 업데이트됩니다.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div id="th-th-settings" class="ws">
+        <div class="pt">설정</div>
+        <div class="set-sec"><h3>계정</h3>
+          <div class="sr"><div><div class="sr-lbl">이름</div></div><div class="sr-val">치료사 최선생</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ===== TEACHER WEB (IEP Chain) ===== -->
+<section id="teacher" class="sec web-sec">
+  <div class="wh">
+    <div class="w-logo">온<em>길</em></div>
+    <div class="w-psw">&#128100; 박선생 (특수교사)</div>
+    <div class="w-right">
+      <div class="w-hbtn">&#128276;</div>
+      <div class="w-avatar" style="background:var(--edu)">교</div>
+    </div>
+  </div>
+  <div class="wb">
+    <div class="wsb">
+      <div class="sm on" data-nav="t-home" onclick="wNav('teacher','t-home')"><span class="sm-ico">&#127968;</span>홈</div>
+      <div class="sm" data-nav="t-iep" onclick="wNav('teacher','t-iep')"><span class="sm-ico">&#128279;</span>IEP 기록 연계</div>
+      <div class="sm" data-nav="t-obs" onclick="wNav('teacher','t-obs')"><span class="sm-ico">&#128196;</span>관찰기록 작성</div>
+      <div class="sm" data-nav="t-check" onclick="wNav('teacher','t-check')"><span class="sm-ico">&#128202;</span>IEP 점검</div>
+      <div class="sm-div"></div>
+      <div class="sm" data-nav="t-settings" onclick="wNav('teacher','t-settings')"><span class="sm-ico">&#9881;</span>설정</div>
+    </div>
+    <div class="wmain">
+
+      <!-- HOME -->
+      <div id="t-t-home" class="ws on">
+        <div class="pt">안녕하세요, 박선생님</div>
+        <div class="hub-row">
+          <div class="hc"><div class="hc-ico">&#128218;</div><div class="hc-lbl">IEP 연간계획</div><div class="hc-val">2</div><div class="hc-sub">진행 중</div><div class="hc-btn" onclick="wNav('teacher','t-iep')">IEP 보기</div></div>
+          <div class="hc"><div class="hc-ico">&#128196;</div><div class="hc-lbl">관찰기록 (이번달)</div><div class="hc-val">8</div><div class="hc-sub">작성 완료</div><div class="hc-btn" onclick="wNav('teacher','t-obs')">작성하기</div></div>
+          <div class="hc"><div class="hc-ico">&#128202;</div><div class="hc-lbl">IEP 점검</div><div class="hc-val">3월</div><div class="hc-sub">1분기 점검 완료</div><div class="hc-btn" onclick="wNav('teacher','t-check')">점검 결과</div></div>
+        </div>
+        <div class="infobox edu">&#128279; IEP 목표와 수업 관찰기록이 연결됩니다. 점검 시 모든 관찰기록이 자동 집계됩니다.</div>
+      </div>
+
+      <!-- IEP CHAIN (핵심 — Goal 목록 + 연결 관찰기록) -->
+      <div id="t-t-iep" class="ws">
+        <div class="flex-bet">
+          <div class="pt">IEP 기록 연계 — 김민준</div>
+          <button class="btn-p" onclick="wNav('teacher','t-obs')">+ 관찰기록 작성</button>
+        </div>
+        <div class="banner info">&#128279; 왼쪽에서 IEP 목표를 선택하면 연결된 관찰기록 목록이 표시됩니다.</div>
+
+        <div class="iep-chain">
+          <!-- Goal list -->
+          <div class="iep-goal-list">
+            <div style="padding:10px 12px;font-size:11px;font-weight:700;color:var(--edu-txt);border-bottom:1px solid var(--g100);background:var(--edu-bg)">IEP 2024-2025 목표</div>
+            <div class="iep-goal-item on" onclick="selectIEPGoal(this, 'g1')">
+              <div class="igi-name">목표 1: 수 개념 이해</div>
+              <div class="igi-pct">12건 관찰 | 달성률 78%</div>
+              <div class="igi-bar"><div class="igi-bar-f" style="width:78%;background:var(--p600)"></div></div>
+            </div>
+            <div class="iep-goal-item" onclick="selectIEPGoal(this, 'g2')">
+              <div class="igi-name">목표 2: 읽기 유창성</div>
+              <div class="igi-pct">9건 관찰 | 달성률 61%</div>
+              <div class="igi-bar"><div class="igi-bar-f" style="width:61%;background:var(--edu)"></div></div>
+            </div>
+            <div class="iep-goal-item" onclick="selectIEPGoal(this, 'g3')">
+              <div class="igi-name">목표 3: 사회적 상호작용</div>
+              <div class="igi-pct">7건 관찰 | 달성률 55%</div>
+              <div class="igi-bar"><div class="igi-bar-f" style="width:55%;background:var(--g400)"></div></div>
+            </div>
+            <div class="iep-goal-item" onclick="selectIEPGoal(this, 'g4')">
+              <div class="igi-name">목표 4: 일상생활 기술</div>
+              <div class="igi-pct">10건 관찰 | 달성률 82%</div>
+              <div class="igi-bar"><div class="igi-bar-f" style="width:82%;background:var(--wel)"></div></div>
+            </div>
+            <div class="iep-goal-item" onclick="selectIEPGoal(this, 'g5')">
+              <div class="igi-name">목표 5: 미술 표현</div>
+              <div class="igi-pct">5건 관찰 | 달성률 40%</div>
+              <div class="igi-bar"><div class="igi-bar-f" style="width:40%;background:var(--g300)"></div></div>
+            </div>
+            <div class="iep-goal-item" onclick="selectIEPGoal(this, 'g6')">
+              <div class="igi-name">목표 6: 체육 참여</div>
+              <div class="igi-pct">8건 관찰 | 달성률 90%</div>
+              <div class="igi-bar"><div class="igi-bar-f" style="width:90%;background:var(--p600)"></div></div>
+            </div>
+          </div>
+
+          <!-- IEP Detail: observations linked to selected goal -->
+          <div class="iep-detail">
+            <div id="iep-detail-g1">
+              <div style="font-size:13px;font-weight:800;color:var(--edu-txt);margin-bottom:4px">목표 1: 수 개념 이해</div>
+              <div style="font-size:11px;color:var(--g500);margin-bottom:12px">20까지 수를 이해하고 셈하기 | 달성 기준: 80%</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <div>
+                  <div style="font-size:11px;color:var(--g500)">현재 달성률</div>
+                  <div style="font-size:22px;font-weight:800;color:var(--p600)">78%</div>
+                </div>
+                <div style="width:100px;height:100px;border-radius:50%;background:conic-gradient(var(--p600) 0% 78%, var(--g200) 78% 100%);display:flex;align-items:center;justify-content:center">
+                  <div style="width:70px;height:70px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:var(--p600)">78%</div>
+                </div>
+              </div>
+              <div style="font-size:12px;font-weight:700;color:var(--g700);margin-bottom:8px">연결된 관찰기록 (12건)</div>
+              <div class="obs-tags" style="margin-bottom:10px">
+                <div class="obs-tag on" onclick="filterObs(this,'all')">전체 12</div>
+                <div class="obs-tag" onclick="filterObs(this,'achieved')">달성 7</div>
+                <div class="obs-tag" onclick="filterObs(this,'partial')">부분 3</div>
+                <div class="obs-tag" onclick="filterObs(this,'none')">미달 2</div>
+              </div>
+              <div class="obs-card linked" onclick="toast('관찰기록 #12 열기')">
+                <div class="obs-card-hd"><span class="obs-card-title">관찰기록 #12 — 수학 수업</span><span style="font-size:10px;padding:2px 6px;background:var(--p100);color:var(--p700);border-radius:4px;font-weight:700">달성</span></div>
+                <div class="obs-card-body">10까지 덧셈 정확도 95%. 교구 없이 암산 시도. 전반적 참여도 매우 양호.</div>
+                <div style="font-size:10px;color:var(--g400);margin-top:4px">2025-03-08 | IEP 목표1 직접 근거</div>
+              </div>
+              <div class="obs-card linked" onclick="toast('관찰기록 #11 열기')">
+                <div class="obs-card-hd"><span class="obs-card-title">관찰기록 #11 — 수학 수업</span><span style="font-size:10px;padding:2px 6px;background:var(--p100);color:var(--p700);border-radius:4px;font-weight:700">달성</span></div>
+                <div class="obs-card-body">11~20 수 개념 도입. 구체물 조작으로 이해 확인.</div>
+                <div style="font-size:10px;color:var(--g400);margin-top:4px">2025-03-05 | IEP 목표1 직접 근거</div>
+              </div>
+              <div class="obs-card" onclick="toast('관찰기록 #10 열기')">
+                <div class="obs-card-hd"><span class="obs-card-title">관찰기록 #10 — 수학 수업</span><span style="font-size:10px;padding:2px 6px;background:var(--amber);color:var(--p900);border-radius:4px;font-weight:700">부분</span></div>
+                <div class="obs-card-body">10~15 범위 정확도 75%. 16~20 추가 연습 필요.</div>
+                <div style="font-size:10px;color:var(--g400);margin-top:4px">2025-02-26 | IEP 목표1 직접 근거</div>
+              </div>
+              <div style="margin-top:6px;text-align:center;font-size:11px;color:var(--edu-txt);font-weight:700;cursor:pointer" onclick="toast('나머지 9건 보기')">+ 9건 더 보기</div>
+
+              <div style="margin-top:14px;padding:10px;background:var(--p50);border-radius:7px;border:1px solid var(--p200)">
+                <div style="font-size:11px;font-weight:700;color:var(--p700);margin-bottom:4px">&#128201; IEP 점검과의 연결</div>
+                <div style="font-size:11px;color:var(--g600)">이 목표의 12건 관찰기록이 <strong>2025-03-10 IEP 1분기 점검</strong>에 반영되었습니다. 달성률 78%로 목표치(80%)에 근접합니다.</div>
+                <div style="margin-top:6px"><button class="btn-ghost" onclick="wNav('teacher','t-check')">IEP 점검 결과 보기 &#8594;</button></div>
+              </div>
+            </div>
+
+            <div id="iep-detail-g2" style="display:none">
+              <div style="font-size:13px;font-weight:800;color:var(--edu-txt);margin-bottom:4px">목표 2: 읽기 유창성</div>
+              <div style="font-size:11px;color:var(--g500);margin-bottom:12px">1분 내 40단어 읽기 | 달성 기준: 70%</div>
+              <div style="font-size:22px;font-weight:800;color:var(--edu)">61%</div>
+              <div style="height:6px;background:var(--g200);border-radius:3px;margin:8px 0"><div style="height:100%;width:61%;background:var(--edu);border-radius:3px"></div></div>
+              <div style="font-size:11px;color:var(--g500)">9건 관찰기록 연결됨</div>
+            </div>
+            <div id="iep-detail-g3" style="display:none"><div style="font-size:13px;font-weight:800;color:var(--edu-txt)">목표 3: 사회적 상호작용</div><div style="font-size:22px;font-weight:800;color:var(--g500);margin-top:8px">55%</div><div style="height:6px;background:var(--g200);border-radius:3px;margin:8px 0"><div style="height:100%;width:55%;background:var(--g400);border-radius:3px"></div></div></div>
+            <div id="iep-detail-g4" style="display:none"><div style="font-size:13px;font-weight:800;color:var(--edu-txt)">목표 4: 일상생활 기술</div><div style="font-size:22px;font-weight:800;color:var(--wel);margin-top:8px">82%</div><div style="height:6px;background:var(--g200);border-radius:3px;margin:8px 0"><div style="height:100%;width:82%;background:var(--wel);border-radius:3px"></div></div></div>
+            <div id="iep-detail-g5" style="display:none"><div style="font-size:13px;font-weight:800;color:var(--edu-txt)">목표 5: 미술 표현</div><div style="font-size:22px;font-weight:800;color:var(--g400);margin-top:8px">40%</div><div style="height:6px;background:var(--g200);border-radius:3px;margin:8px 0"><div style="height:100%;width:40%;background:var(--g300);border-radius:3px"></div></div></div>
+            <div id="iep-detail-g6" style="display:none"><div style="font-size:13px;font-weight:800;color:var(--edu-txt)">목표 6: 체육 참여</div><div style="font-size:22px;font-weight:800;color:var(--p600);margin-top:8px">90%</div><div style="height:6px;background:var(--g200);border-radius:3px;margin:8px 0"><div style="height:100%;width:90%;background:var(--p600);border-radius:3px"></div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OBSERVATION WRITE -->
+      <div id="t-t-obs" class="ws">
+        <div class="flex-bet"><div class="pt">수업 관찰기록 작성</div></div>
+        <div style="display:grid;grid-template-columns:1fr 240px;gap:14px">
+          <div>
+            <div class="infobox edu">&#128196; 어떤 IEP 목표를 다루었는지 태그하면, 점검 시 자동 집계됩니다.</div>
+            <div class="card">
+              <div class="wf"><label>수업 날짜</label><input type="date" value="2025-03-22"></div>
+              <div class="wf"><label>수업 과목/활동</label><input type="text" placeholder="예: 수학, 체육, 일상생활훈련" value="수학"></div>
+              <div class="wf"><label>관찰 내용</label><textarea placeholder="수업에서 관찰한 행동, 반응, 수행 수준을 기록하세요..."></textarea></div>
+              <div style="margin-bottom:8px;font-size:12px;font-weight:700;color:var(--g700)">연결할 IEP 목표 (복수 선택 가능)</div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <label style="display:flex;align-items:center;gap:7px;padding:8px 10px;background:var(--g50);border-radius:6px;cursor:pointer;border:1.5px solid var(--g200)">
+                  <input type="checkbox" checked style="accent-color:var(--p600)">
+                  <span style="font-size:12px;font-weight:600;color:var(--g700)">목표 1: 수 개념 이해</span>
+                  <span style="margin-left:auto;font-size:10px;color:var(--p600);font-weight:700">78%</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:7px;padding:8px 10px;background:var(--g50);border-radius:6px;cursor:pointer;border:1.5px solid var(--g200)">
+                  <input type="checkbox" style="accent-color:var(--p600)">
+                  <span style="font-size:12px;font-weight:600;color:var(--g700)">목표 3: 사회적 상호작용</span>
+                  <span style="margin-left:auto;font-size:10px;color:var(--g500);font-weight:700">55%</span>
+                </label>
+              </div>
+              <div class="wf" style="margin-top:10px"><label>이번 수업 달성 수준</label>
+                <select><option>달성</option><option>부분 달성</option><option>미달성</option></select>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:12px">
+                <button class="btn-p" onclick="toast('관찰기록 저장! IEP 목표와 연결됨')">저장 및 IEP 연결</button>
+                <button class="btn-s">임시저장</button>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="cont-ref">
+              <div class="cont-ref-hdr">&#128218; IEP 목표 현황</div>
+              <div class="cont-ref-item"><span class="cri-date">목표 1</span><span class="cri-text">수 개념 이해</span><span class="cri-link">78%</span></div>
+              <div class="cont-ref-item"><span class="cri-date">목표 2</span><span class="cri-text">읽기 유창성</span><span class="cri-link">61%</span></div>
+              <div class="cont-ref-item"><span class="cri-date">목표 3</span><span class="cri-text">사회적 상호작용</span><span class="cri-link">55%</span></div>
+            </div>
+            <div class="cont-ref" style="margin-top:8px">
+              <div class="cont-ref-hdr">&#128196; 최근 관찰기록 (#12)</div>
+              <div class="cont-ref-item"><span class="cri-date">2025-03-08</span><span class="cri-text">수학 — 목표1 달성</span><span class="cri-link">열기</span></div>
+              <div class="cont-ref-item"><span class="cri-date">2025-03-05</span><span class="cri-text">수학 — 목표1 달성</span><span class="cri-link">열기</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- IEP CHECK -->
+      <div id="t-t-check" class="ws">
+        <div class="flex-bet"><div class="pt">IEP 1분기 점검 결과</div><button class="btn-s" onclick="toast('PDF 내보내기')">&#128247; 내보내기</button></div>
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+            <span style="padding:3px 8px;background:var(--edu-bg);color:var(--edu-txt);border-radius:5px;font-size:11px;font-weight:700">EDU-001</span>
+            <span style="font-size:14px;font-weight:800">IEP 점검 — 2025년 1분기</span>
+          </div>
+          <div class="banner ok">&#9989; 전체 6개 목표 중 3개 달성, 2개 부분 달성, 1개 미달성 (전체 달성률 78%)</div>
+          <div style="margin-bottom:12px;font-size:12px;font-weight:700;color:var(--g700)">목표별 달성 현황 (총 52건 관찰기록 집계)</div>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <div style="padding:9px 12px;background:var(--g50);border-radius:7px;border-left:3px solid var(--p600)">
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="font-weight:600">목표 6: 체육 참여</span><span style="font-weight:700;color:var(--p600)">90% &#9989;</span></div>
+              <div style="height:5px;background:var(--g200);border-radius:3px"><div style="height:100%;width:90%;background:var(--p600);border-radius:3px"></div></div>
+              <div style="font-size:10px;color:var(--g400);margin-top:3px">8건 관찰기록</div>
+            </div>
+            <div style="padding:9px 12px;background:var(--g50);border-radius:7px;border-left:3px solid var(--wel)">
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="font-weight:600">목표 4: 일상생활</span><span style="font-weight:700;color:var(--wel)">82% &#9989;</span></div>
+              <div style="height:5px;background:var(--g200);border-radius:3px"><div style="height:100%;width:82%;background:var(--wel);border-radius:3px"></div></div>
+              <div style="font-size:10px;color:var(--g400);margin-top:3px">10건 관찰기록</div>
+            </div>
+            <div style="padding:9px 12px;background:var(--g50);border-radius:7px;border-left:3px solid var(--p400)">
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="font-weight:600">목표 1: 수 개념</span><span style="font-weight:700;color:var(--p600)">78% (목표 80%)</span></div>
+              <div style="height:5px;background:var(--g200);border-radius:3px"><div style="height:100%;width:78%;background:var(--p400);border-radius:3px"></div></div>
+              <div style="font-size:10px;color:var(--g400);margin-top:3px">12건 관찰기록</div>
+            </div>
+          </div>
+          <div style="margin-top:14px;padding:10px;background:var(--tra-bg);border-radius:7px;border:1px solid rgba(138,93,198,.2)">
+            <div style="font-size:11px;font-weight:700;color:var(--tra-txt);margin-bottom:4px">&#128279; 다음 단계 연결</div>
+            <div style="font-size:11px;color:var(--g600)">이 IEP 점검 결과는 <strong>전환교육 계획(TRA-001)</strong> 수립의 근거 자료로 사용됩니다.</div>
+            <div style="margin-top:6px"><button class="btn-ghost" style="border-color:var(--tra);color:var(--tra-txt)" onclick="toast('전환교육 계획 작성')">전환교육 계획 작성 &#8594;</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div id="t-t-settings" class="ws">
+        <div class="pt">설정</div>
+        <div class="set-sec"><h3>계정</h3><div class="sr"><div><div class="sr-lbl">이름</div></div><div class="sr-val">박선생 (특수교사)</div></div></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ===== SUPPORTER WEB (Journal Continuity) ===== -->
+<section id="supporter" class="sec web-sec">
+  <div class="wh">
+    <div class="w-logo">온<em>길</em></div>
+    <div class="w-psw">&#128100; 이선생 (활동지원사)</div>
+    <div class="w-right">
+      <div class="w-hbtn">&#128276;</div>
+      <div class="w-avatar" style="background:var(--dai)">지</div>
+    </div>
+  </div>
+  <div class="wb">
+    <div class="wsb">
+      <div class="sm on" data-nav="su-home" onclick="wNav('supporter','su-home')"><span class="sm-ico">&#127968;</span>홈</div>
+      <div class="sm" data-nav="su-journal" onclick="wNav('supporter','su-journal')"><span class="sm-ico">&#128196;</span>일지 작성</div>
+      <div class="sm" data-nav="su-history" onclick="wNav('supporter','su-history')"><span class="sm-ico">&#128337;</span>일지 연속성</div>
+      <div class="sm-div"></div>
+      <div class="sm" data-nav="su-settings" onclick="wNav('supporter','su-settings')"><span class="sm-ico">&#9881;</span>설정</div>
+    </div>
+    <div class="wmain">
+
+      <!-- HOME -->
+      <div id="su-su-home" class="ws on">
+        <div class="pt">안녕하세요, 이선생님</div>
+        <div class="banner amber">&#128196; 오늘 지원 일지 #90을 작성해주세요. 어제 특이사항이 있었습니다.</div>
+        <div class="hub-row">
+          <div class="hc"><div class="hc-ico">&#128100;</div><div class="hc-lbl">담당 당사자</div><div class="hc-val">2</div><div class="hc-sub">이번 주 지원 예정</div><div class="hc-btn" onclick="wNav('supporter','su-journal')">일지 작성</div></div>
+          <div class="hc"><div class="hc-ico">&#128196;</div><div class="hc-lbl">이번 달 일지</div><div class="hc-val">18</div><div class="hc-sub">3월 기준</div><div class="hc-btn" onclick="wNav('supporter','su-history')">이력 보기</div></div>
+          <div class="hc"><div class="hc-ico">&#128201;</div><div class="hc-lbl">월간 트렌드</div><div class="hc-val">&#128994;</div><div class="hc-sub">건강 상태 양호</div><div class="hc-btn" onclick="wNav('supporter','su-history')">트렌드 보기</div></div>
+        </div>
+      </div>
+
+      <!-- JOURNAL WRITE (연속성 패널) -->
+      <div id="su-su-journal" class="ws">
+        <div class="flex-bet">
+          <div class="pt">활동지원 일지 작성 — #90</div>
+          <div style="font-size:11px;color:var(--g400)">김민준</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 240px;gap:14px">
+          <div>
+            <div class="card">
+              <div class="wf"><label>지원 날짜</label><input type="date" value="2025-03-22"></div>
+              <div class="wf"><label>지원 시간</label><input type="text" value="09:00 ~ 14:00 (5시간)"></div>
+              <div class="wf"><label>건강 상태</label>
+                <div style="display:flex;gap:8px">
+                  <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="radio" name="health" style="accent-color:var(--p600)"> 양호</label>
+                  <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="radio" name="health" checked style="accent-color:var(--p600)"> 보통</label>
+                  <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="radio" name="health" style="accent-color:var(--p600)"> 주의</label>
+                </div>
+              </div>
+              <div class="wf"><label>활동 내용</label><textarea placeholder="오늘 진행한 활동과 지원 내용을 기술하세요..."></textarea></div>
+              <div class="wf"><label>특이사항</label><textarea placeholder="건강, 행동, 감정 변화 등 특이한 점이 있으면 기록하세요..." style="height:52px"></textarea></div>
+              <div style="display:flex;gap:8px;margin-top:12px">
+                <button class="btn-p" onclick="toast('일지 저장 완료!')">저장</button>
+                <button class="btn-s">임시저장</button>
+              </div>
+            </div>
+          </div>
+          <!-- Continuity sidebar -->
+          <div>
+            <div class="cont-ref">
+              <div class="cont-ref-hdr">&#9888; 이전 일지 특이사항 (#89)</div>
+              <div style="padding:8px;background:#fff;border-radius:6px;border-left:3px solid var(--amber);font-size:11px;color:var(--g600);margin-bottom:6px">오전 수영 참여. 컨디션 양호. 특이사항 없음.</div>
+            </div>
+            <div class="cont-ref" style="margin-top:8px">
+              <div class="cont-ref-hdr">&#128196; 최근 3건 요약</div>
+              <div class="cont-ref-item"><span class="cri-date">3/15 #88</span><span class="cri-text">건강 보통. 활동 참여 양호.</span></div>
+              <div class="cont-ref-item"><span class="cri-date">3/12 #87</span><span class="cri-text">건강 주의. 피로도 높음.</span></div>
+              <div class="cont-ref-item"><span class="cri-date">3/08 #86</span><span class="cri-text">건강 양호. 수영 첫 참여.</span></div>
+            </div>
+            <div style="margin-top:8px;padding:10px;background:var(--p50);border-radius:7px;border:1px solid var(--p200)">
+              <div style="font-size:10px;font-weight:700;color:var(--p600);margin-bottom:6px">&#128201; 이번 달 트렌드</div>
+              <div class="trend-row" style="height:50px">
+                <div class="tr-bar" style="height:90%;background:var(--p600)" data-tip="1주: 양호"></div>
+                <div class="tr-bar" style="height:60%;background:var(--amber)" data-tip="2주: 보통"></div>
+                <div class="tr-bar" style="height:40%;background:var(--med)" data-tip="3주: 주의"></div>
+                <div class="tr-bar" style="height:80%;background:var(--p600)" data-tip="4주: 양호"></div>
+              </div>
+              <div class="trend-labels">
+                <div class="tr-lbl">1주</div><div class="tr-lbl">2주</div><div class="tr-lbl">3주</div><div class="tr-lbl">4주</div>
+              </div>
+              <div style="font-size:10px;color:var(--g500);margin-top:5px">건강 상태 트렌드</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- JOURNAL HISTORY (월별 캘린더 + 연속성) -->
+      <div id="su-su-history" class="ws">
+        <div class="pt">일지 연속성 — 2025년 3월</div>
+        <div style="display:grid;grid-template-columns:240px 1fr;gap:14px">
+          <div>
+            <div class="card" style="padding:12px">
+              <div style="font-size:12px;font-weight:700;color:var(--g700);margin-bottom:8px;text-align:center">2025년 3월</div>
+              <div class="journal-month">
+                <div class="jm-hdr">월</div><div class="jm-hdr">화</div><div class="jm-hdr">수</div><div class="jm-hdr">목</div><div class="jm-hdr">금</div><div class="jm-hdr">토</div><div class="jm-hdr">일</div>
+                <div class="jm-day other"></div><div class="jm-day other"></div><div class="jm-day other"></div><div class="jm-day other"></div><div class="jm-day other"></div>
+                <div class="jm-day has" onclick="toast('#81 일지')">1</div><div class="jm-day empty">2</div>
+                <div class="jm-day has" onclick="toast('#82 일지')">3</div><div class="jm-day has" onclick="toast('#83 일지')">4</div><div class="jm-day empty">5</div><div class="jm-day has" onclick="toast('#84 일지')">6</div><div class="jm-day empty">7</div><div class="jm-day empty">8</div><div class="jm-day empty">9</div>
+                <div class="jm-day has" onclick="toast('#85 일지')">10</div><div class="jm-day empty">11</div><div class="jm-day has" onclick="toast('#86 일지')">12</div><div class="jm-day empty">13</div><div class="jm-day empty">14</div><div class="jm-day empty">15</div><div class="jm-day has" onclick="toast('#87 일지')">16</div>
+                <div class="jm-day empty">17</div><div class="jm-day empty">18</div><div class="jm-day has" onclick="toast('#88 일지')">19</div><div class="jm-day empty">20</div><div class="jm-day empty">21</div><div class="jm-day today">22</div><div class="jm-day empty">23</div>
+              </div>
+              <div style="font-size:10px;color:var(--g500);text-align:center">&#9679; 색상: 일지 작성일</div>
+            </div>
+            <div class="card" style="padding:12px;margin-top:0">
+              <div style="font-size:11px;font-weight:700;color:var(--g700);margin-bottom:8px">월간 통계</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px">
+                <div style="text-align:center;padding:6px;background:var(--p50);border-radius:5px"><div style="font-size:18px;font-weight:800;color:var(--p600)">18</div><div style="color:var(--g500)">총 일지</div></div>
+                <div style="text-align:center;padding:6px;background:var(--wel-bg);border-radius:5px"><div style="font-size:18px;font-weight:800;color:var(--wel)">78%</div><div style="color:var(--g500)">양호 비율</div></div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="card">
+              <h3>&#128201; 건강 상태 월간 트렌드</h3>
+              <div class="trend-row" style="height:70px;margin-bottom:8px">
+                <div class="tr-bar" style="height:90%;background:var(--p600)" data-tip="3/1: 양호"></div>
+                <div class="tr-bar" style="height:90%;background:var(--p600)" data-tip="3/3: 양호"></div>
+                <div class="tr-bar" style="height:90%;background:var(--p600)" data-tip="3/4: 양호"></div>
+                <div class="tr-bar" style="height:90%;background:var(--p600)" data-tip="3/6: 양호"></div>
+                <div class="tr-bar" style="height:90%;background:var(--p600)" data-tip="3/10: 양호"></div>
+                <div class="tr-bar" style="height:70%;background:var(--amber)" data-tip="3/12: 보통"></div>
+                <div class="tr-bar" style="height:40%;background:var(--med)" data-tip="3/16: 주의"></div>
+                <div class="tr-bar" style="height:70%;background:var(--amber)" data-tip="3/19: 보통"></div>
+                <div class="tr-bar" style="height:90%;background:var(--p600)" data-tip="3/22: 오늘"></div>
+              </div>
+              <div class="trend-labels">
+                <div class="tr-lbl">1</div><div class="tr-lbl">3</div><div class="tr-lbl">4</div><div class="tr-lbl">6</div><div class="tr-lbl">10</div><div class="tr-lbl">12</div><div class="tr-lbl">16</div><div class="tr-lbl">19</div><div class="tr-lbl">22</div>
+              </div>
+              <div style="display:flex;gap:10px;margin-top:10px;font-size:10px">
+                <span style="display:flex;align-items:center;gap:3px"><span style="width:10px;height:10px;border-radius:2px;background:var(--p600);display:inline-block"></span>양호</span>
+                <span style="display:flex;align-items:center;gap:3px"><span style="width:10px;height:10px;border-radius:2px;background:var(--amber);display:inline-block"></span>보통</span>
+                <span style="display:flex;align-items:center;gap:3px"><span style="width:10px;height:10px;border-radius:2px;background:var(--med);display:inline-block"></span>주의</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>&#128196; 최근 일지 목록 (연속성)</h3>
+              <div style="display:flex;flex-direction:column;gap:0">
+                <div style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--g100);cursor:pointer" onclick="toast('#89 상세')">
+                  <div style="width:36px;height:36px;border-radius:50%;background:var(--p600);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">89</div>
+                  <div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--g700)">2025-03-19 | 오전 수영</div><div style="font-size:11px;color:var(--g500);margin-top:2px">건강 양호. 컨디션 좋음. 특이사항 없음.</div></div>
+                  <span style="padding:2px 6px;background:var(--p100);color:var(--p700);border-radius:4px;font-size:9px;font-weight:700">양호</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--g100);cursor:pointer" onclick="toast('#88 상세')">
+                  <div style="width:36px;height:36px;border-radius:50%;background:var(--amber);color:var(--p900);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">88</div>
+                  <div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--g700)">2025-03-16 | 주간활동센터</div><div style="font-size:11px;color:var(--g500);margin-top:2px">건강 보통. 피로도 높아 조기 귀가.</div></div>
+                  <span style="padding:2px 6px;background:var(--amber);color:var(--p900);border-radius:4px;font-size:9px;font-weight:700">보통</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;cursor:pointer" onclick="toast('#87 상세')">
+                  <div style="width:36px;height:36px;border-radius:50%;background:var(--med);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">87</div>
+                  <div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--g700)">2025-03-12 | 외출 지원</div><div style="font-size:11px;color:var(--g500);margin-top:2px">건강 주의. 발열 37.8도. 조기 귀가 처리.</div></div>
+                  <span style="padding:2px 6px;background:var(--med-bg);color:var(--med-txt);border-radius:4px;font-size:9px;font-weight:700">주의</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="su-su-settings" class="ws">
+        <div class="pt">설정</div>
+        <div class="set-sec"><h3>계정</h3><div class="sr"><div><div class="sr-lbl">이름</div></div><div class="sr-val">이선생 (활동지원사)</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SOCIAL WORKER WEB ===== -->
+<section id="social" class="sec web-sec">
+  <div class="wh">
+    <div class="w-logo">온<em>길</em></div>
+    <div class="w-psw">&#128100; 김선생 (사회복지사)</div>
+    <div class="w-right">
+      <div class="w-hbtn">&#128276;</div>
+      <div class="w-avatar" style="background:var(--wel)">복</div>
+    </div>
+  </div>
+  <div class="wb">
+    <div class="wsb">
+      <div class="sm on" data-nav="sw-home" onclick="wNav('social','sw-home')"><span class="sm-ico">&#127968;</span>홈</div>
+      <div class="sm" data-nav="sw-isp" onclick="wNav('social','sw-isp')"><span class="sm-ico">&#128279;</span>ISP 기록 연계</div>
+      <div class="sm" data-nav="sw-rec" onclick="wNav('social','sw-rec')"><span class="sm-ico">&#128196;</span>서비스 기록</div>
+      <div class="sm-div"></div>
+      <div class="sm" data-nav="sw-settings" onclick="wNav('social','sw-settings')"><span class="sm-ico">&#9881;</span>설정</div>
+    </div>
+    <div class="wmain">
+      <div id="sw-sw-home" class="ws on">
+        <div class="pt">안녕하세요, 김선생님</div>
+        <div class="hub-row">
+          <div class="hc"><div class="hc-ico">&#128221;</div><div class="hc-lbl">ISP 계획</div><div class="hc-val">4</div><div class="hc-sub">진행 중</div><div class="hc-btn" onclick="wNav('social','sw-isp')">ISP 보기</div></div>
+          <div class="hc"><div class="hc-ico">&#128196;</div><div class="hc-lbl">서비스 기록</div><div class="hc-val">12</div><div class="hc-sub">이번 달</div><div class="hc-btn" onclick="wNav('social','sw-rec')">기록 보기</div></div>
+          <div class="hc"><div class="hc-ico">&#128337;</div><div class="hc-lbl">중간점검</div><div class="hc-val">6월</div><div class="hc-sub">예정</div><div class="hc-btn" onclick="toast('중간점검 준비')">준비하기</div></div>
+        </div>
+      </div>
+      <div id="sw-sw-isp" class="ws">
+        <div class="flex-bet"><div class="pt">ISP 기록 연계</div><button class="btn-p" onclick="toast('ISP 수립')">+ ISP 수립</button></div>
+        <div class="infobox" style="background:var(--wel-bg);border-left:3px solid var(--wel);color:var(--wel-txt)">&#128279; ISP 목표와 서비스 이용기록이 연결됩니다. 중간점검 시 자동 집계됩니다.</div>
+        <div class="chain-flow" style="margin-top:12px">
+          <div class="chain-node wel" onclick="toast('ISP 열기')">
+            <div class="cn-type">WEL-001 | 기준</div>
+            <div class="cn-title">ISP 2025 상반기</div>
+            <div class="cn-date">2025-01-02 ~ 2025-06-30</div>
+            <span class="cn-badge" style="background:var(--wel-bg);color:var(--wel-txt)">목표 3개</span>
+          </div>
+          <div class="chain-connector linked"><span class="arr">&#8594;</span></div>
+          <div style="flex-shrink:0;width:180px;display:flex;flex-direction:column;gap:6px">
+            <div style="font-size:9px;font-weight:700;color:var(--g400);text-transform:uppercase;text-align:center">서비스 기록 (12건)</div>
+            <div class="chain-node" onclick="toast('서비스기록 열기')" style="border-color:var(--wel);background:var(--wel-bg)">
+              <div class="cn-type">WEL-003 | 최근</div>
+              <div class="cn-title">주간활동 2025-03</div>
+              <div class="cn-date">2025-03-01 ~ 3/31</div>
+            </div>
+            <div class="chain-node" onclick="toast('서비스기록 열기')">
+              <div class="cn-type">WEL-003</div>
+              <div class="cn-title">주간활동 2025-02</div>
+              <div class="cn-date">2025-02-01 ~ 2/28</div>
+            </div>
+          </div>
+          <div class="chain-connector linked"><span class="arr">&#8594;</span></div>
+          <div class="chain-node" onclick="toast('중간점검 열기')" style="border-style:dashed;border-color:var(--tra)">
+            <div class="cn-type">WEL-001 | 점검</div>
+            <div class="cn-title">ISP 중간점검</div>
+            <div class="cn-date">예정: 2025-06-30</div>
+            <div style="font-size:10px;color:var(--tra-txt);margin-top:6px">서비스기록 자동 집계</div>
+          </div>
+          <div class="chain-connector"><span class="arr">&#8594;</span></div>
+          <div class="chain-node" onclick="toast('전환계획 열기')" style="border-style:dashed;border-color:var(--tra);background:var(--tra-bg)">
+            <div class="cn-type">TRA-001 | 후속</div>
+            <div class="cn-title">전환지원 계획</div>
+            <div class="cn-date">ISP 성과 기반</div>
+          </div>
+        </div>
+      </div>
+      <div id="sw-sw-rec" class="ws">
+        <div class="flex-bet"><div class="pt">서비스 이용기록</div><button class="btn-p" onclick="toast('신규 기록')">+ 기록 추가</button></div>
+        <div class="card"><div style="font-size:12px;color:var(--g600);line-height:1.7">서비스 이용기록은 ISP 목표와 자동으로 연결됩니다. 각 기록에서 어떤 ISP 목표를 지원하는지 선택하면, 중간점검 시 자동 집계됩니다.</div>
+        <button class="btn-ghost" style="margin-top:10px" onclick="wNav('social','sw-isp')">ISP 연계 현황 보기 &#8594;</button></div>
+      </div>
+      <div id="sw-sw-settings" class="ws">
+        <div class="pt">설정</div>
+        <div class="set-sec"><h3>계정</h3><div class="sr"><div><div class="sr-lbl">이름</div></div><div class="sr-val">김선생 (사회복지사)</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PERSON WEB ===== -->
+<section id="person-web" class="sec web-sec">
+  <div class="wh" style="background:var(--p700)">
+    <div class="w-logo">온<em>길</em></div>
+    <div class="w-psw">&#128100; 김민준 (당사자)</div>
+    <div class="w-right"><div class="w-avatar">나</div></div>
+  </div>
+  <div class="wb">
+    <div class="wsb">
+      <div class="sm on" data-nav="pw-home" onclick="wNav('person-web','pw-home')"><span class="sm-ico">&#127968;</span>나의 기록</div>
+      <div class="sm" data-nav="pw-timeline" onclick="wNav('person-web','pw-timeline')"><span class="sm-ico">&#128337;</span>나의 이야기</div>
+      <div class="sm" data-nav="pw-self" onclick="wNav('person-web','pw-self')"><span class="sm-ico">&#127774;</span>자기표현</div>
+    </div>
+    <div class="wmain">
+      <div id="pw-pw-home" class="ws on">
+        <div class="pt">나의 기록</div>
+        <div class="infobox p">&#128150; 선생님들이 나를 위해 작성한 기록들을 볼 수 있어요.</div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px">
+          <div style="width:140px;height:120px;background:var(--med-bg);border:2px solid var(--med);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-size:28px" onclick="toast('치료 기록 보기')">&#128138;<div style="font-size:12px;font-weight:700;color:var(--med-txt);margin-top:8px">치료 기록</div><div style="font-size:10px;color:var(--g400)">44건</div></div>
+          <div style="width:140px;height:120px;background:var(--edu-bg);border:2px solid var(--edu);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-size:28px" onclick="toast('학교 기록 보기')">&#128218;<div style="font-size:12px;font-weight:700;color:var(--edu-txt);margin-top:8px">학교 기록</div><div style="font-size:10px;color:var(--g400)">12건</div></div>
+          <div style="width:140px;height:120px;background:var(--dai-bg);border:2px solid var(--dai);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-size:28px" onclick="toast('일상 기록 보기')">&#128196;<div style="font-size:12px;font-weight:700;color:var(--dai-txt);margin-top:8px">일상 기록</div><div style="font-size:10px;color:var(--g400)">89건</div></div>
+        </div>
+      </div>
+      <div id="pw-pw-timeline" class="ws">
+        <div class="pt">나의 이야기</div>
+        <div class="tl-row"><div class="tl-dot-w"><div class="tl-dot" style="color:var(--med);background:var(--med)"></div><div class="tl-vline"></div></div>
+          <div class="tl-c"><div class="tl-dt">2025-03-15</div><div class="tl-title">&#128138; 치료 선생님이 기록을 썼어요</div><div class="tl-desc">언어치료 44번째. 열심히 했어요!</div></div></div>
+        <div class="tl-row"><div class="tl-dot-w"><div class="tl-dot" style="color:var(--edu);background:var(--edu)"></div><div class="tl-vline"></div></div>
+          <div class="tl-c"><div class="tl-dt">2025-03-10</div><div class="tl-title">&#128218; 학교 선생님이 기록을 썼어요</div><div class="tl-desc">수학을 정말 잘 했대요!</div></div></div>
+        <div class="tl-row"><div class="tl-dot-w"><div class="tl-dot" style="color:var(--dai);background:var(--dai)"></div></div>
+          <div class="tl-c"><div class="tl-dt">2025-03-08</div><div class="tl-title">&#128196; 활동지원 선생님이 기록을 썼어요</div><div class="tl-desc">오늘 수영장에 갔어요.</div></div></div>
+      </div>
+      <div id="pw-pw-self" class="ws">
+        <div class="pt">자기표현 기록</div>
+        <div class="infobox p">&#127774; 오늘의 기분과 하고 싶은 말을 아이콘으로 표현해보세요!</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+          <div style="text-align:center;cursor:pointer" onclick="toast('기분: 행복!')"><div style="font-size:48px">&#128512;</div><div style="font-size:12px;font-weight:600;color:var(--g600)">행복해요</div></div>
+          <div style="text-align:center;cursor:pointer" onclick="toast('기분: 보통!')"><div style="font-size:48px">&#128528;</div><div style="font-size:12px;font-weight:600;color:var(--g600)">보통이에요</div></div>
+          <div style="text-align:center;cursor:pointer" onclick="toast('기분: 힘들어!')"><div style="font-size:48px">&#128543;</div><div style="font-size:12px;font-weight:600;color:var(--g600)">힘들어요</div></div>
+        </div>
+        <button class="btn-p" style="padding:10px 24px;font-size:14px" onclick="toast('자기표현 저장!')">저장하기</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== MOBILE: GUARDIAN ===== -->
+<section id="m-guardian" class="sec mob-sec">
+  <div style="text-align:center;margin-bottom:16px"><div style="font-size:18px;font-weight:800;color:var(--g800)">&#128241; 보호자 모바일</div><div style="font-size:12px;color:var(--g400)">통합 타임라인 + 기록 연계</div></div>
+  <div class="phones-row">
+    <div class="ph">
+      <div class="ph-screen">
+        <div class="ph-status"><span>9:41</span><span>&#128267; &#128267;&#128267;</span></div>
+        <div class="m-navb" style="background:var(--p800);border:none"><div class="m-navb-t" style="color:#fff;font-size:15px;font-weight:800">온<span style="color:var(--amber)">길</span></div><div style="font-size:18px;color:rgba(255,255,255,.7)">&#128276;</div></div>
+        <div class="ph-content" style="padding:12px">
+          <div style="font-size:13px;font-weight:700;color:var(--g700);margin-bottom:10px">생애주기 타임라인</div>
+          <!-- expandable timeline entries in mobile -->
+          <div class="mc" style="border-left:3px solid var(--amber);background:var(--amber)" onclick="toast('마일스톤 펼치기')">
+            <div style="font-size:10px;color:var(--p900);font-weight:600;margin-bottom:3px">2024-09 — 마일스톤</div>
+            <div class="mc-t" style="color:var(--p900)">&#127775; 성인전환기 전환 계획</div>
+            <div style="font-size:10px;color:var(--p800);margin-top:4px">&#128279; 연관 기록 5건 연결됨</div>
+          </div>
+          <div class="mc" style="border-left:3px solid var(--med)" onclick="toast('회기 #44 펼치기')">
+            <div style="font-size:10px;color:var(--g400);margin-bottom:3px">2025-03-15 — 의료</div>
+            <div class="mc-t">&#128138; 회기일지 #44</div>
+            <div class="mc-s">치료계획서 목표2 72%</div>
+            <div style="font-size:10px;color:var(--p600);font-weight:600;margin-top:4px">&#128196; 치료계획서 연결 보기 &#8250;</div>
+          </div>
+          <div class="mc" style="border-left:3px solid var(--edu)" onclick="toast('IEP 점검 펼치기')">
+            <div style="font-size:10px;color:var(--g400);margin-bottom:3px">2025-03-10 — 교육</div>
+            <div class="mc-t">&#128218; IEP 1분기 점검</div>
+            <div class="mc-s">관찰기록 12건 집계 | 78% 달성</div>
+            <div style="font-size:10px;color:var(--edu-txt);font-weight:600;margin-top:4px">&#128279; 관찰기록 12건 보기 &#8250;</div>
+          </div>
+          <div class="mc">
+            <div style="font-size:10px;color:var(--g400);margin-bottom:3px">2025-03-08 — 일상</div>
+            <div class="mc-t">&#128196; 활동지원 일지 #89</div>
+            <div class="mc-s">오전 수영 참여. 컨디션 양호.</div>
+          </div>
+        </div>
+        <div class="ph-tabs">
+          <div class="pht on"><div class="pht-ico">&#128337;</div><div class="pht-lbl" style="color:var(--p600)">타임라인</div></div>
+          <div class="pht"><div class="pht-ico">&#128279;</div><div class="pht-lbl">연계도</div></div>
+          <div class="pht"><div class="pht-ico">&#128274;</div><div class="pht-lbl">권한</div></div>
+          <div class="pht"><div class="pht-ico">&#128276;</div><div class="pht-lbl">알림</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ph">
+      <div class="ph-screen">
+        <div class="ph-status"><span>9:41</span><span>&#128267; &#128267;&#128267;</span></div>
+        <div class="m-navb"><div class="m-back">&#8592;</div><div class="m-navb-t">회기일지 #44 상세</div></div>
+        <div class="ph-content" style="padding:12px">
+          <div style="padding:10px;background:var(--med-bg);border-radius:8px;border:1.5px solid var(--med);margin-bottom:10px">
+            <div style="font-size:10px;font-weight:700;color:var(--med-txt);margin-bottom:2px">MED-006 | 2025-03-15</div>
+            <div style="font-size:13px;font-weight:800;color:var(--g800)">회기일지 #44</div>
+            <div style="font-size:11px;color:var(--g600);margin-top:5px;line-height:1.5">이중모음 훈련. 집중력 양호.</div>
+          </div>
+          <!-- mini chain in mobile detail -->
+          <div style="font-size:10px;font-weight:700;color:var(--g500);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">기록 체인 위치</div>
+          <div style="display:flex;align-items:center;gap:5px;overflow-x:auto;padding:6px 0 10px;margin-bottom:10px">
+            <div style="flex-shrink:0;padding:5px 8px;background:var(--med-bg);border:1.5px solid var(--med);border-radius:6px;font-size:9px;font-weight:700;color:var(--med-txt)">치료계획서</div>
+            <div style="color:var(--g300);font-size:10px">&#8594;</div>
+            <div style="flex-shrink:0;padding:5px 8px;background:var(--p100);border:2px solid var(--p600);border-radius:6px;font-size:9px;font-weight:800;color:var(--p700)">&#9658; #44 (현재)</div>
+            <div style="color:var(--g300);font-size:10px">&#8594;</div>
+            <div style="flex-shrink:0;padding:5px 8px;background:var(--g100);border:1.5px dashed var(--g300);border-radius:6px;font-size:9px;color:var(--g400)">평가 (예정)</div>
+          </div>
+          <div style="font-size:11px;font-weight:700;color:var(--g700);margin-bottom:6px">치료목표 진척도</div>
+          <div style="display:flex;flex-direction:column;gap:5px">
+            <div><div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px"><span>목표1 어휘이해</span><span style="font-weight:700;color:var(--p600)">85%</span></div><div style="height:4px;background:var(--g200);border-radius:2px"><div style="height:100%;width:85%;background:var(--p600);border-radius:2px"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px"><span>목표2 이중모음</span><span style="font-weight:700;color:var(--amber-dk)">72%</span></div><div style="height:4px;background:var(--g200);border-radius:2px"><div style="height:100%;width:72%;background:var(--amber);border-radius:2px"></div></div></div>
+          </div>
+        </div>
+        <div class="ph-tabs">
+          <div class="pht on"><div class="pht-ico">&#128337;</div><div class="pht-lbl" style="color:var(--p600)">타임라인</div></div>
+          <div class="pht"><div class="pht-ico">&#128279;</div><div class="pht-lbl">연계도</div></div>
+          <div class="pht"><div class="pht-ico">&#128274;</div><div class="pht-lbl">권한</div></div>
+          <div class="pht"><div class="pht-ico">&#128276;</div><div class="pht-lbl">알림</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== MOBILE: PERSON ===== -->
+<section id="m-person" class="sec mob-sec">
+  <div style="text-align:center;margin-bottom:16px"><div style="font-size:18px;font-weight:800;color:var(--g800)">&#128241; 당사자 모바일</div><div style="font-size:12px;color:var(--g400)">나의 이야기 + 자기표현</div></div>
+  <div class="phones-row">
+    <div class="ph">
+      <div class="ph-screen">
+        <div class="ph-status"><span>9:41</span><span>&#128267; &#128267;&#128267;</span></div>
+        <div style="background:var(--p700);padding:14px 12px 10px;flex-shrink:0">
+          <div style="font-size:18px;font-weight:900;color:#fff">온<span style="color:var(--amber)">길</span></div>
+          <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:2px">안녕하세요, 민준님!</div>
+        </div>
+        <div class="ph-content" style="padding:12px">
+          <div style="font-size:13px;font-weight:700;color:var(--g700);margin-bottom:8px">나의 이야기</div>
+          <div class="mc" style="background:var(--med-bg);border:2px solid var(--med)">
+            <div style="font-size:24px;margin-bottom:5px">&#128138;</div>
+            <div class="mc-t" style="font-size:14px">치료 선생님 기록</div>
+            <div class="mc-s" style="font-size:12px">3월 15일 | 언어치료 44번째</div>
+          </div>
+          <div class="mc" style="background:var(--edu-bg);border:2px solid var(--edu)">
+            <div style="font-size:24px;margin-bottom:5px">&#128218;</div>
+            <div class="mc-t" style="font-size:14px">학교 선생님 기록</div>
+            <div class="mc-s" style="font-size:12px">3월 10일 | 수학을 잘 했대요!</div>
+          </div>
+          <div style="font-size:13px;font-weight:700;color:var(--g700);margin:10px 0 8px">오늘 기분은?</div>
+          <div style="display:flex;gap:10px;justify-content:center">
+            <div style="text-align:center;cursor:pointer" onclick="toast('행복해요!')"><div style="font-size:40px">&#128512;</div><div style="font-size:11px;color:var(--g500)">행복</div></div>
+            <div style="text-align:center;cursor:pointer" onclick="toast('보통이에요')"><div style="font-size:40px">&#128528;</div><div style="font-size:11px;color:var(--g500)">보통</div></div>
+            <div style="text-align:center;cursor:pointer" onclick="toast('힘들어요')"><div style="font-size:40px">&#128543;</div><div style="font-size:11px;color:var(--g500)">힘들어</div></div>
+          </div>
+        </div>
+        <div class="ph-tabs">
+          <div class="pht on"><div class="pht-ico">&#127968;</div><div class="pht-lbl" style="color:var(--p600)">홈</div></div>
+          <div class="pht"><div class="pht-ico">&#128337;</div><div class="pht-lbl">이야기</div></div>
+          <div class="pht"><div class="pht-ico">&#127774;</div><div class="pht-lbl">자기표현</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== MOBILE: SUPPORTER ===== -->
+<section id="m-supporter" class="sec mob-sec">
+  <div style="text-align:center;margin-bottom:16px"><div style="font-size:18px;font-weight:800;color:var(--g800)">&#128241; 활동지원사 모바일</div><div style="font-size:12px;color:var(--g400)">일지 작성 + 연속성</div></div>
+  <div class="phones-row">
+    <div class="ph">
+      <div class="ph-screen">
+        <div class="ph-status"><span>9:41</span><span>&#128267; &#128267;&#128267;</span></div>
+        <div class="m-navb" style="background:var(--dai);border:none"><div class="m-navb-t" style="color:#fff">일지 작성 #90</div></div>
+        <div class="ph-content" style="padding:12px">
+          <div style="padding:10px;background:var(--tra-bg);border-radius:8px;border:1px solid rgba(138,93,198,.2);margin-bottom:10px">
+            <div style="font-size:10px;font-weight:700;color:var(--tra-txt);margin-bottom:4px">&#9888; 이전 일지 (#89) 참조</div>
+            <div style="font-size:11px;color:var(--g600)">특이사항 없음. 컨디션 양호.</div>
+          </div>
+          <div style="margin-bottom:8px">
+            <div style="font-size:11px;font-weight:600;color:var(--g600);margin-bottom:4px">건강 상태</div>
+            <div style="display:flex;gap:6px">
+              <button style="padding:7px 12px;background:var(--p600);color:#fff;border-radius:6px;font-size:12px;font-weight:700;border:none">양호</button>
+              <button style="padding:7px 12px;background:var(--g100);color:var(--g500);border-radius:6px;font-size:12px;border:1px solid var(--g200)">보통</button>
+              <button style="padding:7px 12px;background:var(--g100);color:var(--g500);border-radius:6px;font-size:12px;border:1px solid var(--g200)">주의</button>
+            </div>
+          </div>
+          <div style="margin-bottom:8px">
+            <div style="font-size:11px;font-weight:600;color:var(--g600);margin-bottom:4px">오늘 활동 내용</div>
+            <textarea style="width:100%;height:80px;border:1.5px solid var(--g200);border-radius:7px;padding:8px;font-size:11px;resize:none" placeholder="오전 수영, 오후 산책 등..."></textarea>
+          </div>
+          <div style="margin-bottom:8px">
+            <div style="font-size:11px;font-weight:600;color:var(--g600);margin-bottom:4px">특이사항</div>
+            <textarea style="width:100%;height:52px;border:1.5px solid var(--g200);border-radius:7px;padding:8px;font-size:11px;resize:none" placeholder="특이사항이 있으면..."></textarea>
+          </div>
+          <button style="width:100%;padding:11px;background:var(--p600);color:#fff;border-radius:8px;font-size:13px;font-weight:700;border:none" onclick="toast('일지 저장!')">저장하기</button>
+        </div>
+        <div class="ph-tabs">
+          <div class="pht"><div class="pht-ico">&#127968;</div><div class="pht-lbl">홈</div></div>
+          <div class="pht on"><div class="pht-ico">&#128196;</div><div class="pht-lbl" style="color:var(--p600)">일지</div></div>
+          <div class="pht"><div class="pht-ico">&#128201;</div><div class="pht-lbl">트렌드</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== MOBILE: TEACHER ===== -->
+<section id="m-teacher" class="sec mob-sec">
+  <div style="text-align:center;margin-bottom:16px"><div style="font-size:18px;font-weight:800;color:var(--g800)">&#128241; 특수교사 모바일</div><div style="font-size:12px;color:var(--g400)">관찰기록 + IEP 연결</div></div>
+  <div class="phones-row">
+    <div class="ph">
+      <div class="ph-screen">
+        <div class="ph-status"><span>9:41</span><span>&#128267; &#128267;&#128267;</span></div>
+        <div class="m-navb" style="background:var(--edu);border:none"><div class="m-navb-t" style="color:#fff">관찰기록 작성 #13</div></div>
+        <div class="ph-content" style="padding:12px">
+          <div style="padding:8px 10px;background:var(--edu-bg);border-radius:7px;border:1px solid rgba(67,119,192,.2);margin-bottom:10px">
+            <div style="font-size:10px;font-weight:700;color:var(--edu-txt);margin-bottom:4px">&#128279; IEP 연결 (목표 선택)</div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <label style="display:flex;align-items:center;gap:6px;font-size:11px"><input type="checkbox" checked style="accent-color:var(--p600)"><span>목표1: 수 개념 (78%)</span></label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:11px"><input type="checkbox" style="accent-color:var(--p600)"><span>목표3: 사회적 상호작용 (55%)</span></label>
+            </div>
+          </div>
+          <div style="margin-bottom:8px">
+            <div style="font-size:11px;font-weight:600;color:var(--g600);margin-bottom:4px">수업 과목</div>
+            <input style="width:100%;border:1.5px solid var(--g200);border-radius:7px;padding:8px 10px;font-size:12px" value="수학">
+          </div>
+          <div style="margin-bottom:8px">
+            <div style="font-size:11px;font-weight:600;color:var(--g600);margin-bottom:4px">관찰 내용</div>
+            <textarea style="width:100%;height:80px;border:1.5px solid var(--g200);border-radius:7px;padding:8px;font-size:11px;resize:none" placeholder="수업에서 관찰한 내용..."></textarea>
+          </div>
+          <div style="margin-bottom:10px">
+            <div style="font-size:11px;font-weight:600;color:var(--g600);margin-bottom:4px">달성 수준</div>
+            <div style="display:flex;gap:6px">
+              <button style="flex:1;padding:7px;background:var(--p600);color:#fff;border-radius:6px;font-size:11px;font-weight:700;border:none">달성</button>
+              <button style="flex:1;padding:7px;background:var(--g100);color:var(--g500);border-radius:6px;font-size:11px;border:1px solid var(--g200)">부분</button>
+              <button style="flex:1;padding:7px;background:var(--g100);color:var(--g500);border-radius:6px;font-size:11px;border:1px solid var(--g200)">미달</button>
+            </div>
+          </div>
+          <button style="width:100%;padding:11px;background:var(--edu);color:#fff;border-radius:8px;font-size:13px;font-weight:700;border:none" onclick="toast('관찰기록 저장! IEP에 연결됨')">IEP와 함께 저장</button>
+        </div>
+        <div class="ph-tabs">
+          <div class="pht"><div class="pht-ico">&#127968;</div><div class="pht-lbl">홈</div></div>
+          <div class="pht on"><div class="pht-ico">&#128196;</div><div class="pht-lbl" style="color:var(--edu)">관찰기록</div></div>
+          <div class="pht"><div class="pht-ico">&#128218;</div><div class="pht-lbl">IEP</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ===== Section Navigation =====
+function showSec(id) {
+  document.querySelectorAll('.sec').forEach(function(s) { s.classList.remove('on'); });
+  var el = document.getElementById(id);
+  if (el) el.classList.add('on');
+  document.querySelectorAll('.pnb').forEach(function(b) { b.classList.remove('on'); });
+  var btn = document.querySelector('[data-s="' + id + '"]');
+  if (btn) btn.classList.add('on');
+  window.scrollTo(0,0);
+}
+
+// ===== Web Role Sub-navigation =====
+var wPfx = {
+  'guardian': 'g', 'person-web': 'pw', 'supporter': 'su',
+  'teacher': 't', 'social': 'sw', 'therapist': 'th'
+};
+function wNav(role, key) {
+  var pfx = wPfx[role] || role;
+  var sec = document.getElementById(role);
+  if (!sec) return;
+  sec.querySelectorAll('.ws').forEach(function(w) { w.classList.remove('on'); });
+  var target = document.getElementById(pfx + '-' + key);
+  if (target) target.classList.add('on');
+  sec.querySelectorAll('.sm').forEach(function(m) { m.classList.remove('on'); });
+  var activeMenu = sec.querySelector('[data-nav="' + key + '"]');
+  if (activeMenu) activeMenu.classList.add('on');
+}
+
+// ===== Landing role tabs =====
+function switchRole(el, targetId) {
+  document.querySelectorAll('.rt').forEach(function(t) {
+    t.classList.remove('on');
+    t.style.background = '#fff';
+    t.style.color = 'var(--g600)';
+    t.style.borderColor = 'var(--g200)';
+  });
+  el.classList.add('on');
+  el.style.background = 'var(--p600)';
+  el.style.color = '#fff';
+  el.style.borderColor = 'var(--p600)';
+  document.querySelectorAll('.rp').forEach(function(p) { p.style.display = 'none'; });
+  var tp = document.getElementById(targetId);
+  if (tp) tp.style.display = 'block';
+}
+
+// ===== Timeline inline expand =====
+function toggleExpand(el) {
+  var expand = el.querySelector('.tl-expand');
+  if (!expand) return;
+  if (expand.classList.contains('on')) {
+    expand.classList.remove('on');
+    el.classList.remove('open');
+  } else {
+    expand.classList.add('on');
+    el.classList.add('open');
+  }
+}
+
+// ===== IEP Goal selector =====
+function selectIEPGoal(el, goalId) {
+  var goalList = el.closest('.iep-goal-list');
+  if (goalList) {
+    goalList.querySelectorAll('.iep-goal-item').forEach(function(i) { i.classList.remove('on'); });
+  }
+  el.classList.add('on');
+  // Hide all detail panels
+  ['g1','g2','g3','g4','g5','g6'].forEach(function(id) {
+    var d = document.getElementById('iep-detail-' + id);
+    if (d) d.style.display = 'none';
+  });
+  var target = document.getElementById('iep-detail-' + goalId);
+  if (target) target.style.display = 'block';
+}
+
+// ===== Session detail toggle =====
+function showSessionDetail() {
+  var d = document.getElementById('th-session-detail');
+  if (d) d.style.display = d.style.display === 'none' ? 'block' : 'none';
+}
+
+// ===== Observation filter =====
+function filterObs(el, type) {
+  el.closest('.obs-tags').querySelectorAll('.obs-tag').forEach(function(t) { t.classList.remove('on'); });
+  el.classList.add('on');
+  toast(type === 'all' ? '전체 12건 표시' : type + ' 필터 적용');
+}
+
+// ===== Auth role selector =====
+function selRole(el) {
+  if (el.closest('.role-sel')) {
+    el.closest('.role-sel').querySelectorAll('.rs-item').forEach(function(i) { i.classList.remove('on'); });
+    el.classList.add('on');
+  }
+}
+
+// ===== Toast =====
+var toastTimer;
+function toast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+
+// ===== Init =====
+document.addEventListener('DOMContentLoaded', function() {
+  showSec('landing');
+});
+</script>
+</body>
+</html>

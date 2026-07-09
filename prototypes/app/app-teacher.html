@@ -1,0 +1,475 @@
+<meta charset="utf-8">
+<title>온길 — 특수교사 앱 프로토타입</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<style>
+:root{
+  --primary-50:#F0FDF9;--primary-100:#E1F5EE;--primary-400:#5DCAA5;
+  --primary-600:#1D9E75;--primary-700:#0F6E56;--primary-800:#065F46;--primary-900:#064E3B;
+  --accent-amber:#FAC775;--accent-coral:#F5C4B3;--accent-stone:#444441;--accent-pebble:#B4B2A9;
+  --med-bg:#FEF0F0;--med-text:#BF3030;--med-accent:#E04545;
+  --edu-bg:#EEF4FD;--edu-text:#2E5FA8;--edu-accent:#4377C0;
+  --wel-bg:#EDFAF3;--wel-text:#276B4C;--wel-accent:#3EA673;
+  --dai-bg:#FFF5E6;--dai-text:#B56F10;--dai-accent:#E8991E;
+  --tra-bg:#F4EFFB;--tra-text:#6A43A8;--tra-accent:#8A5DC6;
+  --leg-bg:#EEF2F7;--leg-text:#3E5E7A;--leg-accent:#5A7FA0;
+  --br-sm:6px;--br-md:10px;--br-lg:14px;--br-xl:20px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif;background:#e7eaee;color:#1c1c1c;font-size:14px;line-height:1.5;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:20px 10px}
+button{font-family:inherit;cursor:pointer}
+
+.proto-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;justify-content:center;max-width:420px}
+.proto-tabs button{border:0;background:#fff;color:#555;padding:7px 13px;border-radius:20px;font-size:12px;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.proto-tabs button.on{background:var(--edu-accent);color:#fff}
+.proto-badge{background:var(--accent-amber);color:var(--primary-900);font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;margin-bottom:14px}
+
+/* Phone frame */
+.phone{width:390px;height:820px;background:#fff;border-radius:34px;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden;position:relative;display:flex;flex-direction:column}
+.statusbar{height:24px;background:var(--primary-800);display:flex;align-items:center;justify-content:space-between;padding:0 18px;color:#fff;font-size:11px;font-weight:600;flex-shrink:0}
+.navbar{height:48px;background:var(--primary-800);display:flex;align-items:center;padding:0 12px;color:#fff;gap:8px;flex-shrink:0}
+.navbar .back{background:transparent;border:0;color:#fff;font-size:20px;width:32px}
+.navbar .title{font-size:15px;font-weight:700;flex:1}
+.navbar .action{background:rgba(255,255,255,.16);border:0;color:#fff;font-size:12px;font-weight:600;padding:5px 11px;border-radius:16px}
+.navbar .brand{display:flex;align-items:center;gap:6px}
+.wm-on{color:var(--primary-400);font-weight:800}
+.wm-gil{color:#fff;font-weight:800}
+
+.content{flex:1;overflow-y:auto;background:#f5f7f9;padding:16px 14px 20px}
+.ia-label{display:inline-block;background:#e9edf1;color:#5a6472;font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;margin-bottom:10px}
+.screen{display:none}
+.screen.active{display:block;animation:fade .2s}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+
+.tabbar{height:56px;background:#fff;border-top:1px solid #e6e8eb;display:flex;flex-shrink:0}
+.tabbar button{flex:1;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#9aa4b0;font-size:10px;font-weight:600}
+.tabbar button .ti{font-size:19px}
+.tabbar button.on{color:var(--edu-accent)}
+
+.card{background:#fff;border:1px solid #e9ecef;border-radius:var(--br-md);padding:14px;margin-bottom:12px}
+h2.sec{font-size:15px;font-weight:800;margin:6px 0 12px}
+.btn{border:0;border-radius:var(--br-md);padding:12px;font-weight:700;font-size:14px;width:100%}
+.btn-edu{background:var(--edu-accent);color:#fff}
+.btn-primary{background:var(--primary-600);color:#fff}
+.btn-ghost{background:#fff;border:1px solid #d5dae0;color:#3a4450}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:var(--br-sm)}
+.chip-edu{background:var(--edu-bg);color:var(--edu-text)}
+.chip-med{background:var(--med-bg);color:var(--med-text)}
+.chip-tra{background:var(--tra-bg);color:var(--tra-text)}
+
+/* T-01 */
+.greet{font-size:19px;font-weight:800;margin-bottom:2px}
+.greet-sub{font-size:12.5px;color:#7a8390;margin-bottom:16px}
+.mini-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.mini{background:#fff;border:1px solid #e9ecef;border-radius:var(--br-md);padding:12px 8px;text-align:center}
+.mini b{display:block;font-size:20px;color:var(--edu-text)}
+.mini span{font-size:10.5px;color:#8a94a0}
+.stu-card{background:#fff;border:1px solid #e9ecef;border-radius:var(--br-md);border-left:3px solid var(--edu-accent);padding:14px;margin-bottom:10px}
+.stu-top{display:flex;align-items:center;gap:11px}
+.stu-ava{width:42px;height:42px;border-radius:11px;background:var(--edu-bg);color:var(--edu-text);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px}
+.stu-name{font-size:15px;font-weight:700}
+.stu-meta{font-size:11.5px;color:#8a94a0}
+.stu-bar{margin-top:10px;display:flex;align-items:center;gap:8px}
+.stu-prog{flex:1;height:6px;background:#e4e8ec;border-radius:4px;overflow:hidden}
+.stu-prog i{display:block;height:100%;background:var(--edu-accent)}
+.stu-pct{font-size:11px;font-weight:700;color:var(--edu-text)}
+.stu-alert{margin-top:9px;font-size:11px;background:var(--dai-bg);color:var(--dai-text);padding:5px 9px;border-radius:6px}
+
+/* Step */
+.stepbar{display:flex;align-items:center;margin-bottom:16px}
+.step{display:flex;align-items:center;flex:1}
+.step:last-child{flex:0}
+.step .dot{width:24px;height:24px;border-radius:50%;background:#e4e8ec;color:#8a94a0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0}
+.step .line{flex:1;height:2px;background:#e4e8ec;margin:0 4px}
+.step.done .dot{background:var(--edu-accent);color:#fff}
+.step.done .line{background:var(--edu-accent)}
+.step.cur .dot{background:var(--edu-text);color:#fff;box-shadow:0 0 0 3px var(--edu-bg)}
+.step-name{text-align:center;font-size:13px;font-weight:700;color:var(--edu-text);margin-bottom:14px}
+.wizstep{display:none}
+.wizstep.on{display:block}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11.5px;font-weight:600;color:#4a5560;margin-bottom:5px}
+.field input,.field select,.field textarea,.level-block textarea{width:100%;border:1px solid #d5dae0;border-radius:var(--br-md);padding:10px;font-size:13px;font-family:inherit}
+.field input:focus,.field textarea:focus,.field select:focus,.level-block textarea:focus{outline:2px solid var(--primary-600);border-color:transparent}
+.field textarea,.level-block textarea{min-height:64px;resize:vertical}
+.level-block{border:1px solid #e9ecef;border-radius:var(--br-md);padding:11px;margin-bottom:10px}
+.level-block .lh-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.level-block .lh{font-weight:700;color:var(--edu-text);font-size:13px;display:block}
+.level-block .lh-count{font-size:10.5px;color:#9aa3ad;font-weight:500}
+.cond-note{background:var(--tra-bg);color:var(--tra-text);font-size:11.5px;padding:9px 11px;border-radius:8px;margin-bottom:12px}
+.toggle-row{display:flex;align-items:center;gap:9px;background:#eef1f4;padding:10px 11px;border-radius:var(--br-md);margin-bottom:14px}
+.toggle-row input{width:18px;height:18px}
+.toggle-row label{font-size:12px;font-weight:600}
+.confirm-item{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #eef0f2;font-size:12.5px}
+.confirm-item span:first-child{color:#7a8390}
+.confirm-item span:last-child{font-weight:600;text-align:right;max-width:60%}
+.wiz-foot{display:flex;gap:8px;margin-top:8px}
+.wiz-foot .btn{flex:1}
+
+/* T-14 review (mobile: list -> accordion) */
+.rev-goal{background:#fff;border:1px solid #e9ecef;border-radius:var(--br-md);margin-bottom:10px;overflow:hidden}
+.rev-head{padding:13px 14px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.rev-head .r-area{font-size:11px;font-weight:700;color:var(--edu-text);background:var(--edu-bg);padding:2px 8px;border-radius:5px}
+.rev-head .r-title{flex:1;font-size:13.5px;font-weight:600}
+.rev-head .r-pct{font-size:12px;font-weight:700;color:var(--edu-text)}
+.rev-body{display:none;padding:0 14px 14px;border-top:1px solid #eef0f2}
+.rev-goal.open .rev-body{display:block}
+.rev-goal.open .rev-head .caret{transform:rotate(90deg)}
+.caret{transition:.15s;color:#b0b8c0}
+.ref-mini{background:#f7f9fb;border-radius:8px;padding:10px;margin-top:10px;font-size:11.5px}
+.ref-mini .rm-h{font-weight:700;color:#5a6472;margin-bottom:5px}
+.obs-link{display:flex;gap:8px;padding:8px;background:#fff;border:1px solid #e9ecef;border-radius:7px;margin-top:6px;font-size:11.5px}
+.obs-link .od{font-size:10px;color:#8a94a0}
+
+/* T-16 tags */
+.tg-cat{font-size:11.5px;font-weight:700;color:#4a5560;margin:12px 0 7px}
+.tagchips{display:flex;flex-wrap:wrap;gap:7px}
+.tagchip{border:1.5px solid #d5dae0;background:#fff;border-radius:18px;padding:6px 13px;font-size:12px;font-weight:600;color:#5a6472}
+.tagchip.on{background:var(--edu-accent);border-color:var(--edu-accent);color:#fff}
+.sel-count{font-size:11px;color:var(--edu-text);font-weight:600}
+
+/* T-20 timeline */
+.seg{display:flex;background:#eef0f2;border-radius:8px;padding:3px;margin-bottom:14px}
+.seg button{flex:1;border:0;background:transparent;padding:7px;border-radius:6px;font-size:12px;font-weight:600;color:#7a8390}
+.seg button.on{background:#fff;color:var(--edu-text);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.pinned{border:2px solid var(--med-accent);border-radius:var(--br-md);padding:11px;background:var(--med-bg);margin-bottom:14px;font-size:12px}
+.pinned b{color:var(--med-text)}
+.tl-item{position:relative;padding-left:20px;margin-bottom:12px}
+.tl-item:before{content:"";position:absolute;left:4px;top:0;bottom:-12px;width:2px;background:#e4e8ec}
+.tl-item:last-child:before{display:none}
+.tl-item:after{content:"";position:absolute;left:0;top:14px;width:10px;height:10px;border-radius:50%;background:var(--edu-accent);border:2px solid #fff;box-shadow:0 0 0 2px var(--edu-accent)}
+.tl-card{background:#fff;border:1px solid #e9ecef;border-radius:var(--br-md);padding:12px}
+.tl-card.milestone{border:2px solid var(--accent-amber);background:#fffdf7}
+.tl-date{font-size:10.5px;color:#8a94a0;margin-bottom:4px}
+.tl-card h4{font-size:13.5px;font-weight:700;margin-bottom:4px}
+.tl-card p{font-size:11.5px;color:#6b7683}
+.tl-badges{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}
+.draft-badge{background:#eceff2;color:#7a8390;font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px}
+.mile-badge{background:var(--accent-amber);color:var(--primary-900);font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px}
+
+/* settings */
+.set-item{display:flex;align-items:center;gap:12px;padding:14px;background:#fff;border:1px solid #e9ecef;border-radius:var(--br-md);margin-bottom:8px;font-size:14px;font-weight:600}
+.set-item .si{font-size:18px}
+.set-item .chev{margin-left:auto;color:#c0c8d0}
+</style>
+
+<div class="proto-badge">◈ 프로토타입 · 특수교사 앱 (390px) · 디자인 검토용</div>
+<div class="proto-tabs">
+  <button class="on" data-go="t01" onclick="goScreen('t01',this)">T-01 홈</button>
+  <button data-go="t13" onclick="goScreen('t13',this)">T-13 IEP 작성</button>
+  <button data-go="t14" onclick="goScreen('t14',this)">T-14 IEP 점검</button>
+  <button data-go="t16" onclick="goScreen('t16',this)">T-16 관찰기록</button>
+  <button data-go="t20" onclick="goScreen('t20',this)">T-20 타임라인</button>
+</div>
+
+<div class="phone">
+  <div class="statusbar"><span>9:41</span><span>온길 · 특수교사</span><span>📶 100%</span></div>
+  <div class="navbar" id="nav">
+    <div class="brand" id="navBrand">
+      <svg viewBox="0 0 90 100" width="24" height="27" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="온길 로고">
+        <path d="M20 25 H55" stroke="#4377C0" stroke-width="9" stroke-linecap="round"/>
+        <path d="M55 25 Q68 25 68 38 V50" stroke="#3EA673" stroke-width="9" stroke-linecap="round"/>
+        <path d="M20 25 V70" stroke="#E04545" stroke-width="9" stroke-linecap="round"/>
+        <path d="M20 70 Q35 82 70 78" stroke="#0F6E56" stroke-width="9" stroke-linecap="round"/>
+        <circle cx="42" cy="50" r="14" fill="#FAC775"/>
+        <path d="M56 50 H66" stroke="#E8991E" stroke-width="9" stroke-linecap="round"/>
+      </svg>
+      <span style="font-size:17px;letter-spacing:-.02em"><span class="wm-on">온</span><span class="wm-gil">길</span></span>
+    </div>
+    <button class="back" id="navBack" style="display:none" onclick="goScreen('t01')">←</button>
+    <span class="title" id="navTitle" style="display:none"></span>
+    <button class="action" id="navAction" style="display:none">저장</button>
+    <span style="flex:1"></span>
+    <button class="action" id="navBell">🔔</button>
+  </div>
+
+  <div class="content">
+
+    <!-- T-01 -->
+    <section class="screen active" data-screen="t01">
+      <span class="ia-label">[T-01] 홈</span>
+      <div class="greet">안녕하세요, 김서연 선생님</div>
+      <div class="greet-sub">2026학년도 · 담당 6명 · 오늘 할 일 3건</div>
+      <div class="mini-row">
+        <div class="mini"><b>6</b><span>담당 학생</span></div>
+        <div class="mini"><b>2</b><span>IEP 갱신</span></div>
+        <div class="mini"><b>8</b><span>주간 관찰</span></div>
+      </div>
+      <h2 class="sec">담당 학생</h2>
+      <div class="stu-card" onclick="goScreen('t14')">
+        <div class="stu-top"><div class="stu-ava">이준</div><div><div class="stu-name">이준호</div><div class="stu-meta">중2 · 자폐성장애 · 만 14세</div></div></div>
+        <div class="stu-bar"><div class="stu-prog"><i style="width:65%"></i></div><span class="stu-pct">65%</span></div>
+        <div class="stu-alert" style="background:var(--tra-bg);color:var(--tra-text)">🔀 전환계획 수립 대상 (만 14세+)</div>
+      </div>
+      <div class="stu-card" onclick="goScreen('t14')">
+        <div class="stu-top"><div class="stu-ava">박서</div><div><div class="stu-name">박서윤</div><div class="stu-meta">초5 · 지적장애 · 만 11세</div></div></div>
+        <div class="stu-bar"><div class="stu-prog"><i style="width:78%"></i></div><span class="stu-pct">78%</span></div>
+        <div class="stu-alert" style="background:var(--med-bg);color:var(--med-text)">📅 IEP 갱신 D-12</div>
+      </div>
+      <div class="stu-card" onclick="goScreen('t14')">
+        <div class="stu-top"><div class="stu-ava">최민</div><div><div class="stu-name">최민재</div><div class="stu-meta">초3 · 지적장애 · 만 9세</div></div></div>
+        <div class="stu-bar"><div class="stu-prog"><i style="width:52%"></i></div><span class="stu-pct">52%</span></div>
+      </div>
+      <div class="stu-card" onclick="goScreen('t14')">
+        <div class="stu-top"><div class="stu-ava">정하</div><div><div class="stu-name">정하윤</div><div class="stu-meta">중1 · 자폐성장애 · 만 13세</div></div></div>
+        <div class="stu-bar"><div class="stu-prog"><i style="width:71%"></i></div><span class="stu-pct">71%</span></div>
+      </div>
+      <button class="btn btn-edu" style="margin-top:6px" onclick="goScreen('t13')">＋ 새 IEP 작성</button>
+    </section>
+
+    <!-- T-13 -->
+    <section class="screen" data-screen="t13">
+      <span class="ia-label">[T-13] IEP 작성 6단계</span>
+      <div class="stepbar" id="iepSteps">
+        <div class="step cur"><div class="dot">1</div><div class="line"></div></div>
+        <div class="step"><div class="dot">2</div><div class="line"></div></div>
+        <div class="step"><div class="dot">3</div><div class="line"></div></div>
+        <div class="step"><div class="dot">4</div><div class="line"></div></div>
+        <div class="step"><div class="dot">5</div><div class="line"></div></div>
+        <div class="step"><div class="dot">6</div></div>
+      </div>
+      <div class="step-name" id="iepName">1/6 · 기본 정보</div>
+
+      <div class="wizstep on" data-step="1">
+        <div class="field"><label>학교명</label><input value="온길특수학교"></div>
+        <div class="field"><label>학년도</label><input value="2026"></div>
+        <div class="field"><label>학생명</label><input value="이준호"></div>
+        <div class="field"><label>IEP 회의 날짜</label><input type="date" value="2026-03-05"></div>
+        <div class="field"><label>참석자</label><input value="특수교사, 학부모, 담임, 치료지원"></div>
+      </div>
+      <div class="wizstep" data-step="2">
+        <div class="level-block"><div class="lh-row"><label class="lh" for="a-lvl-korean">국어</label><span class="lh-count" id="a-lvl-korean-count">0자</span></div><textarea id="a-lvl-korean" oninput="lvlCount(this)" placeholder="현재 수행 수준을 기술하세요">받침 없는 낱말 읽기 가능. 받침 낱말 어려움.</textarea></div>
+        <div class="level-block"><div class="lh-row"><label class="lh" for="a-lvl-math">수학</label><span class="lh-count" id="a-lvl-math-count">0자</span></div><textarea id="a-lvl-math" oninput="lvlCount(this)" placeholder="현재 수행 수준을 기술하세요">20 이내 수 세기. 한 자리 덧셈 이해.</textarea></div>
+        <div class="level-block"><div class="lh-row"><label class="lh" for="a-lvl-social">사회성</label><span class="lh-count" id="a-lvl-social-count">0자</span></div><textarea id="a-lvl-social" oninput="lvlCount(this)" placeholder="현재 수행 수준을 기술하세요">또래 짧은 상호작용. 규칙 시각지원 필요.</textarea></div>
+        <div class="level-block"><div class="lh-row"><label class="lh" for="a-lvl-comm">의사소통</label><span class="lh-count" id="a-lvl-comm-count">0자</span></div><textarea id="a-lvl-comm" oninput="lvlCount(this)" placeholder="현재 수행 수준을 기술하세요">단어 표현. 감정은 AAC 병행.</textarea></div>
+        <div class="level-block"><div class="lh-row"><label class="lh" for="a-lvl-self">자조기술</label><span class="lh-count" id="a-lvl-self-count">0자</span></div><textarea id="a-lvl-self" oninput="lvlCount(this)" placeholder="현재 수행 수준을 기술하세요">식사·용변 독립. 단추 부분 지원.</textarea></div>
+      </div>
+      <div class="wizstep" data-step="3">
+        <div class="field"><label>연간 목표 ①</label><input value="받침 있는 낱말을 읽고 쓸 수 있다"></div>
+        <div class="field"><label>단기목표 (1분기)</label><input value="받침 ㄴ,ㄹ 낱말 10개 읽기"></div>
+        <div class="field"><label>단기목표 (2분기)</label><input value="받침 ㄱ,ㅁ,ㅂ 낱말 15개 읽기"></div>
+        <div class="field"><label>평가 방법</label><select><option>관찰 평가</option><option>포트폴리오</option><option>수행 평가</option></select></div>
+        <button class="btn btn-ghost">＋ 연간 목표 추가</button>
+      </div>
+      <div class="wizstep" data-step="4">
+        <div class="field"><label>치료 지원</label><input value="언어치료 주2, 작업치료 주1"></div>
+        <div class="field"><label>보조 인력</label><input value="특수교육 실무사"></div>
+        <div class="field"><label>보조공학</label><input value="AAC 태블릿"></div>
+        <div class="field"><label>기타 지원</label><textarea>통학버스, 방과후 돌봄</textarea></div>
+      </div>
+      <div class="wizstep" data-step="5">
+        <div class="cond-note">🔀 전환계획은 <b>만 14세 이상</b>만 표시됩니다. 아래 토글로 시뮬레이션.</div>
+        <div class="toggle-row"><input type="checkbox" id="ageToggle" checked onchange="toggleTransition()"><label for="ageToggle">이 학생은 만 14세 이상 (전환계획 표시)</label></div>
+        <div id="transitionYes">
+          <div class="field"><label>전환 목표 영역</label><select><option>진로·직업</option><option>자립생활</option><option>지역사회 참여</option></select></div>
+          <div class="field"><label>희망 진로</label><input value="바리스타 직업훈련 희망"></div>
+          <div class="field"><label>전환 활동 계획</label><textarea>카페 실습, 대중교통 이용 훈련</textarea></div>
+          <div class="field"><label>연계 기관</label><input value="발달장애인 훈련센터"></div>
+        </div>
+        <div id="transitionNo" style="display:none">
+          <div class="card" style="text-align:center;color:#8a94a0;padding:30px">만 14세 미만 학생은<br>전환계획 단계를 건너뜁니다.</div>
+        </div>
+      </div>
+      <div class="wizstep" data-step="6">
+        <div class="confirm-item"><span>학생 / 학년도</span><span>이준호 / 2026</span></div>
+        <div class="confirm-item"><span>회의 날짜</span><span>2026-03-05</span></div>
+        <div class="confirm-item"><span>현재 수준</span><span>5개 영역</span></div>
+        <div class="confirm-item"><span>연간 목표</span><span>2개 · 단기 4개</span></div>
+        <div class="confirm-item"><span>지원 서비스</span><span>언어·작업치료, AAC</span></div>
+        <div class="confirm-item"><span>전환 계획</span><span>포함 (만 14세+)</span></div>
+        <div style="background:var(--primary-50);border-radius:10px;padding:13px;margin-top:14px;color:var(--primary-700);font-size:12px">✅ 필수 항목 완료. 저장 시 타임라인에 기록됩니다.</div>
+      </div>
+
+      <div class="wiz-foot">
+        <button class="btn btn-ghost" id="iepPrev" onclick="iepNav(-1)" style="display:none">← 이전</button>
+        <button class="btn btn-edu" id="iepNext" onclick="iepNav(1)">다음 →</button>
+      </div>
+    </section>
+
+    <!-- T-14 -->
+    <section class="screen" data-screen="t14">
+      <span class="ia-label">[T-14] IEP 점검</span>
+      <h2 class="sec">이준호 · 영역별 목표</h2>
+      <p style="font-size:12px;color:#7a8390;margin-bottom:12px">항목을 눌러 인라인 편집 · 관찰기록 연결</p>
+
+      <div class="rev-goal open">
+        <div class="rev-head" onclick="accord(this)"><span class="r-area">국어</span><span class="r-title">받침 낱말 읽기·쓰기</span><span class="r-pct">65%</span><span class="caret">▶</span></div>
+        <div class="rev-body">
+          <div class="field" style="margin-top:12px"><label>연간 목표 (편집)</label><input value="받침 있는 낱말을 읽고 쓸 수 있다"></div>
+          <div class="field"><label>진행 상태</label><select><option>진행 중</option><option>달성</option><option>미달성</option></select></div>
+          <div class="field"><label>평가 메모</label><textarea>받침 ㄴ,ㄹ 90% 정확. ㄹ 혼동 간헐적.</textarea></div>
+          <div class="ref-mini">
+            <div class="rm-h">📑 이전 버전 비교</div>
+            2025: 받침 없는 낱말 → 2026: 받침 있는 낱말 (난이도 상향)
+          </div>
+          <div class="ref-mini">
+            <div class="rm-h">🔗 연결된 관찰기록</div>
+            <div class="obs-link"><span>👀</span><div>받침 낱말 카드 읽기 활동<div class="od">2026-06-18</div></div></div>
+            <div class="obs-link"><span>👀</span><div>받침 ㄹ 혼동 관찰<div class="od">2026-06-10</div></div></div>
+          </div>
+          <button class="btn btn-edu" style="margin-top:10px">변경 저장</button>
+        </div>
+      </div>
+      <div class="rev-goal">
+        <div class="rev-head" onclick="accord(this)"><span class="r-area">수학</span><span class="r-title">한 자리 덧셈·뺄셈</span><span class="r-pct">48%</span><span class="caret">▶</span></div>
+        <div class="rev-body"><div class="field" style="margin-top:12px"><label>연간 목표</label><input value="한 자리 수 덧셈·뺄셈을 할 수 있다"></div><div class="field"><label>평가 메모</label><textarea>구체물 덧셈 도달. 뺄셈 형성 중.</textarea></div><button class="btn btn-edu">변경 저장</button></div>
+      </div>
+      <div class="rev-goal">
+        <div class="rev-head" onclick="accord(this)"><span class="r-area">사회성</span><span class="r-title">또래 상호작용 규칙</span><span class="r-pct">72%</span><span class="caret">▶</span></div>
+        <div class="rev-body"><div class="field" style="margin-top:12px"><label>연간 목표</label><input value="상호작용에서 규칙을 지킬 수 있다"></div><button class="btn btn-edu">변경 저장</button></div>
+      </div>
+      <div class="rev-goal">
+        <div class="rev-head" onclick="accord(this)"><span class="r-area">자조</span><span class="r-title">단추 채우기 독립</span><span class="r-pct">80%</span><span class="caret">▶</span></div>
+        <div class="rev-body"><div class="field" style="margin-top:12px"><label>연간 목표</label><input value="단추를 스스로 채울 수 있다"></div><button class="btn btn-edu">변경 저장</button></div>
+      </div>
+    </section>
+
+    <!-- T-16 -->
+    <section class="screen" data-screen="t16">
+      <span class="ia-label">[T-16] 관찰기록 작성</span>
+      <div class="field"><label>대상 학생</label><select><option>이준호</option><option>박서윤</option></select></div>
+      <div class="field"><label>관찰 일시</label><input type="datetime-local" value="2026-07-08T10:30"></div>
+      <div class="field"><label>관찰 상황</label><input value="3교시 국어 모둠 활동"></div>
+
+      <label style="font-size:11.5px;font-weight:600;color:#4a5560">관찰 태그 <span class="sel-count" id="tagCount">3개 선택됨</span></label>
+      <div class="tg-cat">행동</div>
+      <div class="tagchips">
+        <button class="tagchip on" onclick="tog(this)">착석 유지</button>
+        <button class="tagchip" onclick="tog(this)">자리 이탈</button>
+        <button class="tagchip on" onclick="tog(this)">과제 집중</button>
+        <button class="tagchip" onclick="tog(this)">상동행동</button>
+      </div>
+      <div class="tg-cat">언어</div>
+      <div class="tagchips">
+        <button class="tagchip" onclick="tog(this)">발화 시도</button>
+        <button class="tagchip" onclick="tog(this)">AAC 사용</button>
+        <button class="tagchip" onclick="tog(this)">지시 이해</button>
+      </div>
+      <div class="tg-cat">사회성</div>
+      <div class="tagchips">
+        <button class="tagchip on" onclick="tog(this)">또래 상호작용</button>
+        <button class="tagchip" onclick="tog(this)">차례 지키기</button>
+        <button class="tagchip" onclick="tog(this)">협동 활동</button>
+      </div>
+      <div class="tg-cat">학습</div>
+      <div class="tagchips">
+        <button class="tagchip" onclick="tog(this)">목표 도달</button>
+        <button class="tagchip" onclick="tog(this)">부분 도움</button>
+        <button class="tagchip" onclick="tog(this)">읽기</button>
+        <button class="tagchip" onclick="tog(this)">쓰기</button>
+      </div>
+
+      <div class="field" style="margin-top:14px"><label>관찰 내용</label><textarea style="min-height:90px">모둠 활동에서 받침 낱말 카드를 짝과 함께 읽음. 착석·집중 양호. 차례 기다리기 시각 안내 필요.</textarea></div>
+      <div class="field"><label>연결할 IEP 목표</label><select><option>국어 · 받침 낱말 읽기·쓰기</option><option>사회성 · 또래 상호작용</option></select></div>
+      <button class="btn btn-edu" style="margin-top:6px">관찰기록 저장</button>
+    </section>
+
+    <!-- T-20 -->
+    <section class="screen" data-screen="t20">
+      <span class="ia-label">[T-20] 타임라인 (교육)</span>
+      <h2 class="sec">교육 타임라인 · 이준호</h2>
+      <div class="seg">
+        <button class="on" id="segStream" onclick="tlView('stream')">스트림</button>
+        <button id="segLane" onclick="tlView('lane')">레인</button>
+      </div>
+      <div class="pinned"><span>📌</span> <b>응급 대응 정보</b> — 발작 이력. 발작 시 담임·보건교사 즉시 연락.</div>
+
+      <div id="tlStream">
+        <div class="tl-item"><div class="tl-card milestone"><div class="tl-date">2026-07-08</div><h4>1학기 IEP 중간 점검 완료</h4><p>4개 영역 평균 66% 달성.</p><div class="tl-badges"><span class="chip chip-edu">교육</span><span class="mile-badge">◆ 이정표</span></div></div></div>
+        <div class="tl-item"><div class="tl-card"><div class="tl-date">2026-07-08</div><h4>관찰 · 국어 모둠 활동</h4><p>착석·집중 양호. 차례 지키기 지원 필요.</p><div class="tl-badges"><span class="chip chip-edu">교육</span><span class="draft-badge">임시저장</span></div></div></div>
+        <div class="tl-item"><div class="tl-card"><div class="tl-date">2026-06-18</div><h4>관찰 · 받침 낱말 읽기</h4><p>받침 ㄴ,ㄹ 90% 정확도.</p><div class="tl-badges"><span class="chip chip-edu">교육</span></div></div></div>
+        <div class="tl-item"><div class="tl-card"><div class="tl-date">2026-05-20</div><h4>언어치료 연계 회의</h4><p>AAC 확대·발화 유도 전략 공유.</p><div class="tl-badges"><span class="chip chip-med">의료</span><span class="chip chip-edu">교육</span></div></div></div>
+        <div class="tl-item"><div class="tl-card"><div class="tl-date">2026-03-05</div><h4>2026학년도 IEP 수립</h4><p>연간 2개·단기 4개. 전환계획 포함.</p><div class="tl-badges"><span class="chip chip-edu">교육</span><span class="chip chip-tra">전환</span></div></div></div>
+      </div>
+      <div id="tlLane" style="display:none">
+        <div style="margin-bottom:12px"><div style="text-align:center;font-size:12px;font-weight:700;background:var(--edu-bg);color:var(--edu-text);padding:6px;border-radius:6px;margin-bottom:8px">교육 EDU</div>
+          <div class="tl-card" style="margin-bottom:8px"><div class="tl-date">07-08</div>IEP 중간 점검 ◆</div>
+          <div class="tl-card" style="margin-bottom:8px"><div class="tl-date">06-18</div>받침 낱말 관찰</div>
+          <div class="tl-card"><div class="tl-date">03-05</div>2026 IEP 수립</div>
+        </div>
+        <div style="margin-bottom:12px"><div style="text-align:center;font-size:12px;font-weight:700;background:var(--med-bg);color:var(--med-text);padding:6px;border-radius:6px;margin-bottom:8px">의료 MED</div>
+          <div class="tl-card"><div class="tl-date">05-20</div>언어치료 연계 회의</div>
+        </div>
+        <div><div style="text-align:center;font-size:12px;font-weight:700;background:var(--tra-bg);color:var(--tra-text);padding:6px;border-radius:6px;margin-bottom:8px">전환 TRA</div>
+          <div class="tl-card"><div class="tl-date">03-05</div>전환계획 수립</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="screen" data-screen="set">
+      <span class="ia-label">[설정]</span>
+      <h2 class="sec">설정</h2>
+      <div class="set-item"><span class="si">👤</span> 프로필 · 김서연<span class="chev">›</span></div>
+      <div class="set-item"><span class="si">🔔</span> 알림 설정<span class="chev">›</span></div>
+      <div class="set-item"><span class="si">🏫</span> 담당 학급 관리<span class="chev">›</span></div>
+      <div class="set-item"><span class="si">🔒</span> 접근 권한 · 개인정보<span class="chev">›</span></div>
+      <div class="set-item"><span class="si">♿</span> 접근성<span class="chev">›</span></div>
+      <div class="set-item"><span class="si">↪</span> 로그아웃<span class="chev">›</span></div>
+    </section>
+
+  </div>
+
+  <div class="tabbar">
+    <button class="on" data-t="t01" onclick="goScreen('t01')"><span class="ti">🏠</span>홈</button>
+    <button data-t="t13" onclick="goScreen('t13')"><span class="ti">📝</span>IEP</button>
+    <button data-t="t16" onclick="goScreen('t16')"><span class="ti">👀</span>관찰</button>
+    <button data-t="t20" onclick="goScreen('t20')"><span class="ti">📊</span>타임라인</button>
+    <button data-t="set" onclick="goScreen('set')"><span class="ti">⚙️</span>설정</button>
+  </div>
+</div>
+
+<script>
+const TITLES={t01:'홈',t13:'IEP 작성',t14:'IEP 점검',t16:'관찰기록',t20:'타임라인',set:'설정'};
+const TAB_MAP={t01:'t01',t13:'t13',t14:'t13',t16:'t16',t20:'t20',set:'set'};
+function goScreen(id,el){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelector('[data-screen="'+id+'"]').classList.add('active');
+  // proto tabs
+  document.querySelectorAll('.proto-tabs button').forEach(b=>b.classList.toggle('on',b.dataset.go===id));
+  // bottom tab
+  document.querySelectorAll('.tabbar button').forEach(b=>b.classList.toggle('on',b.dataset.t===TAB_MAP[id]));
+  // navbar: home shows brand, others show back+title
+  const isHome=id==='t01';
+  document.getElementById('navBrand').style.display=isHome?'flex':'none';
+  document.getElementById('navBack').style.display=isHome?'none':'block';
+  document.getElementById('navTitle').style.display=isHome?'none':'block';
+  document.getElementById('navTitle').textContent=TITLES[id];
+  document.getElementById('navAction').style.display=(id==='t13'||id==='t16')?'block':'none';
+  document.getElementById('navBell').style.display=isHome?'block':'none';
+  document.querySelector('.content').scrollTop=0;
+}
+
+// IEP wizard
+let iepStep=1;const IEP_MAX=6;
+const NAMES=['','1/6 · 기본 정보','2/6 · 현재 학습 수준','3/6 · 목표 · 평가','4/6 · 지원 서비스','5/6 · 전환 계획','6/6 · 확인 및 저장'];
+function iepNav(d){
+  iepStep=Math.min(IEP_MAX,Math.max(1,iepStep+d));
+  document.querySelectorAll('.wizstep').forEach(s=>s.classList.toggle('on',+s.dataset.step===iepStep));
+  document.getElementById('iepName').textContent=NAMES[iepStep];
+  const steps=document.querySelectorAll('#iepSteps .step');
+  steps.forEach((s,i)=>{s.classList.remove('cur','done');if(i+1<iepStep)s.classList.add('done');if(i+1===iepStep)s.classList.add('cur');});
+  document.getElementById('iepPrev').style.display=iepStep===1?'none':'block';
+  const nx=document.getElementById('iepNext');
+  nx.textContent=iepStep===IEP_MAX?'IEP 저장 ✓':'다음 →';
+  nx.className=iepStep===IEP_MAX?'btn btn-primary':'btn btn-edu';
+  document.querySelector('.content').scrollTop=0;
+}
+function toggleTransition(){
+  const on=document.getElementById('ageToggle').checked;
+  document.getElementById('transitionYes').style.display=on?'block':'none';
+  document.getElementById('transitionNo').style.display=on?'none':'block';
+}
+function accord(el){el.parentElement.classList.toggle('open');}
+function lvlCount(el){
+  const c=document.getElementById(el.id+'-count');
+  if(c)c.textContent=el.value.length+'자';
+}
+document.querySelectorAll('.level-block textarea').forEach(lvlCount);
+function tog(el){el.classList.toggle('on');document.getElementById('tagCount').textContent=document.querySelectorAll('.tagchip.on').length+'개 선택됨';}
+function tlView(v){
+  document.getElementById('tlStream').style.display=v==='stream'?'block':'none';
+  document.getElementById('tlLane').style.display=v==='lane'?'block':'none';
+  document.getElementById('segStream').classList.toggle('on',v==='stream');
+  document.getElementById('segLane').classList.toggle('on',v==='lane');
+}
+</script>
