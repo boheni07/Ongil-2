@@ -8,6 +8,13 @@ node_modules/
 dist/
 build/
 .turbo/
+*.tsbuildinfo
+
+# Expo (apps/mobile)
+.expo/
+.expo-shared/
+apps/mobile/ios/
+apps/mobile/android/
 
 # Env & secrets
 .env

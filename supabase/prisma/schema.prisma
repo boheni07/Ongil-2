@@ -1,0 +1,395 @@
+// 온길 플랫폼 — Prisma 스키마
+// 원본 설계: docs/05-erd.md §2 (13개 테이블), §7 (Prisma 매핑 컨벤션)
+//
+// 주의:
+// - permission_logs, access_logs는 불변(append-only) 감사 로그다.
+//   INSERT only, UPDATE/DELETE 금지는 RLS(WBS P0-4, security-rls 에이전트)에서 강제한다.
+//   이 스키마 자체는 그 제약을 표현하지 않는다.
+// - get_life_stage() 함수, persons_with_stage 뷰, 모든 RLS 정책과 트리거
+//   (log_permission_change, assign_record_confirmer, enforce_confirmation_owner,
+//   reset_confirmation_on_edit)는 이 단계(P0-3)의 범위가 아니다.
+//   get_life_stage/persons_with_stage는 마이그레이션 SQL 말미에 원문 그대로 추가된다.
+// - permission_presets는 테이블 구조만 정의하며 시드 데이터는 넣지 않는다.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────────
+
+enum UserRole {
+  person
+  guardian
+  supporter
+  teacher
+  social_worker
+  therapist
+}
+
+// permissions.domain, records.domain, permission_presets.domain, access_logs.domain 공용
+enum Domain {
+  MED
+  EDU
+  WEL
+  DAI
+  TRA
+  LEG
+}
+
+// permissions.access_level, permission_presets.access_level 공용
+enum AccessLevel {
+  read
+  write
+  edit
+}
+
+enum Gender {
+  M
+  F
+  other
+}
+
+enum DisabilityDegree {
+  severe
+  mild
+}
+
+// permission_logs.action 전용 (access_logs.action과 값 집합이 달라 별도 enum)
+enum PermissionLogAction {
+  grant
+  revoke
+  update
+}
+
+// access_logs.action 전용
+enum AccessLogAction {
+  view
+  create
+  update
+  delete
+  export
+}
+
+enum ConsentType {
+  terms
+  privacy
+  marketing
+  sensitive
+  unique_id
+}
+
+enum HandoverPriority {
+  high
+  normal
+  low
+}
+
+// notifications.type, notification_preferences.type 공용
+enum NotificationType {
+  record_new
+  permission_grant
+  handover
+  reminder
+  record_confirm
+}
+
+// invitations.status 전용
+enum InvitationStatus {
+  pending
+  accepted
+  declined
+  expired
+}
+
+// ─────────────────────────────────────────────────────────
+// Models
+// ─────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String   @unique
+  role      UserRole
+  fullName  String   @map("full_name")
+  avatarUrl String?  @map("avatar_url")
+  fcmToken  String?  @map("fcm_token")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  primaryGuardianOfPersons Person[]             @relation("PrimaryGuardian")
+  guardianOf               Guardian[]           @relation("UserGuardian")
+  permissionsGranted       Permission[]         @relation("Grantee")
+  permissionsGrantedBy     Permission[]         @relation("GrantedBy")
+  permissionLogs           PermissionLog[]      @relation("PermissionLogActor")
+  authoredRecords          Record[]             @relation("Author")
+  confirmedRecords         Record[]             @relation("Confirmer")
+  uploadedAttachments      RecordAttachment[]   @relation("UploadedBy")
+  consents                 Consent[]            @relation("ConsentOwner")
+  accessLogs               AccessLog[]          @relation("Actor")
+  handoverNotesFrom        HandoverNote[]       @relation("HandoverFrom")
+  handoverNotesTo          HandoverNote[]       @relation("HandoverTo")
+  notifications            Notification[]       @relation("NotificationRecipient")
+  notificationPreferences  NotificationPreference[]
+  invitationsSent          Invitation[]         @relation("Inviter")
+  invitationsAccepted      Invitation[]         @relation("InvitationAcceptedBy")
+
+  @@map("users")
+}
+
+model Person {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  primaryGuardianId   String   @map("primary_guardian_id") @db.Uuid
+  fullName            String   @map("full_name")
+  birthDate           DateTime @map("birth_date") @db.Date
+  gender              Gender?
+  disabilityTypes     String[] @map("disability_types")
+  disabilityDegree    DisabilityDegree? @map("disability_degree")
+  emergencyInfo       Json?    @map("emergency_info")
+  avatarUrl           String?  @map("avatar_url")
+  isAdult             Boolean  @default(false) @map("is_adult")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  primaryGuardian User            @relation("PrimaryGuardian", fields: [primaryGuardianId], references: [id])
+  guardians       Guardian[]
+  permissions     Permission[]
+  records         Record[]
+  consents        Consent[]       @relation("ConsentOnBehalfOf")
+  accessLogs      AccessLog[]
+  handoverNotes   HandoverNote[]
+  invitations     Invitation[]
+
+  @@map("persons")
+}
+
+model Guardian {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  personId  String   @map("person_id") @db.Uuid
+  isPrimary Boolean  @default(false) @map("is_primary")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user   User   @relation("UserGuardian", fields: [userId], references: [id], onDelete: Cascade)
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, personId])
+  @@map("guardians")
+}
+
+model Permission {
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  personId     String      @map("person_id") @db.Uuid
+  granteeId    String      @map("grantee_id") @db.Uuid
+  domain       Domain
+  accessLevel  AccessLevel @map("access_level")
+  isActive     Boolean     @default(true) @map("is_active")
+  validFrom    DateTime    @default(now()) @map("valid_from") @db.Date
+  validUntil   DateTime?   @map("valid_until") @db.Date
+  grantedBy    String?     @map("granted_by") @db.Uuid
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime    @updatedAt @map("updated_at") @db.Timestamptz
+
+  person  Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+  grantee User   @relation("Grantee", fields: [granteeId], references: [id], onDelete: Cascade)
+  granter User?  @relation("GrantedBy", fields: [grantedBy], references: [id])
+
+  permissionLogs PermissionLog[]
+
+  @@unique([personId, granteeId, domain])
+  @@map("permissions")
+}
+
+// INSERT only, UPDATE/DELETE 금지는 RLS(P0-4)에서 강제 — 불변 감사 로그
+model PermissionLog {
+  id           String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  permissionId String?             @map("permission_id") @db.Uuid
+  action       PermissionLogAction
+  actorId      String?             @map("actor_id") @db.Uuid
+  beforeState  Json?               @map("before_state")
+  afterState   Json?               @map("after_state")
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz
+
+  permission Permission? @relation(fields: [permissionId], references: [id])
+  actor      User?       @relation("PermissionLogActor", fields: [actorId], references: [id])
+
+  @@map("permission_logs")
+}
+
+model Record {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  personId             String    @map("person_id") @db.Uuid
+  authorId             String?   @map("author_id") @db.Uuid
+  domain               Domain
+  recordType           String    @map("record_type")
+  content              Json
+  isDraft              Boolean   @default(false) @map("is_draft")
+  isMilestone          Boolean   @default(false) @map("is_milestone")
+  isPinned             Boolean   @default(false) @map("is_pinned")
+  tags                 String[]
+  recordDate           DateTime  @default(now()) @map("record_date") @db.Timestamptz
+  requiresConfirmation Boolean   @default(false) @map("requires_confirmation")
+  confirmerId          String?   @map("confirmer_id") @db.Uuid
+  confirmedAt          DateTime? @map("confirmed_at") @db.Timestamptz
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  person      Person             @relation(fields: [personId], references: [id], onDelete: Cascade)
+  author      User?              @relation("Author", fields: [authorId], references: [id])
+  confirmer   User?              @relation("Confirmer", fields: [confirmerId], references: [id])
+  attachments RecordAttachment[]
+  accessLogs  AccessLog[]
+
+  @@index([personId, domain], map: "idx_records_person_domain")
+  @@index([personId, recordDate(sort: Desc)], map: "idx_records_person_date")
+  @@index([recordType], map: "idx_records_type")
+  @@map("records")
+}
+
+model RecordAttachment {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recordId   String   @map("record_id") @db.Uuid
+  fileName   String   @map("file_name")
+  fileUrl    String   @map("file_url")
+  mimeType   String?  @map("mime_type")
+  fileSize   Int?     @map("file_size")
+  uploadedBy String?  @map("uploaded_by") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  record   Record @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  uploader User?  @relation("UploadedBy", fields: [uploadedBy], references: [id])
+
+  @@map("record_attachments")
+}
+
+model Consent {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String?      @map("user_id") @db.Uuid
+  consentType  ConsentType  @map("consent_type")
+  isAgreed     Boolean      @map("is_agreed")
+  onBehalf     Boolean      @default(false) @map("on_behalf")
+  onBehalfOf   String?      @map("on_behalf_of") @db.Uuid
+  version      String
+  ipAddress    String?      @map("ip_address")
+  agreedAt     DateTime?    @map("agreed_at") @db.Timestamptz
+  revokedAt    DateTime?    @map("revoked_at") @db.Timestamptz
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz
+
+  user           User?   @relation("ConsentOwner", fields: [userId], references: [id], onDelete: Cascade)
+  onBehalfPerson Person? @relation("ConsentOnBehalfOf", fields: [onBehalfOf], references: [id])
+
+  @@map("consents")
+}
+
+// INSERT only — 불변 감사 로그
+model AccessLog {
+  id         String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actorId    String?          @map("actor_id") @db.Uuid
+  personId   String?          @map("person_id") @db.Uuid
+  recordId   String?          @map("record_id") @db.Uuid
+  action     AccessLogAction
+  domain     String?
+  ipAddress  String?          @map("ip_address")
+  userAgent  String?          @map("user_agent")
+  accessedAt DateTime         @default(now()) @map("accessed_at") @db.Timestamptz
+
+  actor  User?   @relation("Actor", fields: [actorId], references: [id])
+  person Person? @relation(fields: [personId], references: [id])
+  record Record? @relation(fields: [recordId], references: [id])
+
+  @@index([personId, accessedAt(sort: Desc)], map: "idx_access_logs_person")
+  @@index([actorId, accessedAt(sort: Desc)], map: "idx_access_logs_actor")
+  @@map("access_logs")
+}
+
+model HandoverNote {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  personId        String            @map("person_id") @db.Uuid
+  fromUserId      String?           @map("from_user_id") @db.Uuid
+  toUserId        String?           @map("to_user_id") @db.Uuid
+  content         String
+  priority        HandoverPriority  @default(normal)
+  acknowledgedAt  DateTime?         @map("acknowledged_at") @db.Timestamptz
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz
+
+  person   Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+  fromUser User?  @relation("HandoverFrom", fields: [fromUserId], references: [id])
+  toUser   User?  @relation("HandoverTo", fields: [toUserId], references: [id])
+
+  @@index([toUserId, acknowledgedAt(sort: Asc)], map: "idx_handover_to_user")
+  @@map("handover_notes")
+}
+
+model Notification {
+  id          String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recipientId String            @map("recipient_id") @db.Uuid
+  type        NotificationType
+  title       String
+  body        String?
+  data        Json?
+  isRead      Boolean           @default(false) @map("is_read")
+  sentAt      DateTime          @default(now()) @map("sent_at") @db.Timestamptz
+  readAt      DateTime?         @map("read_at") @db.Timestamptz
+
+  recipient User @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, isRead, sentAt(sort: Desc)], map: "idx_notifications_recipient")
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id           String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String           @map("user_id") @db.Uuid
+  type         NotificationType
+  fcmEnabled   Boolean          @default(true) @map("fcm_enabled")
+  emailEnabled Boolean          @default(true) @map("email_enabled")
+  updatedAt    DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@map("notification_preferences")
+}
+
+// 이해관계자 초대 (Flow-1, F-G-05 권한 부여 위저드가 생성) — docs/05-erd.md §2-12
+model Invitation {
+  id           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  token        String            @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  personId     String?           @map("person_id") @db.Uuid
+  inviterId    String?           @map("inviter_id") @db.Uuid
+  inviteeEmail String            @map("invitee_email")
+  // 초대 가능한 역할(당사자 person 제외). CHECK 제약은 마이그레이션에서 강제 — enum 대신 String.
+  role         String
+  // [{ domain: 'EDU', access_level: 'write' }, ...] — 수락 시 accept_invitation()이 permissions로 전개
+  domainGrants Json              @map("domain_grants")
+  validUntil   DateTime?         @map("valid_until") @db.Date
+  status       InvitationStatus  @default(pending)
+  acceptedAt   DateTime?         @map("accepted_at") @db.Timestamptz
+  acceptedBy   String?           @map("accepted_by") @db.Uuid
+  createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz
+
+  person   Person? @relation(fields: [personId], references: [id], onDelete: Cascade)
+  inviter  User?   @relation("Inviter", fields: [inviterId], references: [id])
+  acceptor User?   @relation("InvitationAcceptedBy", fields: [acceptedBy], references: [id])
+
+  // token은 @unique가 이미 인덱스를 생성하므로 별도 인덱스를 두지 않는다.
+  @@index([inviteeEmail], map: "idx_invitations_email")
+  @@map("invitations")
+}
+
+// 참고용 매핑 테이블 — G-32 위자드 초기값 자동완성용. 시드 데이터는 이번 단계에서 넣지 않는다(§4-5).
+model PermissionPreset {
+  role             String
+  domain           Domain
+  accessLevel      AccessLevel @map("access_level")
+  defaultValidDays Int?        @map("default_valid_days")
+
+  @@id([role, domain])
+  @@map("permission_presets")
+}

@@ -428,6 +428,43 @@ CREATE TABLE notification_preferences (
 - 행이 없으면 기본값(둘 다 `true`)으로 간주 — 신규 가입자가 매 타입마다 명시적으로 행을 만들 필요 없음.
 - Flow-SYS-03에서 "알림 대상 사용자 조회" 단계는 이 테이블에서 `type`에 맞는 채널이 꺼져 있으면 해당 채널 발송을 건너뛴다(둘 다 꺼져 있어도 `notifications` 테이블 INSERT 자체는 항상 수행 — 인앱 알림 목록에는 남는다).
 
+### 2-12. invitations (이해관계자 초대)
+
+`04-workflow.md` Flow-1(이해관계자 초대 수락)이 요구하지만 기존 스키마에 없던 테이블을 보완한다. 보호자가 권한 부여 위저드(F-G-05 / G-32)에서 이해관계자(활동지원사·교사·사회복지사·치료사)를 초대할 때 생성되며, 초대받은 사람이 A-06에서 수락하면 `domain_grants`가 `permissions` 행으로 전개된다.
+
+```sql
+CREATE TABLE invitations (
+  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  token          uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE, -- 추측 불가 비밀값, 초대 링크에 포함
+  person_id      uuid REFERENCES persons(id) ON DELETE CASCADE,  -- 어느 당사자에 대한 권한인지
+  inviter_id     uuid REFERENCES users(id) ON DELETE SET NULL,   -- 초대한 보호자
+  invitee_email  text NOT NULL,                                  -- 초대 대상 이메일
+  role           text NOT NULL CHECK (role IN ('guardian','supporter','teacher','social_worker','therapist')),
+  domain_grants  jsonb NOT NULL,   -- [{ domain: 'EDU', access_level: 'write' }, ...] — 수락 시 permissions로 전개
+  valid_until    date,             -- 부여될 권한의 만료일(NULL = 무기한)
+  status         text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','accepted','declined','expired')),
+  accepted_at    timestamptz,
+  accepted_by    uuid REFERENCES users(id) ON DELETE SET NULL,
+  created_at     timestamptz DEFAULT now()
+);
+
+CREATE INDEX idx_invitations_email ON invitations(invitee_email);
+-- token은 UNIQUE 제약이 인덱스를 겸하므로 별도 인덱스를 두지 않는다.
+```
+
+- `role`은 당사자(person)를 제외한 초대 가능한 5개 역할만 허용하므로 `UserRole` enum을 재사용하지 않고 `CHECK` 제약이 있는 `text`로 둔다(`permission_presets.role`과 동일 선례). `status`는 닫힌 4값 집합이라 Prisma에서 `InvitationStatus` enum으로 매핑한다.
+- **수락 전개는 `accept_invitation(p_token uuid)` SECURITY DEFINER 함수로 처리한다.** `permissions`의 INSERT는 주보호자만 허용되므로(§4-3) 초대받은 이해관계자는 자기 권한을 직접 만들 수 없다. 함수는 (1) 호출자 이메일 = `invitee_email`, (2) `status='pending'`, (3) 미만료를 검증한 뒤에만 `domain_grants`를 `permissions`로 전개하고 `status='accepted'`로 갱신한다.
+
+### 2-13. invitations RLS
+
+RLS 정책·GRANT의 신뢰 소스는 security-rls의 `20260710000000_p0_7_consents_invitations_rls` 마이그레이션(§4-8)이다. 요지는 **authenticated 한정**이다:
+
+- **SELECT**: `inviter_id = auth.uid()` OR `invitee_email = 로그인 사용자 이메일`. **`anon`에는 아무 권한도 주지 않는다.**
+  - ⚠️ 초기 설계에서 검토한 `USING (true)` + anon GRANT는 폐기했다. RLS의 `USING`은 행 필터일 뿐 "쿼리가 반드시 `token`으로 필터링하도록 강제"하지 못하므로, anon이 `SELECT * FROM invitations`로 테이블 전체(모든 `invitee_email`·`domain_grants`)를 덤프할 수 있어 PIPA상 실사용 불가였다.
+  - 미가입자가 A-06에서 토큰으로 초대를 미리 보는 경로는 RLS를 우회하는 **service-role 클라이언트**(`apps/web/src/lib/supabase/service-role.ts`)로 처리하며, 호출부에서 `token` 정확 일치 단일 행만 조회한다(`getInvitationByToken`). token이 애플리케이션 코드 경로의 필수 입력이라 테이블 덤프가 불가능하다.
+- **INSERT**: `inviter_id = auth.uid()` AND 호출자 역할이 `guardian`.
+- **UPDATE**: 초대받은 본인(이메일 일치) + `pending → accepted|declined` 전이만 허용. 수락 시 `permissions` 전개는 `accept_invitation()` SECURITY DEFINER 함수가 담당(권한 INSERT가 주보호자 전용이라 우회 필요). 거절은 권한 전개가 없으므로 별도 함수 없이 이 UPDATE 정책에 기대어 서버 액션에서 직접 갱신한다.
+
 ---
 
 ## 3. record_type별 content JSONB 스키마
@@ -912,6 +949,95 @@ FOR EACH ROW EXECUTE FUNCTION reset_confirmation_on_edit();
 ```
 
 - `trg_confirmation_owner`(③)보다 먼저 평가되어야 하므로, Postgres 트리거 실행 순서(알파벳순)상 `trg_confirmation_owner` → `trg_reset_confirmation_on_edit` 순으로 실행됨에 유의 — `confirmed_at`을 이번 UPDATE에서 함께 바꾸는 요청은 ③에서 먼저 소유자 검증되고, 그 다음 이 트리거가 `content` 변경 여부만으로 재초기화 여부를 판단한다.
+
+### 4-7. consents 테이블 (PIPA §22 필수/선택, §23 민감정보 별도 동의)
+
+동의는 본인이 행위한 행만 접근 가능하며(대리 동의도 `user_id`가 행위자이므로 동일하게 커버됨), 한번 기록된 동의는 불변이다 — 철회(`revoked_at`)만 본인이 갱신할 수 있고 삭제는 불가능하다(불변 감사 원칙, §2-8과 동일 사상).
+
+> ⚠️ **정정 이력:** `consents`는 P0-4 grants에서 `authenticated`에 CRUD GRANT만 받고 `ENABLE ROW LEVEL SECURITY`가 누락되어 있었다. 이는 "RLS on + 정책 0(deny-all)"이 아니라 정반대인 **allow-all 노출**(모든 인증 사용자가 타인의 PIPA 동의를 열람·수정·삭제 가능)이었다. P0-7에서 RLS 활성화 + 아래 정책으로 폐쇄한다.
+
+```sql
+ALTER TABLE consents ENABLE ROW LEVEL SECURITY;
+
+-- SELECT/INSERT: 본인 명의 동의만 (user_id = NULL 익명 동의 차단)
+CREATE POLICY consents_select ON consents FOR SELECT
+  USING (user_id = auth.uid());
+CREATE POLICY consents_insert ON consents FOR INSERT
+  WITH CHECK (user_id = auth.uid());
+
+-- UPDATE: 본인 행 한정. "revoked_at만 갱신"은 RLS로 컬럼 한정이 불가하므로 컬럼 레벨 권한으로 강제
+CREATE POLICY consents_update ON consents FOR UPDATE
+  USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
+
+-- 불변: DELETE 정책 없음(전면 거부) + privilege도 회수. UPDATE는 revoked_at 컬럼만 허용
+REVOKE DELETE ON consents FROM authenticated;
+REVOKE UPDATE ON consents FROM authenticated;
+GRANT  UPDATE (revoked_at) ON consents TO authenticated;
+```
+
+- 왜 컬럼 레벨 권한인가: RLS의 `WITH CHECK`는 "행이 조건을 만족하는가"만 검사할 뿐 "어떤 컬럼이 바뀌었는가"는 제어하지 못한다. `is_agreed`·`version`·`agreed_at` 등 동의 원본의 사후 변조를 막으려면 `GRANT UPDATE (revoked_at)`로 갱신 가능 컬럼 자체를 제한하는 것이 트리거보다 단순하고 확실하다.
+
+### 4-8. invitations 테이블 (권한 부여/초대 — Flow-1, F-G-05 보호자 전용)
+
+```sql
+ALTER TABLE invitations ENABLE ROW LEVEL SECURITY;
+
+-- SELECT: 초대한 보호자 본인 또는 초대받은 당사자(이메일 일치)만 (인증 사용자 한정)
+CREATE POLICY invitations_select ON invitations FOR SELECT
+  USING (
+    inviter_id = auth.uid()
+    OR invitee_email = (SELECT email FROM users WHERE id = auth.uid())
+  );
+
+-- INSERT: 보호자 전용, 본인 명의로만
+CREATE POLICY invitations_insert ON invitations FOR INSERT
+  WITH CHECK (
+    inviter_id = auth.uid()
+    AND (SELECT role FROM users WHERE id = auth.uid()) = 'guardian'
+  );
+
+-- UPDATE: 거절(및 자기 초대 마감). 초대받은 본인만, pending → accepted|declined 전이만 (재처리 차단)
+--   수락은 accept_invitation(SECURITY DEFINER) 경로이므로 이 RLS 와 별개로 동작한다.
+CREATE POLICY invitations_update ON invitations FOR UPDATE
+  USING (
+    status = 'pending'
+    AND invitee_email = (SELECT email FROM users WHERE id = auth.uid())
+  )
+  WITH CHECK (
+    status IN ('accepted','declined')
+    AND invitee_email = (SELECT email FROM users WHERE id = auth.uid())
+  );
+
+-- 불변: DELETE 정책 없음(만료는 status='expired' 배치). anon 전면 차단.
+-- authenticated 직접 UPDATE 는 status 컬럼으로만 못박는다(컬럼 레벨 권한).
+REVOKE ALL    ON invitations FROM anon;
+REVOKE UPDATE ON invitations FROM authenticated;
+GRANT  SELECT, INSERT     ON invitations TO authenticated;
+GRANT  UPDATE (status)    ON invitations TO authenticated;
+```
+
+**⚠️ 왜 `GRANT UPDATE (status)` 컬럼 레벨 제한인가 — 권한 상승 방어:**
+
+`invitations_update`의 `WITH CHECK`는 결과 행이 조건(`status IN (...)` + 이메일 일치)을 만족하는지만 볼 뿐, **같은 UPDATE 문에서 `domain_grants`가 함께 바뀌는 것을 막지 못한다.** Supabase는 테이블을 PostgREST로 직접 노출하므로, 앱의 `declineInvite`가 `status`만 보내는 것과 무관하게 invitee가 PostgREST로 자기 초대 행에 직접 `PATCH`를 보내 `domain_grants`(또는 `role`·`valid_until`)를 자기 유리하게 변조한 뒤, `accept_invitation()`을 호출하면 그 함수가 변조된 `domain_grants`를 그대로 `permissions`로 전개해 **권한 상승**이 된다. `accept_invitation()`이 SECURITY DEFINER라도 이 경로는 별개이므로 RLS 자체의 방어가 필요하다. 해결: authenticated의 직접 UPDATE 대상을 `status` 한 컬럼으로 제한(`consents.revoked_at`과 동일 사상). `accepted_at`/`accepted_by`는 `accept_invitation()`이 owner 권한으로 쓰므로 클라이언트 GRANT에서 제외한다.
+
+**수락/거절 경로 분리:**
+- **수락**: `accept_invitation(p_token)` SECURITY DEFINER 함수 — (1) 호출자 이메일 == `invitee_email`, (2) `status='pending'`, (3) 미만료를 검증한 뒤 `domain_grants`를 `permissions`로 전개하고 `status='accepted'`로 마감. `permissions_write` RLS(주보호자만 INSERT)를 우회해야 하는 정당한 권한 부여 경로이므로 함수에 캡슐화(서버에 service-role 키 노출 회피). `auth.uid()`는 DEFINER 안에서도 호출자 JWT를 가리켜 감사 트리거의 actor 기록이 정상 동작한다.
+- **거절**: 별도 DEFINER 함수를 두지 않고 위 `invitations_update` RLS(직접 UPDATE)에 의존. 앱 `declineInvite`가 `status='declined'`만 PATCH하며, RLS `USING`이 invitee 본인·pending을 강제한다.
+
+**미인증 초대 확인(A-06)의 SELECT 트레이드오프 — service-role 서버 클라이언트로 해결:**
+
+A-06 화면은 미가입자가 초대 링크(`token`)를 열어 내용을 봐야 하므로 완전 인증 요구는 Flow-1과 모순된다. 그렇다고 anon에 SELECT를 열면 안 된다:
+
+- **anon 직접 SELECT는 근본적으로 안전하지 않다.** RLS 정책의 `USING`은 세션 컨텍스트로 *행을 필터링*할 뿐, 쿼리가 `WHERE token = ...`을 넣도록 *강제*하지 못한다. anon에 `USING (status='pending' AND valid_until >= CURRENT_DATE)` 같은 정책을 주면, **공개된 anon 키를 가진 누구나** `WHERE` 없이 전체 초대 목록을 덤프해 `invitee_email`·`person_id`·`inviter`를 수집할 수 있다(PIPA 유출). 뷰를 씌워도 anon이 뷰 전체를 조회할 수 있어 동일하게 뚫린다. 즉 "token을 아는 경우만"을 RLS로 표현할 방법이 없다.
+- **채택: service-role 서버 클라이언트 경유.** invitations의 RLS는 anon을 전면 거부(anon 정책 없음 + `REVOKE ALL FROM anon`)로 잠근다. 미인증 A-06 조회는 `apps/web/src/lib/supabase/service-role.ts`의 서버 전용 클라이언트가 **service-role 키**로 `token`을 받아 `status='pending'`인 단일 행만 찾아, 안전 컬럼(초대자·당사자 이름·역할·도메인 권한·유효기한)만 반환한다. `token`이 서버 코드 경로에서 필수 입력(`.eq("token", token)`)이므로 테이블 덤프가 불가능하고, service-role 키는 `NEXT_PUBLIC_` 접두사가 아니라 브라우저 번들에 주입되지 않으며 클라이언트 실행 시 즉시 throw로 이중 방어한다.
+
+**미인증 초대 확인(A-06)의 SELECT 트레이드오프 — service-role Route Handler로 해결:**
+
+A-06 화면은 미가입자가 초대 링크(`token`)를 열어 내용을 봐야 하므로 완전 인증 요구는 Flow-1과 모순된다. 그렇다고 anon에 SELECT를 열면 안 된다:
+
+- **anon 직접 SELECT는 근본적으로 안전하지 않다.** RLS 정책의 `USING`은 세션 컨텍스트로 *행을 필터링*할 뿐, 쿼리가 `WHERE token = ...`을 넣도록 *강제*하지 못한다. anon에 `USING (status='pending' AND valid_until >= CURRENT_DATE)` 같은 정책을 주면, **공개된 anon 키를 가진 누구나** `WHERE` 없이 전체 초대 목록을 덤프해 `invitee_email`·`person_id`·`inviter`를 수집할 수 있다(PIPA 유출). 뷰를 씌워도 anon이 뷰 전체를 조회할 수 있어 동일하게 뚫린다. 즉 "token을 아는 경우만"을 RLS로 표현할 방법이 없다.
+- **채택: Route Handler(service-role) 경유.** invitations의 RLS는 anon을 전면 거부(정책 없음 + `REVOKE ALL FROM anon`)로 잠근다. 미인증 A-06 조회는 서버 측 Route Handler가 **service-role 키**로 `token`을 받아 `status='pending' AND valid_until >= CURRENT_DATE`인 단일 행만 찾아, 안전 컬럼(초대자 이름·당사자 이름·역할·도메인 권한·유효기한)만 반환한다. `token`이 서버 코드 경로에서 필수 입력이므로 테이블 덤프가 불가능하고, service-role 키는 브라우저에 노출되지 않는다. anon 키의 공개성과 RLS의 행-필터 특성을 감안하면 이 방식이 유일하게 안전한 선택이다.
 
 ---
 

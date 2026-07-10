@@ -1,0 +1,11 @@
+# Supabase
+.branches
+.temp
+
+# Prisma CLI env (mirrors root .env.local values for local dev; Prisma CLI only auto-loads .env)
+prisma/.env
+
+# dotenvx
+.env.keys
+.env.local
+.env.*.local
