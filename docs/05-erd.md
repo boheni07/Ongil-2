@@ -665,12 +665,23 @@ CREATE POLICY persons_select ON persons FOR SELECT
     AND auth.uid()::text = id::text  -- 당사자는 자신의 레코드만
   );
 
--- 보호자만 INSERT
+-- 보호자(대리 등록) 또는 person 역할 셀프 가입(자기 자신)만 INSERT
 CREATE POLICY persons_insert ON persons FOR INSERT
   WITH CHECK (
     (SELECT role FROM users WHERE id = auth.uid()) = 'guardian'
+    OR (
+      (SELECT role FROM users WHERE id = auth.uid()) = 'person'
+      AND id = auth.uid()                    -- persons.id = 당사자 auth.uid()
+      AND primary_guardian_id = auth.uid()   -- 자기 자신이 주보호자
+    )
   );
 ```
+
+> **셀프 가입 당사자 모델(P1-3):** person 역할로 직접 가입한 당사자는 `persons.id = 자기 auth.uid()`,
+> `primary_guardian_id = 자기 auth.uid()`(자기 자신이 주보호자)로 자기 행을 만든다. 이 전제가 있어야
+> `persons_select`의 person 분기(`auth.uid()::text = id::text`)와 §4-6 확인 트리거의
+> `confirmer_id := person_id`(성년 당사자 본인 확인)가 성립한다. 대리 등록(보호자가 당사자를 등록)은
+> 기존대로 `role='guardian'` 분기로 처리된다.
 
 ### 4-2. records 테이블
 
@@ -698,7 +709,7 @@ CREATE POLICY records_select ON records FOR SELECT
     )
   );
 
--- 도메인 write/edit 권한 보유 시 INSERT
+-- 도메인 write/edit 권한 보유자, 보호자, 또는 당사자 본인(자기 기록) INSERT
 CREATE POLICY records_insert ON records FOR INSERT
   WITH CHECK (
     EXISTS (
@@ -714,9 +725,16 @@ CREATE POLICY records_insert ON records FOR INSERT
       SELECT 1 FROM guardians
       WHERE person_id = records.person_id AND user_id = auth.uid()
     )
+    -- 당사자 본인: 자기 person(=auth.uid())에 대한, 자기가 작성자인 기록만 (자기표현 SELF-*)
+    OR (
+      (SELECT role FROM users WHERE id = auth.uid()) = 'person'
+      AND person_id = auth.uid()
+      AND author_id = auth.uid()
+    )
   );
 
--- 도메인 edit 권한 보유 시에만 UPDATE (write는 신규 작성까지, 기존 기록 수정은 edit부터)
+-- edit 권한 보유자, 보호자, 또는 당사자 본인이 '자기가 작성한' 기록만 UPDATE
+-- (write는 신규 작성까지, 기존 기록 수정은 edit부터. 당사자 self-edit는 author_id로 한정)
 CREATE POLICY records_update ON records FOR UPDATE
   USING (
     EXISTS (
@@ -732,8 +750,24 @@ CREATE POLICY records_update ON records FOR UPDATE
       SELECT 1 FROM guardians
       WHERE person_id = records.person_id AND user_id = auth.uid()
     )
+    -- 당사자 본인: author_id 한정 → 전문가가 작성한 공식 기록은 임의 수정 불가,
+    -- 자기표현(SELF-*, requires_confirmation=false)은 본인 작성분이라 오타 수정 등 가능
+    OR (
+      (SELECT role FROM users WHERE id = auth.uid()) = 'person'
+      AND person_id = auth.uid()
+      AND author_id = auth.uid()
+    )
   );
 ```
+
+> **당사자 self-edit와 확인 트리거(§4-6) 상호작용:** 자기표현(`SELF-*`)은 `requires_confirmation=false`이므로
+> `trg_reset_confirmation_on_edit`·`trg_assign_confirmer`가 발화하지 않고, `trg_confirmation_owner`는
+> `confirmed_at` 변경 시에만 발화하므로 본문 수정과 무관하다 → 트리거 간섭 없음. UPDATE 정책에 별도
+> `WITH CHECK`이 없어 USING이 신규 행에도 적용되므로, 당사자가 `author_id`/`person_id`를 타인 값으로
+> 바꿔 소유권을 이전하는 것은 불가능하다.
+
+> **활동지원 일지(P1-4, Flow-S-01):** 별도 정책 불필요. 활동지원사가 DAI 도메인 `write`/`edit` 권한을
+> 보유한 상태이면 위 `records_insert`의 permissions 분기가 그대로 커버한다(DAI-* 기록).
 
 ### 4-3. permissions 테이블
 
@@ -1038,6 +1072,37 @@ A-06 화면은 미가입자가 초대 링크(`token`)를 열어 내용을 봐야
 
 - **anon 직접 SELECT는 근본적으로 안전하지 않다.** RLS 정책의 `USING`은 세션 컨텍스트로 *행을 필터링*할 뿐, 쿼리가 `WHERE token = ...`을 넣도록 *강제*하지 못한다. anon에 `USING (status='pending' AND valid_until >= CURRENT_DATE)` 같은 정책을 주면, **공개된 anon 키를 가진 누구나** `WHERE` 없이 전체 초대 목록을 덤프해 `invitee_email`·`person_id`·`inviter`를 수집할 수 있다(PIPA 유출). 뷰를 씌워도 anon이 뷰 전체를 조회할 수 있어 동일하게 뚫린다. 즉 "token을 아는 경우만"을 RLS로 표현할 방법이 없다.
 - **채택: Route Handler(service-role) 경유.** invitations의 RLS는 anon을 전면 거부(정책 없음 + `REVOKE ALL FROM anon`)로 잠근다. 미인증 A-06 조회는 서버 측 Route Handler가 **service-role 키**로 `token`을 받아 `status='pending' AND valid_until >= CURRENT_DATE`인 단일 행만 찾아, 안전 컬럼(초대자 이름·당사자 이름·역할·도메인 권한·유효기한)만 반환한다. `token`이 서버 코드 경로에서 필수 입력이므로 테이블 덤프가 불가능하고, service-role 키는 브라우저에 노출되지 않는다. anon 키의 공개성과 RLS의 행-필터 특성을 감안하면 이 방식이 유일하게 안전한 선택이다.
+
+### 4-9. guardians 테이블 (보호자-당사자 관계 — allow-all 노출 폐쇄)
+
+> ⚠️ **정정 이력:** `guardians`는 P0-4 grants(`20260709041005_p0_4_rls_grants`)에서 `authenticated`에 CRUD GRANT만 받고 `ENABLE ROW LEVEL SECURITY`가 어디에도 없었다 — consents(§4-7)와 동일한 **allow-all 노출**이다. `records_select/insert/update`·`permissions_write`·`persons_select`·`access_logs_select`가 모두 `EXISTS (SELECT 1 FROM guardians WHERE person_id=… AND user_id=auth.uid())` 분기에 의존하므로, RLS 부재 시 **임의 인증 사용자가 `guardians(user_id=self, person_id=victim, is_primary=true)`를 INSERT하면 타인 당사자의 기록·권한을 전면 장악**할 수 있는 권한 상승 경로였다. P1 마이그레이션(`20260710010000_p1_person_self_and_guardians_rls`)에서 폐쇄한다.
+
+```sql
+ALTER TABLE guardians ENABLE ROW LEVEL SECURITY;
+
+-- 보호자 본인은 자신이 걸린 링크만 SELECT
+-- (상위 정책들의 guardians EXISTS는 모두 user_id=auth.uid() 필터이므로 이 정책으로 정상 평가.
+--  guardians 자기참조 서브쿼리는 RLS 무한재귀를 유발하므로 정책에서 배제한다.)
+CREATE POLICY guardians_select ON guardians FOR SELECT
+  USING (user_id = auth.uid());
+
+-- 주보호자 본인만 '자기 명의로' INSERT (Flow-G-01 당사자 등록)
+CREATE POLICY guardians_insert ON guardians FOR INSERT
+  WITH CHECK (
+    user_id = auth.uid()
+    AND is_primary = true
+    AND EXISTS (
+      SELECT 1 FROM persons
+      WHERE id = guardians.person_id
+        AND primary_guardian_id = auth.uid()
+    )
+  );
+-- UPDATE/DELETE 정책 없음 → authenticated 기본 거부.
+```
+
+- **Flow-G-01(당사자 등록):** 보호자가 `persons`(primary_guardian_id=자기)를 INSERT한 뒤 `guardians`(user_id=자기, is_primary=true)를 INSERT하는 2단계. `guardians_insert`의 `EXISTS(persons … primary_guardian_id=auth.uid())`가 방금 만든 person과의 정합성을 강제하므로, 타인 person에 자신을 보호자로 끼워 넣는 것이 불가능하다.
+- **공동보호자 초대 수락:** invitee의 user_id는 주보호자와 다르고 `primary_guardian_id`도 아니므로 위 정책으로는 INSERT되지 않는다 — 초대 수락 시 guardians INSERT는 invitations(§4-8) 기반으로 **service_role/Edge Function**에서 처리한다(클라이언트 authenticated 직접 INSERT 아님).
+- **관계 해제/변경:** UPDATE/DELETE 정책을 두지 않아 클라이언트에서 불가. 보호자 관계 변경은 감사 로그를 동반하는 service_role 경로에서만 수행한다.
 
 ---
 

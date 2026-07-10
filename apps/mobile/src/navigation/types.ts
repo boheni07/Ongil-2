@@ -16,3 +16,27 @@ export type AuthStackParamList = {
   Terms: undefined;
   Privacy: undefined;
 };
+
+/**
+ * 로그인 후 메인 스택 — 역할별로 진입 홈과 하위 화면이 다르다(MainNavigator가 분기).
+ * 이번 범위: person(P1-3), supporter(P1-4), guardian(P1-5). 나머지 역할은 준비 중 홈.
+ */
+export type PersonStackParamList = {
+  PersonHome: undefined;
+  SelfExpression: undefined;
+};
+
+export type SupporterStackParamList = {
+  SupporterHome: undefined;
+  JournalCompose: { personId: string; personName: string } | undefined;
+  JournalDetail: { journalId: string };
+};
+
+export type GuardianStackParamList = {
+  GuardianDashboard: undefined;
+  PersonRegister: undefined;
+};
+
+export type GenericStackParamList = {
+  GenericHome: undefined;
+};

@@ -1,14 +1,22 @@
 import { StyleSheet, Text, View } from "react-native";
 import { NEUTRAL, PRIMARY } from "../theme/colors";
 
-/** 회원가입 위저드 진행 표시 (A-03→A-04→A-08→A-05, 총 4단계). */
-export function StepBar({ current, total = 4 }: { current: number; total?: number }) {
+/** 위저드 진행 표시. 회원가입(4단계)·일지(5단계)·당사자 등록(6단계) 공용. */
+export function StepBar({
+  current,
+  total = 4,
+  label = "회원가입",
+}: {
+  current: number;
+  total?: number;
+  label?: string;
+}) {
   const steps = Array.from({ length: total }, (_, i) => i + 1);
   return (
     <View
       style={styles.row}
       accessibilityRole="progressbar"
-      accessibilityLabel={`회원가입 ${total}단계 중 ${current}단계`}
+      accessibilityLabel={`${label} ${total}단계 중 ${current}단계`}
     >
       {steps.map((n, idx) => {
         const done = n <= current;
