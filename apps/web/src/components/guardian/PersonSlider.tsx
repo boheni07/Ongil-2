@@ -128,6 +128,12 @@ export function PersonSlider({ persons }: { persons: GuardianPerson[] }) {
           ) : (
             <Muted>최근 기록이 없습니다.</Muted>
           )}
+          <Link
+            href={`/persons/${selected.id}/records`}
+            className="mt-2 inline-block text-caption font-semibold text-primary-700 underline"
+          >
+            전체 기록 보기 →
+          </Link>
         </Card>
 
         <Card title="권한 현황">

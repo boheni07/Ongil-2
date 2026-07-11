@@ -11,6 +11,9 @@ import { GuardianDashboardScreen } from "../screens/GuardianDashboardScreen";
 import { PersonRegisterScreen } from "../screens/PersonRegisterScreen";
 import { PermissionMatrixScreen } from "../screens/PermissionMatrixScreen";
 import { PermissionGrantScreen } from "../screens/PermissionGrantScreen";
+import { RecordManagerScreen } from "../screens/RecordManagerScreen";
+import { RecordDetailScreen } from "../screens/RecordDetailScreen";
+import { RecordFormScreen } from "../screens/RecordFormScreen";
 import { GenericHomeScreen } from "../screens/GenericHomeScreen";
 import type {
   PersonStackParamList,
@@ -102,6 +105,21 @@ export function MainNavigator({ session }: { session: Session }) {
           name="PermissionGrant"
           component={PermissionGrantScreen}
           options={{ title: "권한 부여" }}
+        />
+        <GuardianStack.Screen
+          name="RecordManager"
+          component={RecordManagerScreen}
+          options={{ title: "기록 관리" }}
+        />
+        <GuardianStack.Screen
+          name="RecordDetail"
+          component={RecordDetailScreen}
+          options={{ title: "기록 상세" }}
+        />
+        <GuardianStack.Screen
+          name="RecordForm"
+          component={RecordFormScreen}
+          options={{ title: "기록 작성" }}
         />
       </GuardianStack.Navigator>
     );

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { domainKeySchema } from "./permissions";
 
 /**
  * records 도메인 검증 스키마 — docs/05-erd.md §3 record_type별 content JSONB.
@@ -90,4 +91,57 @@ function timeToMinutes(hhmm: string): number {
 export function computeServiceHours(startTime: string, endTime: string): number {
   const diff = timeToMinutes(endTime) - timeToMinutes(startTime);
   return Math.round((diff / 60) * 100) / 100;
+}
+
+// ─────────────────────────────────────────────────────────
+// GEN-001 — 보호자 범용 기록 (G-21, docs/05-erd.md §3)
+// ─────────────────────────────────────────────────────────
+
+/**
+ * 보호자가 도메인 제한 없이 직접 작성하는 범용 기록 타입.
+ * 전문가가 만든 구조화 기록(EDU-001/WEL-004 등)과 달리 content가 {title, body}로 단순하다.
+ * 보호자의 기존 구조화 기록 "수정"은 이 타입으로 저장하지 않고 원본 content에
+ * guardianNote 서브키를 비파괴적으로 병합한다(구조화 필드 유실 방지, actions.ts 참고).
+ */
+export const GUARDIAN_RECORD_TYPE = "GEN-001";
+
+export const guardianRecordSchema = z.object({
+  domain: domainKeySchema,
+  title: z.string().min(1, "제목을 입력해주세요.").max(200, "제목은 200자 이내여야 합니다."),
+  body: z.string().min(1, "내용을 입력해주세요.").max(5000, "내용은 5000자 이내여야 합니다."),
+});
+
+export type GuardianRecordInput = z.infer<typeof guardianRecordSchema>;
+
+/** 구조화 기록에 병합되는 보호자 메모 서브키(content.guardianNote) 형태. */
+export interface GuardianNote {
+  title: string;
+  body: string;
+  editedAt: string;
+}
+
+/** record_type → 목록/상세 표시용 한글 라벨(docs/05-erd.md §3). */
+export const RECORD_TYPE_LABEL: Record<string, string> = {
+  "GEN-001": "보호자 기록",
+  "SELF-001": "자기표현",
+  "DAI-002": "활동지원 일지",
+  "EDU-001": "IEP",
+  "MED-005": "치료계획서",
+  "MED-006": "회기 일지",
+  "MED-007": "평가보고서",
+  "WEL-004": "ISP",
+  "WEL-005": "서비스 이용계획",
+  "TRA-001": "전환계획",
+};
+
+/**
+ * G-20 목록 표시용 제목. GEN-001은 content.title을 그대로 쓰고, 나머지 구조화 기록은
+ * record_type 라벨을 쓴다(9종 전부 완벽한 제목 추출은 하지 않는 실용적 처리).
+ */
+export function recordDisplayTitle(recordType: string, content: unknown): string {
+  if (recordType === GUARDIAN_RECORD_TYPE) {
+    const c = content as { title?: unknown } | null;
+    if (c && typeof c.title === "string" && c.title.trim()) return c.title.trim();
+  }
+  return RECORD_TYPE_LABEL[recordType] ?? recordType;
 }

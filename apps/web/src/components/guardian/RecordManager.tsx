@@ -1,0 +1,249 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import {
+  getRecordDetail,
+  confirmRecord,
+  type RecordListItem,
+  type RecordDetail,
+} from "@/app/(app)/persons/[id]/records/actions";
+import { DomainChip } from "@/components/timeline/DomainChip";
+import { ConfirmBadge } from "@/components/records/ConfirmBadge";
+import { Button } from "@/components/ui/button";
+
+/**
+ * G-20 기록 관리 — Split Pane(좌: 검색+목록 / 우: 상세).
+ * docs/02-ia.md §3-3, 프로토타입 web-guardian.html 455~523줄.
+ */
+export function RecordManager({
+  personId,
+  personName,
+  initialItems,
+}: {
+  personId: string;
+  personName: string;
+  initialItems: RecordListItem[];
+}) {
+  const [query, setQuery] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(initialItems[0]?.id ?? null);
+  const [detail, setDetail] = useState<RecordDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [confirmBusy, setConfirmBusy] = useState(false);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return initialItems;
+    return initialItems.filter(
+      (r) =>
+        r.title.toLowerCase().includes(q) ||
+        (r.authorName?.toLowerCase().includes(q) ?? false)
+    );
+  }, [initialItems, query]);
+
+  useEffect(() => {
+    if (!selectedId) {
+      setDetail(null);
+      return;
+    }
+    let active = true;
+    setDetailLoading(true);
+    setConfirmError(null);
+    getRecordDetail(selectedId).then((res) => {
+      if (active) {
+        setDetail(res);
+        setDetailLoading(false);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [selectedId]);
+
+  async function handleConfirm() {
+    if (!detail) return;
+    setConfirmBusy(true);
+    setConfirmError(null);
+    const res = await confirmRecord(detail.id);
+    if (res.error) {
+      setConfirmError(res.error);
+      setConfirmBusy(false);
+      return;
+    }
+    setDetail({ ...detail, confirmedAt: new Date().toISOString() });
+    setConfirmBusy(false);
+  }
+
+  return (
+    <div className="flex flex-1 flex-col">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-headline-1 font-extrabold text-foreground">기록 관리</h1>
+          <p className="mt-1 text-body text-muted-foreground">
+            {personName} · 목록에서 기록을 선택하면 우측에 상세가 표시됩니다. 보호자는 모든 도메인의
+            기록을 직접 작성·수정할 수 있습니다.
+          </p>
+        </div>
+        <Button
+          render={<Link href={`/persons/${personId}/records/new`} />}
+          className="h-11 bg-accent-amber font-bold text-accent-stone hover:bg-[#f5bd5e]"
+        >
+          ＋ 새 기록 작성
+        </Button>
+      </div>
+
+      <div className="mt-6 grid min-w-0 gap-0 rounded-xl bg-white ring-1 ring-foreground/10 lg:grid-cols-[320px_1fr]">
+        <div className="min-h-0 overflow-y-auto border-b border-border lg:border-b-0 lg:border-r">
+          <div className="p-3">
+            <input
+              type="text"
+              aria-label="기록 검색"
+              placeholder="🔍 기록 검색 (제목·작성자)"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="min-h-11 w-full rounded-(--br-md) border border-border bg-white px-3.5 text-body text-foreground outline-none focus-visible:border-primary-600"
+            />
+          </div>
+          <ul className="flex flex-col">
+            {filtered.length === 0 && (
+              <li className="px-4 py-6 text-center text-caption text-muted-foreground">
+                기록이 없습니다.
+              </li>
+            )}
+            {filtered.map((r) => (
+              <li key={r.id}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedId(r.id)}
+                  aria-current={selectedId === r.id ? "true" : undefined}
+                  className={`flex w-full flex-col gap-1 border-b border-border px-4 py-3 text-left transition-colors ${
+                    selectedId === r.id ? "bg-primary-50" : "hover:bg-muted"
+                  }`}
+                >
+                  <span className="flex items-center gap-2 font-semibold text-foreground">
+                    {r.title}
+                    <DomainChip domain={r.domain} />
+                    {r.isDraft && (
+                      <span className="rounded-[4px] bg-muted px-1.5 py-0.5 text-[11px] font-bold text-muted-foreground">
+                        임시저장
+                      </span>
+                    )}
+                  </span>
+                  <span className="flex items-center gap-2 text-caption text-muted-foreground">
+                    {r.authorName ?? "알 수 없음"} · {r.recordDate.slice(0, 10)}
+                    {r.requiresConfirmation && <ConfirmBadge confirmedAt={r.confirmedAt} />}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="min-h-0 overflow-y-auto p-5">
+          {detailLoading && <p className="text-body text-muted-foreground">불러오는 중...</p>}
+          {!detailLoading && !detail && (
+            <p className="text-body text-muted-foreground">기록을 선택해주세요.</p>
+          )}
+          {!detailLoading && detail && (
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <DomainChip domain={detail.domain} />
+                  <h2 className="text-headline-2 font-bold text-foreground">{detail.title}</h2>
+                </div>
+                <Button
+                  render={<Link href={`/persons/${personId}/records/${detail.id}/edit`} />}
+                  variant="outline"
+                  className="h-9"
+                >
+                  ✎ 수정
+                </Button>
+              </div>
+              <p className="text-caption text-muted-foreground">
+                👤 작성자 {detail.authorName ?? "알 수 없음"} · 🗓 {detail.recordDate.slice(0, 10)}
+              </p>
+
+              {detail.requiresConfirmation && !detail.confirmedAt && (
+                <div className="rounded-(--br-md) bg-domain-dai-bg p-4 ring-1 ring-domain-dai-accent/30">
+                  <p className="text-body text-foreground">
+                    🔑 이 기록은 공식 문서로 <b>확인</b>이 필요합니다. 승인·반려가 아니라 내용을
+                    확인했음을 남기는 절차입니다.
+                  </p>
+                  {confirmError && (
+                    <p role="alert" className="mt-2 text-caption font-semibold text-red-600">
+                      {confirmError}
+                    </p>
+                  )}
+                  <Button
+                    type="button"
+                    className="mt-3 h-10 font-bold"
+                    disabled={confirmBusy}
+                    onClick={() => void handleConfirm()}
+                  >
+                    {confirmBusy ? "처리 중..." : "확인했습니다"}
+                  </Button>
+                </div>
+              )}
+              {detail.requiresConfirmation && detail.confirmedAt && (
+                <ConfirmBadge confirmedAt={detail.confirmedAt} />
+              )}
+
+              {detail.isGuardianRecord ? (
+                <GuardianBody content={detail.content} />
+              ) : (
+                <StructuredBody content={detail.content} guardianNote={detail.guardianNote} />
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GuardianBody({ content }: { content: unknown }) {
+  const c = content as { title?: string; body?: string } | null;
+  return (
+    <div className="field-block">
+      <p className="text-label font-semibold text-accent-stone">내용</p>
+      <p className="mt-1 whitespace-pre-wrap text-body text-foreground">{c?.body ?? ""}</p>
+    </div>
+  );
+}
+
+function StructuredBody({
+  content,
+  guardianNote,
+}: {
+  content: unknown;
+  guardianNote: { title: string; body: string; editedAt: string } | null;
+}) {
+  const entries = Object.entries((content as Record<string, unknown>) ?? {}).filter(
+    ([k]) => k !== "guardianNote"
+  );
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="rounded-(--br-md) border border-border p-4">
+        <p className="mb-2 text-label font-semibold text-accent-stone">원본 기록 내용</p>
+        <dl className="flex flex-col gap-2">
+          {entries.map(([k, v]) => (
+            <div key={k}>
+              <dt className="text-caption font-semibold text-muted-foreground">{k}</dt>
+              <dd className="text-body text-foreground">
+                {typeof v === "string" ? v : JSON.stringify(v)}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+      {guardianNote && (
+        <div className="rounded-(--br-md) bg-primary-50 p-4">
+          <p className="text-label font-semibold text-primary-800">보호자 메모</p>
+          <p className="mt-1 text-body font-bold text-foreground">{guardianNote.title}</p>
+          <p className="mt-1 whitespace-pre-wrap text-body text-foreground">{guardianNote.body}</p>
+        </div>
+      )}
+    </div>
+  );
+}

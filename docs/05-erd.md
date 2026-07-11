@@ -644,6 +644,18 @@ RLS 정책·GRANT의 신뢰 소스는 security-rls의 `20260710000000_p0_7_conse
 - W-16 "전환계획 로드맵"(UIUX §7-5)은 `roadmap_stage` 값으로 `[탐색]→[계획]→[훈련]→[취업/자립]` 4단계 중 현재 위치를 마커로 표시한다.
 - `EDU-001.transition_plan`(IEP 내 전환계획 서브섹션, 만 14세+ 조건부)과는 별개의 독립 레코드다 — IEP 쪽은 교육 목표 관점의 요약이고, TRA-001은 사회복지사가 작성하는 전환 로드맵 전체를 관리한다. 두 레코드 간 명시적 FK는 없으며 같은 `person_id`로만 연결된다.
 
+### GEN-001 — 보호자 범용 기록 (G-21)
+
+```typescript
+{
+  title: string,   // 1~200자
+  body: string,    // 1~5000자
+}
+```
+
+- 보호자(`guardians`)가 도메인 제한 없이 직접 작성하는 자유 형식 기록(F-G-04). 전문가가 만드는 구조화 기록(EDU-001/WEL-004 등)과 달리 `content`가 `{title, body}`로 단순하다. `domain`은 6개 도메인 중 작성 시 선택하며, `requires_confirmation=false`(보호자 본인 작성분은 확인 절차 대상 아님, §4-6).
+- **구조화 기록의 보호자 편집(비파괴):** 보호자가 GEN-001이 아닌 구조화 기록을 G-21에서 "수정"할 때는 `content`를 `{title, body}`로 덮어쓰지 않는다. 원본 구조화 필드를 보존하기 위해 `content.guardianNote: { title, body, editedAt }` 서브키에 병합한다. 화면은 원본 구조화 내용을 보여주고 그 아래 "보호자 메모" 섹션만 편집 가능하게 노출한다. `content` 변경이므로 `requires_confirmation=true`였던 기록은 `trg_reset_confirmation_on_edit`(§4-6④)에 의해 재확인 대기로 되돌아간다.
+
 ---
 
 ## 4. RLS 정책

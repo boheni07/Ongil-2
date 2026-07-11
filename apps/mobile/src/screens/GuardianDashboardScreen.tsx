@@ -160,7 +160,19 @@ export function GuardianDashboardScreen({ navigation }: Props) {
             ) : (
               <Text style={styles.muted}>최근 기록이 없습니다.</Text>
             )}
-            <DisabledButton label="전체 기록 보기 (준비 중)" />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${selected.fullName} 전체 기록 보기`}
+              onPress={() =>
+                navigation.navigate("RecordManager", {
+                  personId: selected.id,
+                  personName: selected.fullName,
+                })
+              }
+              style={({ pressed }) => [styles.actionBtnOutline, pressed && styles.pressed]}
+            >
+              <Text style={styles.actionBtnOutlineText}>전체 기록 보기</Text>
+            </Pressable>
           </View>
 
           <View style={styles.card}>
@@ -211,19 +223,6 @@ function EmergencyRow({ label, value }: { label: string; value?: string }) {
     <View style={styles.emRow}>
       <Text style={styles.emLabel}>{label}</Text>
       <Text style={styles.emValue}>{value?.trim() ? value : "정보 없음"}</Text>
-    </View>
-  );
-}
-
-function DisabledButton({ label }: { label: string }) {
-  return (
-    <View
-      accessibilityRole="button"
-      accessibilityState={{ disabled: true }}
-      accessibilityLabel={label}
-      style={styles.disabledBtn}
-    >
-      <Text style={styles.disabledBtnText}>{label}</Text>
     </View>
   );
 }

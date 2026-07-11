@@ -37,6 +37,9 @@ export type GuardianStackParamList = {
   PersonRegister: undefined;
   PermissionMatrix: { personId: string; personName: string };
   PermissionGrant: { personId: string; personName: string };
+  RecordManager: { personId: string; personName: string };
+  RecordDetail: { recordId: string; personId: string; personName: string };
+  RecordForm: { personId: string; personName: string; recordId?: string };
 };
 
 export type GenericStackParamList = {
