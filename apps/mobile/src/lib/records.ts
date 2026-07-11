@@ -98,7 +98,17 @@ function extractGuardianNote(content: unknown): GuardianNote | null {
   return null;
 }
 
-/** G-20 목록 — 해당 당사자의 모든 도메인·모든 record_type 기록(최신순). */
+/** 미확인 기록을 우선 정렬(docs/02-ia.md §3-3), 그 다음 최신순. */
+function sortByConfirmationThenDate(items: RecordListItem[]): RecordListItem[] {
+  return [...items].sort((a, b) => {
+    const aPending = a.requiresConfirmation && !a.confirmedAt ? 0 : 1;
+    const bPending = b.requiresConfirmation && !b.confirmedAt ? 0 : 1;
+    if (aPending !== bPending) return aPending - bPending;
+    return a.recordDate < b.recordDate ? 1 : -1;
+  });
+}
+
+/** G-20 목록 — 해당 당사자의 모든 도메인·모든 record_type 기록. 미확인 우선, 그 다음 최신순. */
 export async function getPersonRecords(personId: string): Promise<RecordListItem[]> {
   if (!UUID_RE.test(personId)) return [];
 
@@ -110,7 +120,7 @@ export async function getPersonRecords(personId: string): Promise<RecordListItem
     .limit(100);
 
   if (error || !data) return [];
-  return (data as unknown as RawRecordRow[]).map(toListItem);
+  return sortByConfirmationThenDate((data as unknown as RawRecordRow[]).map(toListItem));
 }
 
 /** G-20 상세 — 단일 기록 전체(content 원본 포함). 접근 불가 시 null. */
@@ -239,18 +249,4 @@ export async function confirmRecord(recordId: string): Promise<ActionResult> {
     return { error: `확인 처리에 실패했습니다: ${error.message}` };
   }
   return { ok: true };
-}
-
-/** G-20 검색 — 제목/작성자 기준 클라이언트 필터링(웹과 동일한 실용적 접근). */
-export async function searchPersonRecords(
-  personId: string,
-  query: string
-): Promise<RecordListItem[]> {
-  const items = await getPersonRecords(personId);
-  const q = query.trim().toLowerCase();
-  if (!q) return items;
-  return items.filter(
-    (r) =>
-      r.title.toLowerCase().includes(q) || (r.authorName?.toLowerCase().includes(q) ?? false)
-  );
 }

@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
   subtle: { fontSize: FONT.body, color: NEUTRAL.textMuted },
   headRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   editBtn: {
-    minHeight: TOUCH_MIN - 4,
+    minHeight: TOUCH_MIN,
     paddingHorizontal: SPACING.md,
     borderRadius: RADIUS.md,
     borderWidth: 1,

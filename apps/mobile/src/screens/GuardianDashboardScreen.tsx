@@ -300,15 +300,6 @@ const styles = StyleSheet.create({
   recDate: { fontSize: 12, color: NEUTRAL.textMuted, marginTop: 2 },
   permCount: { fontSize: 15, fontWeight: "700", color: PRIMARY[700], marginBottom: SPACING.sm },
   muted: { fontSize: 14, color: NEUTRAL.textMuted },
-  disabledBtn: {
-    marginTop: SPACING.md,
-    minHeight: 44,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: RADIUS.md,
-    backgroundColor: NEUTRAL.surface,
-  },
-  disabledBtnText: { fontSize: 13, fontWeight: "600", color: NEUTRAL.textMuted },
   actionBtn: {
     marginTop: SPACING.md,
     minHeight: 48,
