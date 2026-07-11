@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { EmergencyInfoInput } from "@ongil/validation";
 import {
@@ -135,7 +136,12 @@ export function PersonSlider({ persons }: { persons: GuardianPerson[] }) {
           ) : (
             <>
               <p className="text-2xl font-extrabold text-primary-700">{summary?.permissionCount ?? 0}건</p>
-              <Muted>활성 권한. 상세 관리는 준비 중입니다.</Muted>
+              <Link
+                href={`/persons/${selected.id}/permissions`}
+                className="mt-1 inline-block text-caption font-semibold text-primary-700 underline"
+              >
+                권한 매트릭스 보기 →
+              </Link>
             </>
           )}
         </Card>

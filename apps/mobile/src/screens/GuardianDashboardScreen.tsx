@@ -168,8 +168,32 @@ export function GuardianDashboardScreen({ navigation }: Props) {
             <Text style={styles.permCount}>
               활성 권한 {summary?.permissionCount ?? 0}건
             </Text>
-            <DisabledButton label="권한 매트릭스 (준비 중)" />
-            <DisabledButton label="권한 부여하기 (준비 중)" />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${selected.fullName} 권한 매트릭스 열기`}
+              onPress={() =>
+                navigation.navigate("PermissionMatrix", {
+                  personId: selected.id,
+                  personName: selected.fullName,
+                })
+              }
+              style={({ pressed }) => [styles.actionBtn, pressed && styles.pressed]}
+            >
+              <Text style={styles.actionBtnText}>권한 매트릭스</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${selected.fullName}에게 권한 부여하기`}
+              onPress={() =>
+                navigation.navigate("PermissionGrant", {
+                  personId: selected.id,
+                  personName: selected.fullName,
+                })
+              }
+              style={({ pressed }) => [styles.actionBtnOutline, pressed && styles.pressed]}
+            >
+              <Text style={styles.actionBtnOutlineText}>＋ 권한 부여하기</Text>
+            </Pressable>
           </View>
 
           <View style={styles.card}>
@@ -286,4 +310,24 @@ const styles = StyleSheet.create({
     backgroundColor: NEUTRAL.surface,
   },
   disabledBtnText: { fontSize: 13, fontWeight: "600", color: NEUTRAL.textMuted },
+  actionBtn: {
+    marginTop: SPACING.md,
+    minHeight: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: RADIUS.md,
+    backgroundColor: PRIMARY[600],
+  },
+  actionBtnText: { fontSize: 16, fontWeight: "700", color: "#fff" },
+  actionBtnOutline: {
+    marginTop: SPACING.sm,
+    minHeight: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: RADIUS.md,
+    borderWidth: 1.5,
+    borderColor: PRIMARY[400],
+    backgroundColor: PRIMARY[50],
+  },
+  actionBtnOutlineText: { fontSize: 16, fontWeight: "700", color: PRIMARY[700] },
 });

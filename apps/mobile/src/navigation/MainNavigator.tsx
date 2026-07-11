@@ -9,6 +9,8 @@ import { JournalComposeScreen } from "../screens/JournalComposeScreen";
 import { JournalDetailScreen } from "../screens/JournalDetailScreen";
 import { GuardianDashboardScreen } from "../screens/GuardianDashboardScreen";
 import { PersonRegisterScreen } from "../screens/PersonRegisterScreen";
+import { PermissionMatrixScreen } from "../screens/PermissionMatrixScreen";
+import { PermissionGrantScreen } from "../screens/PermissionGrantScreen";
 import { GenericHomeScreen } from "../screens/GenericHomeScreen";
 import type {
   PersonStackParamList,
@@ -90,6 +92,16 @@ export function MainNavigator({ session }: { session: Session }) {
           name="PersonRegister"
           component={PersonRegisterScreen}
           options={{ title: "당사자 등록" }}
+        />
+        <GuardianStack.Screen
+          name="PermissionMatrix"
+          component={PermissionMatrixScreen}
+          options={{ title: "권한 관리" }}
+        />
+        <GuardianStack.Screen
+          name="PermissionGrant"
+          component={PermissionGrantScreen}
+          options={{ title: "권한 부여" }}
         />
       </GuardianStack.Navigator>
     );

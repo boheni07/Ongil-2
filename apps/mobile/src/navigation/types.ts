@@ -35,6 +35,8 @@ export type SupporterStackParamList = {
 export type GuardianStackParamList = {
   GuardianDashboard: undefined;
   PersonRegister: undefined;
+  PermissionMatrix: { personId: string; personName: string };
+  PermissionGrant: { personId: string; personName: string };
 };
 
 export type GenericStackParamList = {

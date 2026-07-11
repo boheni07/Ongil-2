@@ -15,4 +15,5 @@ export const DOMAIN_COLORS = {
   LEG: { bg: "#EEF2F7", text: "#3E5E7A", accent: "#5A7FA0" },
 } as const;
 
-export type DomainKey = keyof typeof DOMAIN_COLORS;
+// DomainKey의 SSOT는 @ongil/validation(도메인 값 집합은 DB CHECK 제약과 1:1). 여기서는 재노출만 한다.
+export type { DomainKey } from "@ongil/validation";
