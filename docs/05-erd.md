@@ -808,6 +808,16 @@ CREATE POLICY permissions_select ON permissions FOR SELECT
 
 ### 4-4. permission_logs, access_logs (불변 감사 로그)
 
+> ⚠️ **정정 이력(P1-8 pgTAP 스위트 작성 중 발견):** 아래 원문의 `DISABLE ROW LEVEL SECURITY`가
+> 실제 마이그레이션(`20260709040253_p0_4_rls_policies`)에 그대로 적용됐는데, 바로 다음
+> 마이그레이션이 `permission_logs`에 authenticated SELECT/INSERT/UPDATE/DELETE를 GRANT해서
+> **임의의 로그인 사용자가 모든 당사자의 권한 변경 감사 로그를 열람·수정·삭제할 수 있는
+> 상태**였다(consents·guardians에서 발견한 것과 동일 계열의 결함). "시스템 서비스 역할에서만
+> 접근" 의도는 RLS 비활성이 아니라 "트리거 경유 쓰기만 허용"이었어야 한다.
+> `20260710020000_p1_permission_logs_rls_hotfix`에서 RLS를 활성화하고, 기존 INSERT 정책(아래
+> 원문)은 트리거 쓰기를 위해 그대로 유지하되, SELECT는 주보호자로 한정하고 UPDATE/DELETE는
+> 정책 없이 GRANT까지 회수해 불변 로그 원칙을 지키도록 보완했다.
+
 ```sql
 -- INSERT ONLY (시스템 레벨에서만 트리거)
 CREATE POLICY perm_logs_insert ON permission_logs FOR INSERT WITH CHECK (true);
@@ -824,6 +834,26 @@ CREATE POLICY access_logs_select ON access_logs FOR SELECT
         AND is_primary = true
     )
   );
+```
+
+**최종 적용본(핫픽스 반영, permission_logs만 — access_logs는 원문 그대로 유효):**
+
+```sql
+ALTER TABLE permission_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY perm_logs_select ON permission_logs FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM permissions p
+      JOIN guardians g ON g.person_id = p.person_id
+      WHERE p.id = permission_logs.permission_id
+        AND g.user_id = auth.uid()
+        AND g.is_primary = true
+    )
+  );
+
+-- UPDATE/DELETE 정책 없음(RLS 활성 상태의 정책 부재 = 전면 거부) + GRANT 회수
+REVOKE UPDATE, DELETE ON permission_logs FROM authenticated;
 ```
 
 ### 4-5. 권한 관리 라이프사이클 (권장안 — PRD §3-2, §3-3 연동)
