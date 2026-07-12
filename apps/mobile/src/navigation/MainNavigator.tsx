@@ -15,11 +15,17 @@ import { RecordManagerScreen } from "../screens/RecordManagerScreen";
 import { RecordDetailScreen } from "../screens/RecordDetailScreen";
 import { RecordFormScreen } from "../screens/RecordFormScreen";
 import { AccessLogsScreen } from "../screens/AccessLogsScreen";
+import { TeacherHomeScreen } from "../screens/TeacherHomeScreen";
+import { IepWizardScreen } from "../screens/IepWizardScreen";
+import { IepReviewScreen } from "../screens/IepReviewScreen";
+import { ObservationFormScreen } from "../screens/ObservationFormScreen";
+import { EduTimelineScreen } from "../screens/EduTimelineScreen";
 import { GenericHomeScreen } from "../screens/GenericHomeScreen";
 import type {
   PersonStackParamList,
   SupporterStackParamList,
   GuardianStackParamList,
+  TeacherStackParamList,
   GenericStackParamList,
 } from "./types";
 
@@ -34,6 +40,7 @@ const screenOptions = {
 const PersonStack = createNativeStackNavigator<PersonStackParamList>();
 const SupporterStack = createNativeStackNavigator<SupporterStackParamList>();
 const GuardianStack = createNativeStackNavigator<GuardianStackParamList>();
+const TeacherStack = createNativeStackNavigator<TeacherStackParamList>();
 const GenericStack = createNativeStackNavigator<GenericStackParamList>();
 
 const ROLE_LABEL: Record<Role, string> = {
@@ -131,7 +138,39 @@ export function MainNavigator({ session }: { session: Session }) {
     );
   }
 
-  // 이번 범위 밖 역할(특수교사·사회복지사·치료사)
+  if (role === "teacher") {
+    return (
+      <TeacherStack.Navigator initialRouteName="TeacherHome" screenOptions={screenOptions}>
+        <TeacherStack.Screen
+          name="TeacherHome"
+          component={TeacherHomeScreen}
+          options={{ headerShown: false }}
+        />
+        <TeacherStack.Screen
+          name="IepWizard"
+          component={IepWizardScreen}
+          options={{ title: "IEP 작성" }}
+        />
+        <TeacherStack.Screen
+          name="IepReview"
+          component={IepReviewScreen}
+          options={{ title: "IEP 점검" }}
+        />
+        <TeacherStack.Screen
+          name="ObservationForm"
+          component={ObservationFormScreen}
+          options={{ title: "관찰기록 작성" }}
+        />
+        <TeacherStack.Screen
+          name="EduTimeline"
+          component={EduTimelineScreen}
+          options={{ title: "교육 타임라인" }}
+        />
+      </TeacherStack.Navigator>
+    );
+  }
+
+  // 이번 범위 밖 역할(사회복지사·치료사)
   return (
     <GenericStack.Navigator screenOptions={screenOptions}>
       <GenericStack.Screen name="GenericHome" options={{ headerShown: false }}>

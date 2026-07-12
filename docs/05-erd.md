@@ -522,6 +522,23 @@ RLS 정책·GRANT의 신뢰 소스는 security-rls의 `20260710000000_p0_7_conse
 }
 ```
 
+- `annual_goals[]`의 `achievement_rate`(0~100)와 `evaluation_note`는 §3 원안에 없던 **선택 확장 필드**다(P2-1 T-14 추가). 작성(T-13) 시엔 없다가 T-14 인라인 점검에서 채워지며, 없으면 미평가로 간주한다. T-01 카드의 달성률 평균은 채워진 `achievement_rate`만 집계한다.
+
+### EDU-002 — 관찰기록 (특수교사, P2-1 T-16)
+
+```typescript
+{
+  observedAt: string,        // ISO datetime (관찰 일시). record_date로도 사용
+  situation: string,         // 관찰 상황 (예: '3교시 국어 모둠 활동')
+  tags: string[],            // 행동/언어/사회성/학습 4개 카테고리의 태그 값(복수). records.tags 컬럼에도 동일 저장
+  note: string,              // 관찰 내용 (1~3000자)
+  linkedGoalArea?: string,   // T-14에서 연결한 IEP 목표 영역 라벨(느슨한 문자열 매칭, FK 아님)
+}
+```
+
+- 특수교사가 작성하는 일상 관찰 기록(F-T-03). `domain='EDU'`, `requires_confirmation=false`(§4-6 일상 기록 — 확인 절차 없음).
+- EDU-001(snake_case)과 달리 **camelCase 키**를 쓴다 — `linkedGoalArea`는 T-14 "관찰기록 연결" 패널에서 IEP 목표(`annual_goals[].area` 또는 `"영역 · 목표"` 라벨)와 문자열로 느슨하게 매칭하는 키이며 FK가 아니다. 태그 카탈로그(4카테고리×4)는 `@ongil/validation`의 `OBSERVATION_TAG_CATALOG` 상수로 프론트·검증이 공유한다.
+
 ### MED-005 — 치료계획서
 
 ```typescript

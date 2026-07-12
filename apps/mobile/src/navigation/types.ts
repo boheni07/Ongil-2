@@ -43,6 +43,14 @@ export type GuardianStackParamList = {
   AccessLogs: { personId: string; personName: string };
 };
 
+export type TeacherStackParamList = {
+  TeacherHome: undefined;
+  IepWizard: { personId: string; personName: string };
+  IepReview: { recordId: string };
+  ObservationForm: { personId: string; personName: string };
+  EduTimeline: { personId: string; personName: string };
+};
+
 export type GenericStackParamList = {
   GenericHome: undefined;
 };

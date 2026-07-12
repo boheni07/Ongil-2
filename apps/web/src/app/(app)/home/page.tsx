@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { PersonHome } from "@/components/person/PersonHome";
 import { SupporterHome } from "@/components/supporter/SupporterHome";
+import { TeacherHome } from "@/components/teacher/TeacherHome";
 
 /**
  * /home — 역할별 분기(docs/02-ia.md §5). person이면 P-01, supporter면 S-01을 렌더한다.
@@ -22,6 +23,7 @@ export default async function HomePage() {
 
   if (role === "person") return <PersonHome userName={fullName} />;
   if (role === "supporter") return <SupporterHome userName={fullName} />;
+  if (role === "teacher") return <TeacherHome userName={fullName} />;
 
   return (
     <div>
