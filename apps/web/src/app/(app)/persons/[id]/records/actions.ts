@@ -9,6 +9,7 @@ import {
   type DomainKey,
 } from "@ongil/validation";
 import { createClient } from "@/lib/supabase/server";
+import { logAccess } from "@/lib/access-log";
 
 /**
  * G-20 보호자용 기록 관리(Split Pane 목록+상세) + G-21 기록 작성·수정 Server Action 모음.
@@ -151,6 +152,10 @@ export async function getRecordDetail(recordId: string): Promise<RecordDetail | 
 
   if (error || !data) return null;
   const row = data as unknown as RawRecordRow;
+  await logAccess(row.person_id, "view", {
+    recordId: row.id,
+    domain: row.domain as DomainKey,
+  });
   const isGuardianRecord = row.record_type === GUARDIAN_RECORD_TYPE;
   return {
     ...toListItem(row),
@@ -199,6 +204,10 @@ export async function createGuardianRecord(
     .single();
 
   if (insErr) return { error: `기록 저장에 실패했습니다: ${insErr.message}` };
+  await logAccess(personId, "create", {
+    recordId: row.id as string,
+    domain: parsed.data.domain,
+  });
   return { ok: true, recordId: row.id as string };
 }
 
@@ -224,7 +233,7 @@ export async function updateGuardianRecord(
 
   const { data: existing, error: selErr } = await supabase
     .from("records")
-    .select("id, record_type, content")
+    .select("id, person_id, domain, record_type, content")
     .eq("id", recordId)
     .maybeSingle();
 
@@ -253,6 +262,10 @@ export async function updateGuardianRecord(
     .eq("id", recordId);
 
   if (updErr) return { error: `기록 수정에 실패했습니다: ${updErr.message}` };
+  await logAccess(existing.person_id as string, "update", {
+    recordId,
+    domain: existing.domain as DomainKey,
+  });
   return { ok: true };
 }
 

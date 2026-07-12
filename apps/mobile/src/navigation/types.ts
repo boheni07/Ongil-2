@@ -40,6 +40,7 @@ export type GuardianStackParamList = {
   RecordManager: { personId: string; personName: string };
   RecordDetail: { recordId: string; personId: string; personName: string };
   RecordForm: { personId: string; personName: string; recordId?: string };
+  AccessLogs: { personId: string; personName: string };
 };
 
 export type GenericStackParamList = {

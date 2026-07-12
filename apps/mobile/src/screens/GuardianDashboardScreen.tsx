@@ -206,6 +206,19 @@ export function GuardianDashboardScreen({ navigation }: Props) {
             >
               <Text style={styles.actionBtnOutlineText}>＋ 권한 부여하기</Text>
             </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${selected.fullName} 접근 로그 보기`}
+              onPress={() =>
+                navigation.navigate("AccessLogs", {
+                  personId: selected.id,
+                  personName: selected.fullName,
+                })
+              }
+              style={({ pressed }) => [styles.actionBtnOutline, pressed && styles.pressed]}
+            >
+              <Text style={styles.actionBtnOutlineText}>접근 로그 보기</Text>
+            </Pressable>
           </View>
 
           <View style={styles.card}>

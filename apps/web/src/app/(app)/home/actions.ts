@@ -8,6 +8,7 @@ import {
 } from "@ongil/validation";
 import type { Role } from "@ongil/validation";
 import { createClient } from "@/lib/supabase/server";
+import { logAccess } from "@/lib/access-log";
 
 /**
  * P1-3 당사자 자기표현 (P-01 오늘 기록 홈, P-02 자기표현 4단계) Server Action 모음.
@@ -123,18 +124,23 @@ export async function submitSelfExpression(input: SelfExpressionInput): Promise<
     return { error: "먼저 내 프로필을 만들어주세요." };
   }
 
-  const { error: insErr } = await supabase.from("records").insert({
-    person_id: user.id,
-    author_id: user.id,
-    domain: "DAI",
-    record_type: "SELF-001",
-    content: parsed.data,
-    is_draft: false,
-    requires_confirmation: false,
-  });
+  const { data: row, error: insErr } = await supabase
+    .from("records")
+    .insert({
+      person_id: user.id,
+      author_id: user.id,
+      domain: "DAI",
+      record_type: "SELF-001",
+      content: parsed.data,
+      is_draft: false,
+      requires_confirmation: false,
+    })
+    .select("id")
+    .single();
   if (insErr) {
     return { error: `기록 저장에 실패했습니다: ${insErr.message}` };
   }
+  await logAccess(user.id, "create", { recordId: row.id as string, domain: "DAI" });
   return { ok: true };
 }
 

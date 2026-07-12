@@ -6,6 +6,7 @@ import {
   type SupportJournalInput,
 } from "@ongil/validation";
 import { createClient } from "@/lib/supabase/server";
+import { logAccess } from "@/lib/access-log";
 
 /**
  * P1-4 활동지원 일지 (S-01 홈, S-12 작성 5단계, S-13 상세) Server Action 모음.
@@ -85,6 +86,10 @@ export async function submitSupportJournal(
 
   if (insErr) {
     return { error: `일지 저장에 실패했습니다: ${insErr.message}` };
+  }
+  // 확정 제출(비임시)만 접근 로그에 남긴다 — 임시저장은 감사 대상이 아니다.
+  if (!isDraft) {
+    await logAccess(personId, "create", { recordId: row.id as string, domain: "DAI" });
   }
   return { ok: true, recordId: row.id as string };
 }

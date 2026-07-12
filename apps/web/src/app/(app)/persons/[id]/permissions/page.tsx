@@ -51,13 +51,19 @@ export default async function PermissionsPage({ params }: { params: Promise<{ id
         <PermissionMatrix personId={id} initialRows={rows} />
       </div>
 
-      <div className="mt-5">
+      <div className="mt-5 flex flex-wrap items-center gap-3">
         <Button
           render={<Link href={`/persons/${id}/permissions/grant`} />}
           className="h-11 bg-accent-amber font-bold text-accent-stone hover:bg-[#f5bd5e]"
         >
           ＋ 새 권한 부여
         </Button>
+        <Link
+          href={`/persons/${id}/access-logs`}
+          className="text-body font-semibold text-primary-700 underline underline-offset-2"
+        >
+          접근 로그 보기 →
+        </Link>
       </div>
     </div>
   );

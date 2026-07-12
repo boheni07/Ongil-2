@@ -14,6 +14,7 @@ import { PermissionGrantScreen } from "../screens/PermissionGrantScreen";
 import { RecordManagerScreen } from "../screens/RecordManagerScreen";
 import { RecordDetailScreen } from "../screens/RecordDetailScreen";
 import { RecordFormScreen } from "../screens/RecordFormScreen";
+import { AccessLogsScreen } from "../screens/AccessLogsScreen";
 import { GenericHomeScreen } from "../screens/GenericHomeScreen";
 import type {
   PersonStackParamList,
@@ -120,6 +121,11 @@ export function MainNavigator({ session }: { session: Session }) {
           name="RecordForm"
           component={RecordFormScreen}
           options={{ title: "기록 작성" }}
+        />
+        <GuardianStack.Screen
+          name="AccessLogs"
+          component={AccessLogsScreen}
+          options={{ title: "접근 로그" }}
         />
       </GuardianStack.Navigator>
     );
