@@ -1,4 +1,4 @@
-import { Home, FileText, Settings, LayoutDashboard, PencilLine } from "lucide-react";
+import { Home, FileText, Settings, LayoutDashboard, PencilLine, ArrowLeftRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { GlobalHeader } from "@/components/layout/GlobalHeader";
 import { Sidebar, type SidebarItem } from "@/components/layout/Sidebar";
@@ -15,6 +15,7 @@ function sidebarItems(role: string | null): SidebarItem[] {
     return [
       { label: "홈", href: "/home", icon: Home },
       { label: "일지 작성", href: "/journals/new", icon: PencilLine },
+      { label: "인수인계", href: "/handovers", icon: ArrowLeftRight },
       { label: "설정", href: "/settings", icon: Settings },
     ];
   }

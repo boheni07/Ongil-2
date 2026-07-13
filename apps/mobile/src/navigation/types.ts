@@ -30,6 +30,8 @@ export type SupporterStackParamList = {
   SupporterHome: undefined;
   JournalCompose: { personId: string; personName: string } | undefined;
   JournalDetail: { journalId: string };
+  HandoverList: undefined;
+  HandoverCompose: { personId: string; personName: string } | undefined;
 };
 
 export type GuardianStackParamList = {

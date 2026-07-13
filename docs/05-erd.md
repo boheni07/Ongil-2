@@ -1163,6 +1163,77 @@ CREATE POLICY guardians_insert ON guardians FOR INSERT
 - **공동보호자 초대 수락:** invitee의 user_id는 주보호자와 다르고 `primary_guardian_id`도 아니므로 위 정책으로는 INSERT되지 않는다 — 초대 수락 시 guardians INSERT는 invitations(§4-8) 기반으로 **service_role/Edge Function**에서 처리한다(클라이언트 authenticated 직접 INSERT 아님).
 - **관계 해제/변경:** UPDATE/DELETE 정책을 두지 않아 클라이언트에서 불가. 보호자 관계 변경은 감사 로그를 동반하는 service_role 경로에서만 수행한다.
 
+### 4-10. handover_notes 테이블 (인수인계 노트 — S-20 목록 / S-21 작성)
+
+> ⚠️ **정정 이력:** `handover_notes`는 `20260709035541_init_13_tables`에서 테이블만 생성되고 `ENABLE ROW LEVEL SECURITY`가 전무했으며, `20260709041005_p0_4_rls_grants`에서 `authenticated`에 CRUD 전권 GRANT만 받았다 — consents(§4-7)·guardians(§4-9)·permission_logs(§4-4)와 **동일 계열의 allow-all 노출**이다. RLS 자체가 없으므로 임의 인증 사용자가 **모든 당사자의 모든 인수인계 노트를 열람·위조·삭제**할 수 있었다. S-20/S-21 구현 라운드에서 실제 쓰기가 발생하므로 `20260713000000_p2_handover_notifications_rls`에서 폐쇄한다.
+
+```sql
+ALTER TABLE handover_notes ENABLE ROW LEVEL SECURITY;
+
+-- SELECT: 받은(to)·보낸(from) 본인만 (주보호자 열람은 워크플로우 미명시 — 최소 권한)
+CREATE POLICY handover_notes_select ON handover_notes FOR SELECT
+  USING (to_user_id = auth.uid() OR from_user_id = auth.uid());
+
+-- INSERT: 발신자 본인 명의 + 대상 당사자에 DAI(일상지원) write/edit 권한 또는 보호자 (records_insert 패턴)
+CREATE POLICY handover_notes_insert ON handover_notes FOR INSERT
+  WITH CHECK (
+    from_user_id = auth.uid()
+    AND (
+      EXISTS (SELECT 1 FROM permissions
+              WHERE person_id = handover_notes.person_id AND grantee_id = auth.uid()
+                AND domain = 'DAI' AND access_level IN ('write','edit')
+                AND is_active = true AND (valid_until IS NULL OR valid_until >= CURRENT_DATE))
+      OR EXISTS (SELECT 1 FROM guardians
+                 WHERE person_id = handover_notes.person_id AND user_id = auth.uid())
+    )
+  );
+
+-- UPDATE: 수신자 본인의 미확인 건만 확인(ack). WITH CHECK 을 별도로 두지 않으면 acknowledged_at 을
+--   채운 새 행이 USING(acknowledged_at IS NULL)에 걸려 확인 자체가 불가능해지므로 명시 필수.
+CREATE POLICY handover_notes_update ON handover_notes FOR UPDATE
+  USING (to_user_id = auth.uid() AND acknowledged_at IS NULL)
+  WITH CHECK (to_user_id = auth.uid());
+
+-- 컬럼 단위 GRANT: acknowledged_at 만 갱신 허용(content/priority/from_user_id 변조 차단)
+REVOKE UPDATE ON handover_notes FROM authenticated;
+GRANT  UPDATE (acknowledged_at) ON handover_notes TO authenticated;
+-- DELETE 정책 없음 → 인수인계 기록 불변(위조·은폐 방지). privilege 도 회수.
+REVOKE DELETE ON handover_notes FROM authenticated;
+```
+
+- **발신자 위조 방지:** `from_user_id = auth.uid()`를 WITH CHECK 에 강제해 타인 명의 작성이 불가능하다.
+- **재확인 방지:** 이미 확인된(acknowledged_at NOT NULL) 건은 USING 에 걸려 재수정 0행 처리된다.
+
+### 4-11. notifications 테이블 (알림 — 인수인계·확인절차 등 다기능 발신)
+
+> ⚠️ **정정 이력:** `notifications`도 §4-10과 동일하게 RLS 미활성 + CRUD 전권 GRANT 상태여서, 임의 인증 사용자가 **타인 알림을 열람·위조·삭제**할 수 있었다. `20260713000000_p2_handover_notifications_rls`에서 폐쇄한다.
+
+```sql
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+
+-- SELECT: 수신자 본인 알림만
+CREATE POLICY notifications_select ON notifications FOR SELECT
+  USING (recipient_id = auth.uid());
+
+-- INSERT: 다기능(인수인계·기록확인 등)이 상대에게 알림을 보내야 하므로 발신자 제약 대신
+--   WITH CHECK(true) + 안전 컬럼 GRANT 로 is_read/sent_at/read_at 조작을 차단 (perm_logs_insert 선례)
+CREATE POLICY notifications_insert ON notifications FOR INSERT WITH CHECK (true);
+
+-- UPDATE: 본인 알림의 읽음 상태(is_read, read_at)만 갱신
+CREATE POLICY notifications_update ON notifications FOR UPDATE
+  USING (recipient_id = auth.uid()) WITH CHECK (recipient_id = auth.uid());
+
+REVOKE INSERT, UPDATE ON notifications FROM authenticated;
+GRANT  INSERT (recipient_id, type, title, body, data) ON notifications TO authenticated;
+GRANT  UPDATE (is_read, read_at) ON notifications TO authenticated;
+-- DELETE 정책 없음 → 삭제 기능 부재, 전면 차단. privilege 도 회수.
+REVOKE DELETE ON notifications FROM authenticated;
+```
+
+- **컬럼 단위 GRANT 의 역할:** INSERT WITH CHECK(true)는 발신자를 제약하지 않으므로, 쓰기 가능 컬럼을 안전 집합으로 못박아 상태 컬럼(is_read/read_at/sent_at) 위조를 막는 것이 핵심 방어선이다.
+
+> pgTAP 회귀: `supabase/tests/09_handover_notifications.sql`(20 asserts)이 §4-10·§4-11 정책을 커버한다.
+
 ---
 
 ## 5. 인덱스 전략

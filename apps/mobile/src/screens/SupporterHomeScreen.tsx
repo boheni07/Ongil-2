@@ -77,6 +77,15 @@ export function SupporterHomeScreen({ navigation }: Props) {
         <Text style={styles.ctaText}>＋ 활동일지 작성</Text>
       </Pressable>
 
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="인수인계"
+        onPress={() => navigation.navigate("HandoverList")}
+        style={({ pressed }) => [styles.secondaryCta, pressed && styles.pressed]}
+      >
+        <Text style={styles.secondaryCtaText}>🔁 인수인계</Text>
+      </Pressable>
+
       <Text style={styles.sectionTitle}>작성한 일지</Text>
       {journals.length === 0 ? (
         <Text style={styles.empty}>아직 작성한 일지가 없습니다.</Text>
@@ -146,6 +155,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   ctaText: { fontSize: 17, fontWeight: "700", color: "#fff" },
+  secondaryCta: {
+    marginTop: SPACING.md,
+    minHeight: 52,
+    borderRadius: RADIUS.md,
+    backgroundColor: PRIMARY[50],
+    borderWidth: 1,
+    borderColor: PRIMARY[400],
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  secondaryCtaText: { fontSize: 16, fontWeight: "700", color: PRIMARY[700] },
   pressed: { opacity: 0.85 },
   sectionTitle: { fontSize: FONT.h3, fontWeight: "700", color: NEUTRAL.text, marginTop: SPACING.xl, marginBottom: SPACING.sm },
   empty: { fontSize: FONT.body, color: NEUTRAL.textMuted, marginTop: SPACING.sm },

@@ -7,6 +7,8 @@ import { SelfExpressionScreen } from "../screens/SelfExpressionScreen";
 import { SupporterHomeScreen } from "../screens/SupporterHomeScreen";
 import { JournalComposeScreen } from "../screens/JournalComposeScreen";
 import { JournalDetailScreen } from "../screens/JournalDetailScreen";
+import { HandoverListScreen } from "../screens/HandoverListScreen";
+import { HandoverComposeScreen } from "../screens/HandoverComposeScreen";
 import { GuardianDashboardScreen } from "../screens/GuardianDashboardScreen";
 import { PersonRegisterScreen } from "../screens/PersonRegisterScreen";
 import { PermissionMatrixScreen } from "../screens/PermissionMatrixScreen";
@@ -101,6 +103,16 @@ export function MainNavigator({ session }: { session: Session }) {
           name="JournalDetail"
           component={JournalDetailScreen}
           options={{ title: "일지 상세" }}
+        />
+        <SupporterStack.Screen
+          name="HandoverList"
+          component={HandoverListScreen}
+          options={{ title: "인수인계" }}
+        />
+        <SupporterStack.Screen
+          name="HandoverCompose"
+          component={HandoverComposeScreen}
+          options={{ title: "인수인계 작성" }}
         />
       </SupporterStack.Navigator>
     );
