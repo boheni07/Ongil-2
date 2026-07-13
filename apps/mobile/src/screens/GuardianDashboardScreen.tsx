@@ -173,6 +173,19 @@ export function GuardianDashboardScreen({ navigation }: Props) {
             >
               <Text style={styles.actionBtnOutlineText}>전체 기록 보기</Text>
             </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${selected.fullName} 생애주기 타임라인 보기`}
+              onPress={() =>
+                navigation.navigate("Timeline", {
+                  personId: selected.id,
+                  personName: selected.fullName,
+                })
+              }
+              style={({ pressed }) => [styles.actionBtnOutline, pressed && styles.pressed]}
+            >
+              <Text style={styles.actionBtnOutlineText}>생애주기 타임라인 보기</Text>
+            </Pressable>
           </View>
 
           <View style={styles.card}>

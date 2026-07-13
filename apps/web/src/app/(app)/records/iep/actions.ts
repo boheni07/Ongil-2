@@ -84,6 +84,8 @@ export interface TimelineItem {
   title: string;
   date: string;
   isMilestone: boolean;
+  isPinned: boolean;
+  isDraft: boolean;
   tags: string[];
 }
 
@@ -413,6 +415,8 @@ interface RawTimelineRow {
   content: unknown;
   record_date: string;
   is_milestone: boolean | null;
+  is_pinned: boolean | null;
+  is_draft: boolean | null;
   tags: string[] | null;
 }
 
@@ -430,7 +434,7 @@ export async function getTimeline(
   const supabase = await createClient();
   let query = supabase
     .from("records")
-    .select("id, domain, record_type, content, record_date, is_milestone, tags")
+    .select("id, domain, record_type, content, record_date, is_milestone, is_pinned, is_draft, tags")
     .eq("person_id", personId)
     .order("record_date", { ascending: false })
     .limit(100);
@@ -446,6 +450,8 @@ export async function getTimeline(
     title: recordDisplayTitle(row.record_type, row.content),
     date: row.record_date,
     isMilestone: Boolean(row.is_milestone),
+    isPinned: Boolean(row.is_pinned),
+    isDraft: Boolean(row.is_draft),
     tags: Array.isArray(row.tags) ? row.tags : [],
   }));
 }

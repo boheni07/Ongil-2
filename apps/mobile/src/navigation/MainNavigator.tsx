@@ -15,6 +15,7 @@ import { RecordManagerScreen } from "../screens/RecordManagerScreen";
 import { RecordDetailScreen } from "../screens/RecordDetailScreen";
 import { RecordFormScreen } from "../screens/RecordFormScreen";
 import { AccessLogsScreen } from "../screens/AccessLogsScreen";
+import { GuardianTimelineScreen } from "../screens/GuardianTimelineScreen";
 import { TeacherHomeScreen } from "../screens/TeacherHomeScreen";
 import { IepWizardScreen } from "../screens/IepWizardScreen";
 import { IepReviewScreen } from "../screens/IepReviewScreen";
@@ -147,6 +148,11 @@ export function MainNavigator({ session }: { session: Session }) {
           name="AccessLogs"
           component={AccessLogsScreen}
           options={{ title: "접근 로그" }}
+        />
+        <GuardianStack.Screen
+          name="Timeline"
+          component={GuardianTimelineScreen}
+          options={{ title: "생애주기 타임라인" }}
         />
       </GuardianStack.Navigator>
     );

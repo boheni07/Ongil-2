@@ -41,6 +41,7 @@ export type GuardianStackParamList = {
   RecordDetail: { recordId: string; personId: string; personName: string };
   RecordForm: { personId: string; personName: string; recordId?: string };
   AccessLogs: { personId: string; personName: string };
+  Timeline: { personId: string; personName: string };
 };
 
 export type TeacherStackParamList = {
