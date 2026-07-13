@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { getTeacherStudents, getTimeline } from "@/app/(app)/records/iep/actions";
+import { getSocialWorkerClients } from "@/app/(app)/records/isp/actions";
 import { EduTimeline } from "@/components/teacher/EduTimeline";
+import { createClient } from "@/lib/supabase/server";
 
 /**
- * T-20 교육 타임라인. searchParams.personId 없으면 담당 학생 선택 유도 화면을 보여준다.
- * personName은 담당 학생 목록에서 파생한다(getTimeline은 이름을 반환하지 않음).
+ * T-20/W-20 공용 타임라인. searchParams.personId 없으면 담당 대상자 선택 유도 화면을 보여준다.
+ * role별로 담당 대상자 목록 조회 함수와 문구("학생"/"당사자")만 다르고, 나머지는 동일하다
+ * (getTimeline/EduTimeline은 role 무관 범용이라 그대로 재사용).
  */
 export default async function TimelinePage({
   searchParams,
@@ -12,28 +15,43 @@ export default async function TimelinePage({
   searchParams: Promise<{ personId?: string }>;
 }) {
   const { personId } = await searchParams;
-  const students = await getTeacherStudents();
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  let role: string | null = null;
+  if (user) {
+    const { data } = await supabase.from("users").select("role").eq("id", user.id).maybeSingle();
+    role = data?.role ?? null;
+  }
+  const isSocialWorker = role === "social_worker";
+  const personLabel = isSocialWorker ? "당사자" : "학생";
+
+  const clients = isSocialWorker
+    ? (await getSocialWorkerClients()).map((c) => ({ personId: c.personId, fullName: c.fullName }))
+    : (await getTeacherStudents()).map((s) => ({ personId: s.personId, fullName: s.fullName }));
 
   if (!personId) {
     return (
       <div className="flex flex-1 flex-col">
         <h1 className="text-headline-2 font-extrabold text-foreground">타임라인</h1>
         <p className="mt-1 text-body text-muted-foreground">
-          타임라인을 확인할 학생을 선택하세요.
+          타임라인을 확인할 {personLabel}를 선택하세요.
         </p>
-        {students.length === 0 ? (
+        {clients.length === 0 ? (
           <p className="mt-6 rounded-xl bg-white p-5 text-body text-muted-foreground ring-1 ring-foreground/10">
-            담당 학생이 없습니다.
+            담당 {personLabel}가 없습니다.
           </p>
         ) : (
           <ul className="mt-6 flex flex-col gap-2">
-            {students.map((s) => (
-              <li key={s.personId}>
+            {clients.map((c) => (
+              <li key={c.personId}>
                 <Link
-                  href={`/timeline?personId=${s.personId}`}
+                  href={`/timeline?personId=${c.personId}`}
                   className="flex items-center justify-between rounded-xl bg-white px-4 py-3 ring-1 ring-foreground/10 transition-colors hover:bg-primary-50"
                 >
-                  <span className="text-body font-semibold text-foreground">{s.fullName}</span>
+                  <span className="text-body font-semibold text-foreground">{c.fullName}</span>
                   <span aria-hidden="true" className="text-muted-foreground">
                     →
                   </span>
@@ -46,10 +64,10 @@ export default async function TimelinePage({
     );
   }
 
-  const [items, student] = [
+  const [items, client] = [
     await getTimeline(personId),
-    students.find((s) => s.personId === personId) ?? null,
+    clients.find((c) => c.personId === personId) ?? null,
   ];
 
-  return <EduTimeline items={items} personName={student?.fullName ?? "학생"} />;
+  return <EduTimeline items={items} personName={client?.fullName ?? personLabel} />;
 }

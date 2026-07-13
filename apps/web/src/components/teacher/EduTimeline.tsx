@@ -90,7 +90,7 @@ export function EduTimeline({
       <div className="mt-4 flex items-start gap-2 rounded-xl border-l-4 border-domain-med-accent bg-domain-med-bg p-3.5">
         <span aria-hidden="true">📌</span>
         <p className="text-body text-domain-med-text">
-          <b>응급 대응 정보</b> — 학생 프로필의 응급 정보를 확인하세요. (핀 고정 항목)
+          <b>응급 대응 정보</b> — 당사자 프로필의 응급 정보를 확인하세요. (핀 고정 항목)
         </p>
       </div>
 

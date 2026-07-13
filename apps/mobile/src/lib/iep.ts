@@ -28,7 +28,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 /** 생애주기 3단계 — 웹 computeLifeStage(docs/05-erd.md §2-2-1)와 동일 경계. */
 export type LifeStage = "child" | "youth_transition" | "adult";
 
-function computeLifeStage(birthDate: string): LifeStage {
+export function computeLifeStage(birthDate: string): LifeStage {
   const age = koreanAge(birthDate) ?? 0;
   if (age < 14) return "child";
   if (age < 18) return "youth_transition";

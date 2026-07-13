@@ -228,6 +228,109 @@ export const observationSchema = z.object({
 
 export type ObservationInput = z.infer<typeof observationSchema>;
 
+// ─────────────────────────────────────────────────────────
+// WEL-004 — ISP 개별지원계획 (P2-2 W-13/W-14, docs/05-erd.md §3)
+// ─────────────────────────────────────────────────────────
+
+/**
+ * 욕구사정 항목(§3 WEL-004 needs[]). W-13 Step2에서 "주요 욕구 영역"(복수 선택 칩) 하나당
+ * 한 항목으로 매핑한다 — area=칩 라벨, needs=당사자·가족 욕구 진술(칩 간 공유), barriers는
+ * 위저드에 별도 입력이 없어 기본 빈 문자열(프론트가 채우면 저장).
+ */
+export const ispNeedSchema = z.object({
+  area: z.string(),
+  needs: z.string(),
+  barriers: z.string().default(""),
+});
+
+/**
+ * 목표 영역(§3 WEL-004 goals[]). area/long_term/short_term/responsible/deadline은 W-13 Step3
+ * 작성 시 채운다. achievement_rate는 §3 원안엔 필수지만 IEP(EDU-001)와 동일하게 작성 시엔
+ * 없다가 W-14 인라인 점검(updateIspGoal)에서 채우는 운영이라 optional로 둔다 — W-01/W-14
+ * 달성률 평균·프로그레스 바는 채워진 값만 집계한다.
+ */
+export const ispGoalSchema = z.object({
+  area: z.string(),
+  long_term: z.string(),
+  short_term: z.string(),
+  responsible: z.string(),
+  deadline: z.string(),
+  achievement_rate: z.number().int().min(0).max(100).optional(),
+});
+
+/**
+ * ISP content(WEL-004). content JSONB 키는 §3 WEL-004와 1:1(snake_case).
+ * assessment_tool은 §3 원안에 없는 필드지만 W-13 Step2 "사정 도구/근거" 셀렉트 값을 유실
+ * 없이 저장하기 위한 단일 옵셔널 확장 필드다(needs[].barriers에 욱여넣지 않기 위함).
+ * reassessment_date는 W-14 재사정 D-30 배지 계산의 기준이라 YYYY-MM-DD로 강제한다.
+ */
+export const ispSchema = z.object({
+  service_period: z.object({
+    start: z.string().regex(dateRegex, "지원 시작일은 YYYY-MM-DD 형식이어야 합니다."),
+    end: z.string().regex(dateRegex, "지원 종료일은 YYYY-MM-DD 형식이어야 합니다."),
+  }),
+  reassessment_date: z.string().regex(dateRegex, "재사정 예정일은 YYYY-MM-DD 형식이어야 합니다."),
+  case_manager: z.string().min(1, "담당자를 입력해주세요."),
+  assessment_tool: z.string().optional(),
+  needs: z.array(ispNeedSchema).default([]),
+  goals: z.array(ispGoalSchema).min(1, "목표를 1개 이상 입력해주세요."),
+  services: z
+    .array(
+      z.object({
+        service: z.string(),
+        provider: z.string(),
+        frequency: z.string(),
+        start: z.string(),
+      })
+    )
+    .default([]),
+});
+
+export type IspInput = z.infer<typeof ispSchema>;
+export type IspGoal = z.infer<typeof ispGoalSchema>;
+
+/** W-14 인라인 편집 — goals[goalIndex]에 얕게 병합할 부분 필드(최소 1개 필수). */
+export const ispGoalPatchSchema = z
+  .object({
+    area: z.string().optional(),
+    long_term: z.string().optional(),
+    short_term: z.string().optional(),
+    responsible: z.string().optional(),
+    deadline: z.string().optional(),
+    achievement_rate: z.number().int().min(0).max(100).optional(),
+  })
+  .refine((p) => Object.values(p).some((v) => v !== undefined), {
+    message: "수정할 내용이 없습니다.",
+  });
+
+export type IspGoalPatch = z.infer<typeof ispGoalPatchSchema>;
+
+// ─────────────────────────────────────────────────────────
+// WEL-005 — 서비스 이용계획 (P2-2 W-17, docs/05-erd.md §3)
+// ─────────────────────────────────────────────────────────
+
+/** 개별 서비스 이용 항목(§3 WEL-005 services[]). W-17 현황표는 이 배열을 평탄화해 렌더한다. */
+export const serviceUsageItemSchema = z.object({
+  service_name: z.string().min(1, "서비스명을 입력해주세요."),
+  provider: z.string(),
+  frequency: z.string(),
+  start_date: z.string(),
+  end_date: z.string().optional(),
+  status: z.enum(["active", "paused", "ended"]),
+});
+
+/** ISP content(WEL-005). content JSONB 키는 §3 WEL-005와 1:1(snake_case). */
+export const serviceUsageSchema = z.object({
+  services: z.array(serviceUsageItemSchema).default([]),
+  monthly_cost: z.number().optional(),
+  funding_source: z.string().optional(),
+  case_manager: z.string().min(1, "담당자를 입력해주세요."),
+  next_review_date: z.string().regex(dateRegex, "다음 검토일은 YYYY-MM-DD 형식이어야 합니다."),
+});
+
+export type ServiceUsageInput = z.infer<typeof serviceUsageSchema>;
+export type ServiceUsageItem = z.infer<typeof serviceUsageItemSchema>;
+
 /** record_type → 목록/상세 표시용 한글 라벨(docs/05-erd.md §3). */
 export const RECORD_TYPE_LABEL: Record<string, string> = {
   "GEN-001": "보호자 기록",

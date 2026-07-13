@@ -20,12 +20,18 @@ import { IepWizardScreen } from "../screens/IepWizardScreen";
 import { IepReviewScreen } from "../screens/IepReviewScreen";
 import { ObservationFormScreen } from "../screens/ObservationFormScreen";
 import { EduTimelineScreen } from "../screens/EduTimelineScreen";
+import { SocialWorkerHomeScreen } from "../screens/SocialWorkerHomeScreen";
+import { IspWizardScreen } from "../screens/IspWizardScreen";
+import { IspReviewScreen } from "../screens/IspReviewScreen";
+import { ServiceUsageScreen } from "../screens/ServiceUsageScreen";
+import { WelTimelineScreen } from "../screens/WelTimelineScreen";
 import { GenericHomeScreen } from "../screens/GenericHomeScreen";
 import type {
   PersonStackParamList,
   SupporterStackParamList,
   GuardianStackParamList,
   TeacherStackParamList,
+  SocialWorkerStackParamList,
   GenericStackParamList,
 } from "./types";
 
@@ -41,6 +47,7 @@ const PersonStack = createNativeStackNavigator<PersonStackParamList>();
 const SupporterStack = createNativeStackNavigator<SupporterStackParamList>();
 const GuardianStack = createNativeStackNavigator<GuardianStackParamList>();
 const TeacherStack = createNativeStackNavigator<TeacherStackParamList>();
+const SocialWorkerStack = createNativeStackNavigator<SocialWorkerStackParamList>();
 const GenericStack = createNativeStackNavigator<GenericStackParamList>();
 
 const ROLE_LABEL: Record<Role, string> = {
@@ -170,7 +177,39 @@ export function MainNavigator({ session }: { session: Session }) {
     );
   }
 
-  // 이번 범위 밖 역할(사회복지사·치료사)
+  if (role === "social_worker") {
+    return (
+      <SocialWorkerStack.Navigator initialRouteName="SocialWorkerHome" screenOptions={screenOptions}>
+        <SocialWorkerStack.Screen
+          name="SocialWorkerHome"
+          component={SocialWorkerHomeScreen}
+          options={{ headerShown: false }}
+        />
+        <SocialWorkerStack.Screen
+          name="IspWizard"
+          component={IspWizardScreen}
+          options={{ title: "ISP 작성" }}
+        />
+        <SocialWorkerStack.Screen
+          name="IspReview"
+          component={IspReviewScreen}
+          options={{ title: "ISP 점검" }}
+        />
+        <SocialWorkerStack.Screen
+          name="ServiceUsage"
+          component={ServiceUsageScreen}
+          options={{ title: "서비스 이용 현황" }}
+        />
+        <SocialWorkerStack.Screen
+          name="WelTimeline"
+          component={WelTimelineScreen}
+          options={{ title: "복지 타임라인" }}
+        />
+      </SocialWorkerStack.Navigator>
+    );
+  }
+
+  // 이번 범위 밖 역할(치료사)
   return (
     <GenericStack.Navigator screenOptions={screenOptions}>
       <GenericStack.Screen name="GenericHome" options={{ headerShown: false }}>

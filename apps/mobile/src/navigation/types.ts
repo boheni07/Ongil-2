@@ -51,6 +51,14 @@ export type TeacherStackParamList = {
   EduTimeline: { personId: string; personName: string };
 };
 
+export type SocialWorkerStackParamList = {
+  SocialWorkerHome: undefined;
+  IspWizard: { personId: string; personName: string };
+  IspReview: { recordId: string };
+  ServiceUsage: undefined;
+  WelTimeline: { personId: string; personName: string };
+};
+
 export type GenericStackParamList = {
   GenericHome: undefined;
 };
