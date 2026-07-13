@@ -229,6 +229,92 @@ export const observationSchema = z.object({
 export type ObservationInput = z.infer<typeof observationSchema>;
 
 // ─────────────────────────────────────────────────────────
+// MED-005 — 치료계획서 (P2-3 TH-13/TH-14, docs/05-erd.md §3)
+// ─────────────────────────────────────────────────────────
+
+/** 치료 영역 4종(§3 MED-005 goals[].area / MED-006 domain_scores 키와 1:1). */
+export const therapyAreaSchema = z.enum(["physical", "language", "cognitive", "social"]);
+export type TherapyArea = z.infer<typeof therapyAreaSchema>;
+
+/**
+ * 치료 목표 영역(§3 MED-005 goals[]). area는 4개 치료 영역 enum이라 MED-006 domain_scores와
+ * 정확히 매핑된다(IEP/ISP의 자유문자열 area와 다름 — TH-14 달성도 표시가 영역별로 이뤄지기 때문).
+ * target_score는 §3에서 optional(평가/회기 domain_scores 비교 기준).
+ */
+export const therapyPlanGoalSchema = z.object({
+  area: therapyAreaSchema,
+  long_term: z.string(),
+  short_term: z.string(),
+  target_score: z.number().int().min(0).max(100).optional(),
+});
+
+/**
+ * 치료계획서 content(MED-005). content JSONB 키는 §3 MED-005와 1:1(snake_case).
+ * 치료계획서는 IEP/ISP와 동급 공식 문서라 requires_confirmation=true(§4-6 표).
+ */
+export const therapyPlanSchema = z.object({
+  plan_period: z.object({
+    start: z.string().regex(dateRegex, "치료 시작일은 YYYY-MM-DD 형식이어야 합니다."),
+    end: z.string().regex(dateRegex, "치료 종료일은 YYYY-MM-DD 형식이어야 합니다."),
+  }),
+  diagnosis: z.string().min(1, "진단명을 입력해주세요."),
+  therapy_type: z.enum(["physical", "occupational", "speech", "psychological", "other"]),
+  goals: z.array(therapyPlanGoalSchema).min(1, "치료 목표를 1개 이상 입력해주세요."),
+  session_frequency: z.string().min(1, "회기 빈도를 입력해주세요."),
+  responsible_therapist: z.string().min(1, "담당 치료사를 입력해주세요."),
+  precautions: z.string().max(2000).optional(),
+});
+
+export type TherapyPlanInput = z.infer<typeof therapyPlanSchema>;
+export type TherapyPlanGoal = z.infer<typeof therapyPlanGoalSchema>;
+
+/** TH-14/TH-15 인라인 편집 — goals[goalIndex]에 얕게 병합할 부분 필드(최소 1개 필수). */
+export const therapyPlanGoalPatchSchema = z
+  .object({
+    area: therapyAreaSchema.optional(),
+    long_term: z.string().optional(),
+    short_term: z.string().optional(),
+    target_score: z.number().int().min(0).max(100).optional(),
+  })
+  .refine((p) => Object.values(p).some((v) => v !== undefined), {
+    message: "수정할 내용이 없습니다.",
+  });
+
+export type TherapyPlanGoalPatch = z.infer<typeof therapyPlanGoalPatchSchema>;
+
+// ─────────────────────────────────────────────────────────
+// MED-006 — 회기 일지 (P2-3 TH-15, docs/05-erd.md §3)
+// ─────────────────────────────────────────────────────────
+
+/** 영역별 달성도(§3 MED-006 domain_scores). 4개 치료 영역 각 0~100. */
+export const therapyDomainScoresSchema = z.object({
+  physical: z.number().int().min(0).max(100),
+  language: z.number().int().min(0).max(100),
+  cognitive: z.number().int().min(0).max(100),
+  social: z.number().int().min(0).max(100),
+});
+
+export type TherapyDomainScores = z.infer<typeof therapyDomainScoresSchema>;
+
+/**
+ * 회기 일지 content(MED-006). content JSONB 키는 §3 MED-006와 1:1(snake_case).
+ * therapy_plan_id는 TH-15 진입 시 getSessionComposeContext가 최근 확정 MED-005를
+ * 자동 연결해 채운다(uuid). 회기 일지는 일상 기록이라 requires_confirmation=false(§4-6 표).
+ */
+export const sessionNoteSchema = z.object({
+  session_date: z.string().regex(dateRegex, "회기 일자는 YYYY-MM-DD 형식이어야 합니다."),
+  therapy_plan_id: z.string().uuid("연결된 치료계획서 ID가 올바르지 않습니다."),
+  session_number: z.number().int().min(1, "회기 차수를 입력해주세요."),
+  planned_goals: z.array(z.string()).default([]),
+  actual_progress: z.string().min(1, "실제 진행 내용을 입력해주세요."),
+  domain_scores: therapyDomainScoresSchema,
+  observations: z.string().min(1, "관찰 내용을 입력해주세요."),
+  next_session_plan: z.string().max(2000).optional(),
+});
+
+export type SessionNoteInput = z.infer<typeof sessionNoteSchema>;
+
+// ─────────────────────────────────────────────────────────
 // WEL-004 — ISP 개별지원계획 (P2-2 W-13/W-14, docs/05-erd.md §3)
 // ─────────────────────────────────────────────────────────
 

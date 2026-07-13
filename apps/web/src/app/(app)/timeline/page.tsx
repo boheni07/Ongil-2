@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { getTeacherStudents, getTimeline } from "@/app/(app)/records/iep/actions";
 import { getSocialWorkerClients } from "@/app/(app)/records/isp/actions";
+import { getTherapistClients } from "@/app/(app)/records/therapy/actions";
 import { EduTimeline } from "@/components/teacher/EduTimeline";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * T-20/W-20 공용 타임라인. searchParams.personId 없으면 담당 대상자 선택 유도 화면을 보여준다.
- * role별로 담당 대상자 목록 조회 함수와 문구("학생"/"당사자")만 다르고, 나머지는 동일하다
+ * T-20/W-20/TH-20 공용 타임라인. searchParams.personId 없으면 담당 대상자 선택 유도 화면을 보여준다.
+ * role별로 담당 대상자 목록 조회 함수와 문구("학생"/"당사자"/"아동")만 다르고, 나머지는 동일하다
  * (getTimeline/EduTimeline은 role 무관 범용이라 그대로 재사용).
  */
 export default async function TimelinePage({
@@ -25,12 +26,15 @@ export default async function TimelinePage({
     const { data } = await supabase.from("users").select("role").eq("id", user.id).maybeSingle();
     role = data?.role ?? null;
   }
-  const isSocialWorker = role === "social_worker";
-  const personLabel = isSocialWorker ? "당사자" : "학생";
+  const personLabel =
+    role === "social_worker" ? "당사자" : role === "therapist" ? "아동" : "학생";
 
-  const clients = isSocialWorker
-    ? (await getSocialWorkerClients()).map((c) => ({ personId: c.personId, fullName: c.fullName }))
-    : (await getTeacherStudents()).map((s) => ({ personId: s.personId, fullName: s.fullName }));
+  const clients =
+    role === "social_worker"
+      ? (await getSocialWorkerClients()).map((c) => ({ personId: c.personId, fullName: c.fullName }))
+      : role === "therapist"
+        ? (await getTherapistClients()).map((c) => ({ personId: c.personId, fullName: c.fullName }))
+        : (await getTeacherStudents()).map((s) => ({ personId: s.personId, fullName: s.fullName }));
 
   if (!personId) {
     return (

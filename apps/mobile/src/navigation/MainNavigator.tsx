@@ -25,6 +25,11 @@ import { IspWizardScreen } from "../screens/IspWizardScreen";
 import { IspReviewScreen } from "../screens/IspReviewScreen";
 import { ServiceUsageScreen } from "../screens/ServiceUsageScreen";
 import { WelTimelineScreen } from "../screens/WelTimelineScreen";
+import { TherapistHomeScreen } from "../screens/TherapistHomeScreen";
+import { TherapyPlanWizardScreen } from "../screens/TherapyPlanWizardScreen";
+import { TherapyPlanDetailScreen } from "../screens/TherapyPlanDetailScreen";
+import { SessionNoteFormScreen } from "../screens/SessionNoteFormScreen";
+import { MedTimelineScreen } from "../screens/MedTimelineScreen";
 import { GenericHomeScreen } from "../screens/GenericHomeScreen";
 import type {
   PersonStackParamList,
@@ -32,6 +37,7 @@ import type {
   GuardianStackParamList,
   TeacherStackParamList,
   SocialWorkerStackParamList,
+  TherapistStackParamList,
   GenericStackParamList,
 } from "./types";
 
@@ -48,6 +54,7 @@ const SupporterStack = createNativeStackNavigator<SupporterStackParamList>();
 const GuardianStack = createNativeStackNavigator<GuardianStackParamList>();
 const TeacherStack = createNativeStackNavigator<TeacherStackParamList>();
 const SocialWorkerStack = createNativeStackNavigator<SocialWorkerStackParamList>();
+const TherapistStack = createNativeStackNavigator<TherapistStackParamList>();
 const GenericStack = createNativeStackNavigator<GenericStackParamList>();
 
 const ROLE_LABEL: Record<Role, string> = {
@@ -209,7 +216,39 @@ export function MainNavigator({ session }: { session: Session }) {
     );
   }
 
-  // 이번 범위 밖 역할(치료사)
+  if (role === "therapist") {
+    return (
+      <TherapistStack.Navigator initialRouteName="TherapistHome" screenOptions={screenOptions}>
+        <TherapistStack.Screen
+          name="TherapistHome"
+          component={TherapistHomeScreen}
+          options={{ headerShown: false }}
+        />
+        <TherapistStack.Screen
+          name="TherapyPlanWizard"
+          component={TherapyPlanWizardScreen}
+          options={{ title: "치료계획서 작성" }}
+        />
+        <TherapistStack.Screen
+          name="TherapyPlanDetail"
+          component={TherapyPlanDetailScreen}
+          options={{ title: "치료계획서 상세" }}
+        />
+        <TherapistStack.Screen
+          name="SessionNoteForm"
+          component={SessionNoteFormScreen}
+          options={{ title: "회기 일지 작성" }}
+        />
+        <TherapistStack.Screen
+          name="MedTimeline"
+          component={MedTimelineScreen}
+          options={{ title: "치료 타임라인" }}
+        />
+      </TherapistStack.Navigator>
+    );
+  }
+
+  // 이번 범위 밖 역할
   return (
     <GenericStack.Navigator screenOptions={screenOptions}>
       <GenericStack.Screen name="GenericHome" options={{ headerShown: false }}>

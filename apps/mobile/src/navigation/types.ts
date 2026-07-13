@@ -59,6 +59,14 @@ export type SocialWorkerStackParamList = {
   WelTimeline: { personId: string; personName: string };
 };
 
+export type TherapistStackParamList = {
+  TherapistHome: undefined;
+  TherapyPlanWizard: { personId: string; personName: string };
+  TherapyPlanDetail: { recordId: string };
+  SessionNoteForm: { personId: string; personName: string };
+  MedTimeline: { personId: string; personName: string };
+};
+
 export type GenericStackParamList = {
   GenericHome: undefined;
 };
