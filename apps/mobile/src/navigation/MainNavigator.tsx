@@ -35,6 +35,7 @@ import { TherapyPlanDetailScreen } from "../screens/TherapyPlanDetailScreen";
 import { SessionNoteFormScreen } from "../screens/SessionNoteFormScreen";
 import { MedTimelineScreen } from "../screens/MedTimelineScreen";
 import { GenericHomeScreen } from "../screens/GenericHomeScreen";
+import { PrivacySettingsScreen } from "../screens/PrivacySettingsScreen";
 import type {
   PersonStackParamList,
   SupporterStackParamList,
@@ -87,6 +88,11 @@ export function MainNavigator({ session }: { session: Session }) {
           name="MyRecords"
           component={MyRecordsScreen}
           options={{ title: "내 기록" }}
+        />
+        <PersonStack.Screen
+          name="PrivacySettings"
+          component={PrivacySettingsScreen}
+          options={{ title: "개인정보·동의 관리" }}
         />
       </PersonStack.Navigator>
     );
@@ -171,6 +177,11 @@ export function MainNavigator({ session }: { session: Session }) {
           name="Timeline"
           component={GuardianTimelineScreen}
           options={{ title: "생애주기 타임라인" }}
+        />
+        <GuardianStack.Screen
+          name="PrivacySettings"
+          component={PrivacySettingsScreen}
+          options={{ title: "개인정보·동의 관리" }}
         />
       </GuardianStack.Navigator>
     );

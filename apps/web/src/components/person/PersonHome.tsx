@@ -66,12 +66,20 @@ export async function PersonHome({ userName }: { userName: string | null }) {
         </span>
       </Link>
 
-      <Link
-        href="/records"
-        className="mt-4 inline-block text-person-base font-semibold text-primary-700 underline"
-      >
-        내 기록 보기 →
-      </Link>
+      <div className="mt-4 flex flex-col gap-3">
+        <Link
+          href="/records"
+          className="inline-block text-person-base font-semibold text-primary-700 underline"
+        >
+          내 기록 보기 →
+        </Link>
+        <Link
+          href="/settings/privacy"
+          className="inline-block text-person-base font-semibold text-primary-700 underline"
+        >
+          개인정보·동의 관리 →
+        </Link>
+      </div>
 
       <section className="mt-8">
         <h2 className="mb-3 text-person-base font-bold text-accent-stone">최근 7일 기록</h2>

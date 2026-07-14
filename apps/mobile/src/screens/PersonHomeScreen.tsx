@@ -135,6 +135,15 @@ function HomeBody({
         <Text style={styles.secondaryCtaText}>📁 내 기록 보기</Text>
       </Pressable>
 
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="개인정보와 동의 관리. 내 동의 현황을 보고 권리를 행사할 수 있어요."
+        onPress={() => navigation.navigate("PrivacySettings")}
+        style={({ pressed }) => [styles.secondaryCta, pressed && styles.pressed]}
+      >
+        <Text style={styles.secondaryCtaText}>⚙️ 개인정보·동의 관리</Text>
+      </Pressable>
+
       <Text style={styles.sectionTitle}>최근 7일</Text>
       {recent.length === 0 ? (
         <Text style={styles.emptyText}>아직 남긴 이야기가 없어요. 첫 이야기를 들려주세요!</Text>

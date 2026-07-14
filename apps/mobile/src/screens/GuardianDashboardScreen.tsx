@@ -69,14 +69,24 @@ export function GuardianDashboardScreen({ navigation }: Props) {
           <Text style={styles.title}>대시보드</Text>
           <Text style={styles.subtle}>피보호자 현황을 한눈에 확인하세요.</Text>
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="로그아웃"
-          onPress={() => supabase.auth.signOut()}
-          hitSlop={8}
-        >
-          <Text style={styles.logout}>로그아웃</Text>
-        </Pressable>
+        <View style={styles.topActions}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="개인정보·동의 관리"
+            onPress={() => navigation.navigate("PrivacySettings")}
+            hitSlop={8}
+          >
+            <Text style={styles.settingsLink}>⚙️ 설정</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="로그아웃"
+            onPress={() => supabase.auth.signOut()}
+            hitSlop={8}
+          >
+            <Text style={styles.logout}>로그아웃</Text>
+          </Pressable>
+        </View>
       </View>
 
       {persons.length === 0 ? (
@@ -271,6 +281,8 @@ const styles = StyleSheet.create({
   topRow: { flexDirection: "row", alignItems: "flex-start" },
   title: { fontSize: FONT.h1, fontWeight: "800", color: NEUTRAL.text },
   subtle: { fontSize: FONT.body, color: NEUTRAL.textMuted, marginTop: 2 },
+  topActions: { alignItems: "flex-end", gap: SPACING.sm },
+  settingsLink: { fontSize: 14, fontWeight: "600", color: PRIMARY[600] },
   logout: { fontSize: 14, fontWeight: "600", color: PRIMARY[600] },
   emptyBox: { padding: SPACING.xl, alignItems: "center", backgroundColor: NEUTRAL.surface, borderRadius: RADIUS.md, marginTop: SPACING.lg },
   emptyText: { fontSize: FONT.body, color: NEUTRAL.textMuted },

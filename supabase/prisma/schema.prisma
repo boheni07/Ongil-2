@@ -122,6 +122,8 @@ model User {
   fullName  String   @map("full_name")
   avatarUrl String?  @map("avatar_url")
   fcmToken  String?  @map("fcm_token")
+  // 계정 비활성화(동의 전체철회 + 탈퇴) 시각. NULL이면 활성. 행 삭제 대신 이 값으로 표현한다.
+  deactivatedAt DateTime? @map("deactivated_at") @db.Timestamptz
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 

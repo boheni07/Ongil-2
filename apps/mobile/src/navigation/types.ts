@@ -25,6 +25,7 @@ export type PersonStackParamList = {
   PersonHome: undefined;
   SelfExpression: undefined;
   MyRecords: undefined;
+  PrivacySettings: undefined;
 };
 
 export type SupporterStackParamList = {
@@ -45,6 +46,7 @@ export type GuardianStackParamList = {
   RecordForm: { personId: string; personName: string; recordId?: string };
   AccessLogs: { personId: string; personName: string };
   Timeline: { personId: string; personName: string };
+  PrivacySettings: undefined;
 };
 
 export type TeacherStackParamList = {

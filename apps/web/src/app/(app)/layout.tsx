@@ -36,9 +36,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   let role: string | null = null;
 
   if (user) {
-    const { data } = await supabase.from("users").select("full_name, role").eq("id", user.id).maybeSingle();
+    const { data } = await supabase
+      .from("users")
+      .select("full_name, role, deactivated_at")
+      .eq("id", user.id)
+      .maybeSingle();
     fullName = data?.full_name ?? null;
     role = data?.role ?? null;
+    // 재로그인 시 비활성화 해제(§settings/privacy "다시 로그인하면 해제됩니다" 안내와 대응).
+    if (data?.deactivated_at) {
+      await supabase.from("users").update({ deactivated_at: null }).eq("id", user.id);
+    }
   }
 
   // 당사자 모드(§7-1): 사이드바 없이 중앙 정렬 단일 컬럼 폰 셸, 넉넉한 여백.
