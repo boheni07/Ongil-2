@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -8,6 +8,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import * as Network from "expo-network";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { computeServiceHours, supportJournalSchema } from "@ongil/validation";
@@ -16,6 +17,8 @@ import {
   getServiceablePersons,
   submitSupportJournal,
 } from "../lib/journal";
+import { enqueue, flushQueue } from "../lib/offline-queue";
+import { useNetworkSync } from "../hooks/useNetworkSync";
 import {
   JOURNAL_CATEGORIES,
   JOURNAL_HEALTH_CHOICES,
@@ -74,8 +77,19 @@ export function JournalComposeScreen({ navigation, route }: Props) {
   const [incidents, setIncidents] = useState("");
   const [handoverNote, setHandoverNote] = useState("");
   const [prevInfo, setPrevInfo] = useState<string | null>(null);
+  const [syncNotice, setSyncNotice] = useState<string | null>(null);
 
   const { loading, error, run } = useAsyncAction();
+
+  // 온라인 전환/포그라운드 복귀 시 큐잉된 오프라인 일지를 자동 재제출.
+  // (offline-queue의 런타임 락으로 SupporterHome의 flush와 중복 제출되지 않는다.)
+  useNetworkSync(
+    useCallback(() => {
+      void flushQueue("journal", submitSupportJournal).then((res) => {
+        if (res.synced > 0) setSyncNotice(`오프라인 일지 ${res.synced}건이 저장되었습니다.`);
+      });
+    }, [])
+  );
   const { checkRestore, saveDraft, clearDraft } = useWizardDraft<Draft>("journal:draft");
 
   const snapshot = useCallback(
@@ -164,6 +178,30 @@ export function JournalComposeScreen({ navigation, route }: Props) {
     run(async () => {
       const parsed = supportJournalSchema.safeParse(buildInput());
       if (!parsed.success) return parsed.error.issues[0]?.message ?? "입력값을 확인해주세요.";
+
+      // 실패 감지보다 사전 확인이 신뢰성 높다: 오프라인이면 네트워크 호출 없이 바로 큐잉.
+      const netState = await Network.getNetworkStateAsync().catch(() => null);
+      const offline = netState != null && netState.isConnected === false;
+
+      if (offline) {
+        await enqueue({
+          formType: "journal",
+          personId,
+          payload: parsed.data,
+          isDraft,
+          // 논리적 초안 식별자 — 같은 이용자·같은 날짜 일지는 최신본만 큐에 유지
+          dedupeKey: `journal:${personId}:${parsed.data.service_date}`,
+        });
+        // 로컬 임시저장을 지워 다음 진입 시 "이어작성" 다이얼로그와 큐 항목이 중복되지 않게 함
+        clearDraft();
+        Alert.alert(
+          "오프라인 상태입니다",
+          "네트워크가 연결되면 작성한 일지가 자동으로 저장됩니다.",
+          [{ text: "확인", onPress: () => navigation.goBack() }]
+        );
+        return;
+      }
+
       const res = await submitSupportJournal(personId, parsed.data, isDraft);
       if (res.error) return res.error;
       clearDraft();
@@ -192,6 +230,7 @@ export function JournalComposeScreen({ navigation, route }: Props) {
         {step}/5 · {STEP_CAPS[step - 1]}
       </Text>
       {error ? <ErrorBanner message={error} /> : null}
+      {syncNotice ? <InfoBanner message={syncNotice} /> : null}
 
       {step === 1 && (
         <View>

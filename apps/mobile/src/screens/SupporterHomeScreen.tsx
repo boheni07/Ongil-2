@@ -4,7 +4,13 @@ import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
-import { getSupporterJournals, type SupportJournalSummary } from "../lib/journal";
+import {
+  getSupporterJournals,
+  submitSupportJournal,
+  type SupportJournalSummary,
+} from "../lib/journal";
+import { flushQueue, getQueue } from "../lib/offline-queue";
+import { useNetworkSync } from "../hooks/useNetworkSync";
 import { formatKoreanDate, relativeDay } from "../lib/date";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { SupporterStackParamList } from "../navigation/types";
@@ -17,6 +23,7 @@ export function SupporterHomeScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [journals, setJournals] = useState<SupportJournalSummary[]>([]);
+  const [pendingSync, setPendingSync] = useState(0);
 
   const load = useCallback(async () => {
     const {
@@ -25,12 +32,23 @@ export function SupporterHomeScreen({ navigation }: Props) {
     const meta = user?.user_metadata ?? {};
     setName((meta.full_name as string) || (meta.name as string) || "");
     setJournals(await getSupporterJournals());
+    setPendingSync((await getQueue("journal")).length);
     setLoading(false);
   }, []);
 
   useFocusEffect(
     useCallback(() => {
       void load();
+    }, [load])
+  );
+
+  // 온라인 전환/포그라운드 복귀 시 큐잉된 오프라인 일지를 자동 재제출 후 목록 갱신.
+  useNetworkSync(
+    useCallback(() => {
+      void flushQueue("journal", submitSupportJournal).then((res) => {
+        if (res.synced > 0) void load();
+        else setPendingSync(res.remaining);
+      });
     }, [load])
   );
 
@@ -67,6 +85,18 @@ export function SupporterHomeScreen({ navigation }: Props) {
         <Stat n={draftCount} label="임시저장" />
         <Stat n={journals.length - draftCount} label="제출 완료" />
       </View>
+
+      {pendingSync > 0 ? (
+        <View
+          accessibilityLiveRegion="polite"
+          accessibilityLabel={`동기화 대기 중인 일지 ${pendingSync}건. 네트워크가 연결되면 자동으로 저장됩니다.`}
+          style={styles.syncBanner}
+        >
+          <Text style={styles.syncBannerText}>
+            📡 동기화 대기 중인 일지 {pendingSync}건 · 연결되면 자동 저장됩니다
+          </Text>
+        </View>
+      ) : null}
 
       <Pressable
         accessibilityRole="button"
@@ -146,6 +176,15 @@ const styles = StyleSheet.create({
   },
   statN: { fontSize: 24, fontWeight: "800", color: PRIMARY[700] },
   statL: { fontSize: 12, color: NEUTRAL.textMuted, marginTop: 2 },
+  syncBanner: {
+    marginTop: SPACING.md,
+    padding: SPACING.md,
+    borderRadius: RADIUS.md,
+    backgroundColor: "#FFF5E6",
+    borderWidth: 1,
+    borderColor: "#F0C98A",
+  },
+  syncBannerText: { fontSize: 13, fontWeight: "600", color: "#B56F10" },
   cta: {
     marginTop: SPACING.xl,
     minHeight: 52,
