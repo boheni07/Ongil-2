@@ -35,12 +35,21 @@ export async function SocialWorkerHome({ userName }: { userName: string | null }
             담당 당사자 {total}명 · 개인별지원계획을 점검하고 서비스 이용을 관리하세요.
           </p>
         </div>
-        <Button
-          render={<Link href="/records/isp/new" />}
-          className="h-11 bg-accent-amber px-5 font-bold text-accent-stone hover:bg-accent-amber/85"
-        >
-          ＋ 새 ISP 작성
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            render={<Link href="/records/transition/new" />}
+            className="h-11 px-5 font-bold"
+          >
+            🧭 전환계획 작성
+          </Button>
+          <Button
+            render={<Link href="/records/isp/new" />}
+            className="h-11 bg-accent-amber px-5 font-bold text-accent-stone hover:bg-accent-amber/85"
+          >
+            ＋ 새 ISP 작성
+          </Button>
+        </div>
       </div>
 
       <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">

@@ -114,6 +114,15 @@ export function SocialWorkerHomeScreen({ navigation }: Props) {
         </Pressable>
       </View>
 
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="전환계획 작성"
+        onPress={() => navigation.navigate("TransitionPlanWizard", { personId: "", personName: "" })}
+        style={({ pressed }) => [styles.transitionBtn, pressed && styles.pressed]}
+      >
+        <Text style={styles.transitionBtnText}>🌱 전환계획 작성 (만 14세+)</Text>
+      </Pressable>
+
       <Text style={styles.sectionTitle}>담당 당사자</Text>
       {clients.length === 0 ? (
         <View style={styles.emptyBox}>
@@ -235,6 +244,18 @@ const styles = StyleSheet.create({
     backgroundColor: PRIMARY[50],
   },
   svcBtnText: { fontSize: 15, fontWeight: "700", color: PRIMARY[700] },
+  transitionBtn: {
+    marginTop: SPACING.sm,
+    minHeight: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: RADIUS.md,
+    borderWidth: 1.5,
+    borderColor: PRIMARY[400],
+    borderStyle: "dashed",
+    backgroundColor: PRIMARY[50],
+  },
+  transitionBtnText: { fontSize: 15, fontWeight: "700", color: PRIMARY[700] },
   sectionTitle: {
     fontSize: FONT.h3,
     fontWeight: "700",

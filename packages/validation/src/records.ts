@@ -417,6 +417,45 @@ export const serviceUsageSchema = z.object({
 export type ServiceUsageInput = z.infer<typeof serviceUsageSchema>;
 export type ServiceUsageItem = z.infer<typeof serviceUsageItemSchema>;
 
+// ─────────────────────────────────────────────────────────
+// TRA-001 — 전환계획 (W-16, docs/05-erd.md §3 TRA-001 642-659)
+// ─────────────────────────────────────────────────────────
+
+/** 로드맵 4단계 — 탐색→계획→훈련→취업/자립(§3 TRA-001 roadmap_stage). W-16 로드맵 마커 위치. */
+export const roadmapStageSchema = z.enum(["exploration", "planning", "training", "employment"]);
+export type RoadmapStage = z.infer<typeof roadmapStageSchema>;
+
+/**
+ * 훈련 이력 항목(§3 TRA-001 training_records[]). program/provider + 기간 + 진행 상태.
+ * period.start/end는 §3 원안이 자유 문자열이라 YYYY-MM-DD를 강제하지 않는다(진행 중 미정 허용).
+ */
+export const trainingRecordSchema = z.object({
+  program: z.string().min(1, "훈련 프로그램명을 입력해주세요."),
+  provider: z.string().min(1, "훈련 제공기관을 입력해주세요."),
+  period: z.object({ start: z.string(), end: z.string() }),
+  status: z.enum(["planned", "ongoing", "completed"]),
+});
+
+export type TrainingRecord = z.infer<typeof trainingRecordSchema>;
+
+/**
+ * 전환계획 content(TRA-001). content JSONB 키는 §3 TRA-001과 1:1(snake_case).
+ * 전환계획은 IEP/ISP와 동급의 공식 문서라 requires_confirmation=true(§4-6 표) — 제출 시
+ * trg_assign_confirmer가 확인 주체(성년=본인, 미성년=주보호자)를 자동 지정한다.
+ * 만 14세+(life_stage != 'child')에서만 작성한다 — 진입 가드는 프론트·백엔드 양쪽에서 강제.
+ */
+export const transitionPlanSchema = z.object({
+  roadmap_stage: roadmapStageSchema,
+  career_goal: z.string().min(1, "희망 진로를 입력해주세요."),
+  independent_living_plan: z.string().max(2000).optional(),
+  training_records: z.array(trainingRecordSchema).default([]),
+  linked_agencies: z.array(z.string()).optional(),
+  case_manager: z.string().min(1, "담당자를 입력해주세요."),
+  next_review_date: z.string().regex(dateRegex, "다음 검토일은 YYYY-MM-DD 형식이어야 합니다."),
+});
+
+export type TransitionPlanInput = z.infer<typeof transitionPlanSchema>;
+
 /** record_type → 목록/상세 표시용 한글 라벨(docs/05-erd.md §3). */
 export const RECORD_TYPE_LABEL: Record<string, string> = {
   "GEN-001": "보호자 기록",

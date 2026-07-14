@@ -27,6 +27,7 @@ import { EduTimelineScreen } from "../screens/EduTimelineScreen";
 import { SocialWorkerHomeScreen } from "../screens/SocialWorkerHomeScreen";
 import { IspWizardScreen } from "../screens/IspWizardScreen";
 import { IspReviewScreen } from "../screens/IspReviewScreen";
+import { TransitionPlanWizardScreen } from "../screens/TransitionPlanWizardScreen";
 import { ServiceUsageScreen } from "../screens/ServiceUsageScreen";
 import { WelTimelineScreen } from "../screens/WelTimelineScreen";
 import { TherapistHomeScreen } from "../screens/TherapistHomeScreen";
@@ -236,6 +237,11 @@ export function MainNavigator({ session }: { session: Session }) {
           name="IspReview"
           component={IspReviewScreen}
           options={{ title: "ISP 점검" }}
+        />
+        <SocialWorkerStack.Screen
+          name="TransitionPlanWizard"
+          component={TransitionPlanWizardScreen}
+          options={{ title: "전환계획 작성" }}
         />
         <SocialWorkerStack.Screen
           name="ServiceUsage"

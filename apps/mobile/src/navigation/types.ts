@@ -61,6 +61,7 @@ export type SocialWorkerStackParamList = {
   SocialWorkerHome: undefined;
   IspWizard: { personId: string; personName: string };
   IspReview: { recordId: string };
+  TransitionPlanWizard: { personId: string; personName: string };
   ServiceUsage: undefined;
   WelTimeline: { personId: string; personName: string };
 };
