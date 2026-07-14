@@ -938,6 +938,24 @@ WHERE is_active = true AND valid_until = CURRENT_DATE + INTERVAL '7 days';
 
 `permissions` UPDATE(특히 `is_active=false`)가 커밋되면 애플리케이션 레이어(Supabase Edge Function 또는 API route)에서 `perm:{grantee_id}:{person_id}:{domain}` 캐시 키를 즉시 `DEL` — RLS 재평가와 캐시 무효화가 원자적으로 처리되어야 회수 후 접근 잔존 시간차가 발생하지 않는다.
 
+> **구현 아키텍처 (마이그레이션 `20260715000000_p3_permission_cache_invalidation`)**
+>
+> **⚠️ 이 캐시는 RLS를 대체하지 않는다.** RLS 정책(`records_select`/`records_insert` 등)은 항상 `permissions` 라이브 테이블을 직접 조회해 즉시(always-fresh) 평가한다 — 이 캐시는 그와 별개로, 애플리케이션 레이어가 "이 사용자가 이 당사자의 이 도메인에 접근 가능한가"를 반복 조회할 때 DB 왕복을 줄이는 **부가 최적화**다. 정확성은 (1) TTL(기본 5분) 만료 + (2) 변경 시 즉시 무효화 두 축으로 유지한다(NF-SEC-05). *현재는 유틸리티·무효화 파이프라인만 구축돼 있고, 어떤 서버 액션도 아직 이 캐시를 조회하지 않는다(전부 RLS 위임) — 채택은 향후 라운드.*
+>
+> **무효화 파이프라인(DB 트리거 → Upstash REST 직접 호출):** 알림 발송(`20260714030000`)과 달리 응답 기반 조건 분기가 없어(단순 DEL) 별도 Edge Function 없이 `pg_net`으로 Upstash Redis REST API를 트리거에서 직접 호출한다.
+> - 트리거 `trg_zz_invalidate_permission_cache` (`AFTER UPDATE ON permissions FOR EACH ROW`), 함수 `invalidate_permission_cache()`(SECURITY DEFINER, `authenticated` 직접 호출 불가).
+> - **WHEN 절**로 접근 판단 관련 컬럼(`is_active`·`access_level`·`domain`·`valid_until`, 그리고 키 구성 컬럼 `grantee_id`·`person_id`)이 바뀐 UPDATE에만 발동 — `updated_at`만 갱신되는 등 무관한 UPDATE는 무시해 불필요한 호출 방지. 키 구성 컬럼이 바뀌면 OLD 키·NEW 키 둘 다 DEL.
+> - Upstash REST: `POST {redis_rest_url}/del/{key}` + `Authorization: Bearer {redis_rest_token}`. 키의 콜론은 `%3A`로 인코딩.
+> - fire-and-forget — Vault 미설정·pg_net 미탑재·HTTP 에러는 `EXCEPTION WHEN OTHERS`로 흡수해 `permissions` UPDATE 트랜잭션을 절대 깨지 않는다(무효화가 유실돼도 TTL이 결국 만료시키는 안전망).
+>
+> **TTL 캐시 유틸리티:** `apps/web/src/lib/permission-cache.ts` — `getCachedPermission`(순수 read, 미스/에러 시 `null`), `setCachedPermission`(SET+EX, 기본 TTL 300초 = `PERMISSION_CACHE_TTL_SECONDS`), `invalidatePermissionCache`(앱 코드 즉시 DEL). Redis 미설정·실패 시 전부 조용히 무시(캐시는 optimization, critical path 아님).
+>
+> **필요 시크릿 전체 목록:**
+> - Supabase **Vault**(DB 트리거용): `redis_rest_url`, `redis_rest_token`
+> - Next.js **서버 env**(유틸리티용): `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
+>
+> **수동 운영 절차(이 세션에서 실행 불가):** ① Upstash 콘솔에서 Redis 인스턴스 생성 → REST URL·토큰 확보. ② 마이그레이션 적용 후 `select vault.create_secret('https://<DB>.upstash.io','redis_rest_url'); select vault.create_secret('<TOKEN>','redis_rest_token');` 수동 실행(교체 시 `vault.update_secret`). ③ `.env.local`에 `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` 등록. 세 값이 모두 갖춰지기 전까지 트리거·유틸리티는 조용히 no-op이며 TTL/RLS가 정확성을 보장한다.
+
 **⑤ 감사 조회 (분기별 정기 알림, F-G-10)**
 
 ```sql
