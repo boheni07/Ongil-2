@@ -24,6 +24,11 @@ export default async function GuardianTimelinePage({
   const emergencyInfo = (person.emergencyInfo ?? null) as EmergencyInfoInput | null;
 
   return (
-    <TimelineView items={items} personName={person.fullName} emergencyInfo={emergencyInfo} />
+    <TimelineView
+      items={items}
+      personName={person.fullName}
+      emergencyInfo={emergencyInfo}
+      birthDate={person.birthDate}
+    />
   );
 }

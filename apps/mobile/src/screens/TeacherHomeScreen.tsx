@@ -4,18 +4,13 @@ import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
-import { getTeacherStudents, type TeacherStudent, type LifeStage } from "../lib/iep";
+import { getTeacherStudents, type TeacherStudent } from "../lib/iep";
 import { koreanAge } from "../lib/date";
+import { StageBadge } from "../components/lifecycle/StageBadge";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { TeacherStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<TeacherStackParamList, "TeacherHome">;
-
-const STAGE_LABEL: Record<LifeStage, string> = {
-  child: "아동기",
-  youth_transition: "청소년 전환기",
-  adult: "성년기",
-};
 
 /** T-01 홈 — 요약 통계, 담당 학생 카드 목록. 카드 탭 시 IEP 점검 또는 새 IEP 작성으로 이동. */
 export function TeacherHomeScreen({ navigation }: Props) {
@@ -109,12 +104,12 @@ export function TeacherHomeScreen({ navigation }: Props) {
             >
               <View style={styles.stuTop}>
                 <Text style={styles.avatar}>🧑‍🎓</Text>
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, gap: 4 }}>
                   <Text style={styles.stuName}>{s.fullName}</Text>
-                  <Text style={styles.stuMeta}>
-                    {STAGE_LABEL[s.lifeStage]}
-                    {age != null ? ` · 만 ${age}세` : ""}
-                  </Text>
+                  <View style={styles.metaRow}>
+                    <StageBadge lifeStage={s.lifeStage} />
+                    {age != null ? <Text style={styles.stuMeta}>만 {age}세</Text> : null}
+                  </View>
                 </View>
                 {s.lifeStage !== "child" ? (
                   <Text style={styles.transTag}>전환</Text>
@@ -202,7 +197,8 @@ const styles = StyleSheet.create({
   stuTop: { flexDirection: "row", alignItems: "center", gap: SPACING.md },
   avatar: { fontSize: 34 },
   stuName: { fontSize: 17, fontWeight: "800", color: NEUTRAL.text },
-  stuMeta: { fontSize: 13, color: NEUTRAL.textMuted, marginTop: 2 },
+  metaRow: { flexDirection: "row", alignItems: "center", gap: SPACING.sm, flexWrap: "wrap" },
+  stuMeta: { fontSize: 13, color: NEUTRAL.textMuted },
   transTag: {
     fontSize: 11,
     fontWeight: "700",

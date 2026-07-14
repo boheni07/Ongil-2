@@ -19,10 +19,12 @@ import {
   getRecentSelfExpressions,
   type SelfExpressionDay,
 } from "../lib/person";
+import { computeLifeStage } from "../lib/iep";
 import { MOOD_CHOICES } from "../lib/content";
 import { formatKoreanDate, formatShortDate } from "../lib/date";
 import { useAsyncAction } from "../hooks/useAsyncAction";
 import { ErrorBanner } from "../components/ui";
+import { StageBadge } from "../components/lifecycle/StageBadge";
 import { NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { PersonStackParamList } from "../navigation/types";
 
@@ -38,7 +40,7 @@ const GENDERS = [
 export function PersonHomeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<{ fullName: string } | null>(null);
+  const [profile, setProfile] = useState<{ fullName: string; birthDate: string } | null>(null);
   const [recent, setRecent] = useState<SelfExpressionDay[]>([]);
 
   const load = useCallback(async () => {
@@ -68,7 +70,12 @@ export function PersonHomeScreen({ navigation }: Props) {
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + SPACING.xl }]}
     >
       {profile ? (
-        <HomeBody navigation={navigation} name={profile.fullName} recent={recent} />
+        <HomeBody
+          navigation={navigation}
+          name={profile.fullName}
+          birthDate={profile.birthDate}
+          recent={recent}
+        />
       ) : (
         <ProfileForm onDone={load} />
       )}
@@ -79,10 +86,12 @@ export function PersonHomeScreen({ navigation }: Props) {
 function HomeBody({
   navigation,
   name,
+  birthDate,
   recent,
 }: {
   navigation: Props["navigation"];
   name: string;
+  birthDate: string;
   recent: SelfExpressionDay[];
 }) {
   const moodEmoji = (m: SelfExpressionDay["mood"]) =>
@@ -91,7 +100,10 @@ function HomeBody({
   return (
     <View>
       <View style={styles.topRow}>
-        <Text style={styles.date}>{formatKoreanDate()}</Text>
+        <View style={styles.headerLeft}>
+          <Text style={styles.date}>{formatKoreanDate()}</Text>
+          {birthDate ? <StageBadge lifeStage={computeLifeStage(birthDate)} simple /> : null}
+        </View>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="로그아웃"
@@ -223,7 +235,8 @@ const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: NEUTRAL.bg },
   content: { padding: SPACING.xl },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: NEUTRAL.bg },
-  topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  headerLeft: { gap: SPACING.sm, alignItems: "flex-start" },
   date: { fontSize: 18, fontWeight: "600", color: NEUTRAL.textMuted },
   logout: { fontSize: 16, fontWeight: "600", color: PRIMARY[600] },
   greet: { fontSize: 28, fontWeight: "800", color: NEUTRAL.text, lineHeight: 38, marginTop: SPACING.sm },

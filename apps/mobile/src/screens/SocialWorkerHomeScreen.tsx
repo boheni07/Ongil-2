@@ -4,18 +4,13 @@ import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
-import { getSocialWorkerClients, type SocialWorkerClient, type LifeStage } from "../lib/isp";
+import { getSocialWorkerClients, type SocialWorkerClient } from "../lib/isp";
 import { koreanAge } from "../lib/date";
-import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
+import { StageBadge } from "../components/lifecycle/StageBadge";
+import { DOMAIN_COLORS, FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { SocialWorkerStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<SocialWorkerStackParamList, "SocialWorkerHome">;
-
-const STAGE_LABEL: Record<LifeStage, string> = {
-  child: "아동기",
-  youth_transition: "청소년 전환기",
-  adult: "성년기",
-};
 
 /** 재사정 D-day가 0~30이면 D-30 경고 배지 노출(사용자 명시 요구사항). */
 function isReassessmentSoon(dday: number | null): boolean {
@@ -35,7 +30,17 @@ export function SocialWorkerHomeScreen({ navigation }: Props) {
     } = await supabase.auth.getUser();
     const meta = user?.user_metadata ?? {};
     setName((meta.full_name as string) || (meta.name as string) || "");
-    setClients(await getSocialWorkerClients());
+    // 성년기 당사자는 성인 서비스 전환 검토 대상이라 목록 최상단으로 끌어올린다(안정 정렬).
+    const list = await getSocialWorkerClients();
+    const sorted = list
+      .map((c, i) => ({ c, i }))
+      .sort((a, b) => {
+        const aAdult = a.c.lifeStage === "adult" ? 0 : 1;
+        const bAdult = b.c.lifeStage === "adult" ? 0 : 1;
+        return aAdult - bAdult || a.i - b.i;
+      })
+      .map((x) => x.c);
+    setClients(sorted);
     setLoading(false);
   }, []);
 
@@ -122,29 +127,38 @@ export function SocialWorkerHomeScreen({ navigation }: Props) {
           const age = koreanAge(c.birthDate);
           const hasIsp = Boolean(c.latestIspRecordId);
           const soon = isReassessmentSoon(c.reassessmentDday);
+          const isAdult = c.lifeStage === "adult";
           return (
             <Pressable
               key={c.personId}
               accessibilityRole="button"
               accessibilityLabel={`${c.fullName}${age != null ? ` 만 ${age}세` : ""}${
-                soon ? `, 재사정 D-${c.reassessmentDday}` : ""
-              }, ${hasIsp ? "ISP 점검하기" : "새 ISP 작성하기"}`}
+                isAdult ? ", 성인 서비스 전환 필요" : ""
+              }${soon ? `, 재사정 D-${c.reassessmentDday}` : ""}, ${
+                hasIsp ? "ISP 점검하기" : "새 ISP 작성하기"
+              }`}
               onPress={() => openClient(c)}
               style={({ pressed }) => [styles.stuCard, pressed && styles.pressed]}
             >
               <View style={styles.stuTop}>
                 <Text style={styles.avatar}>🧑</Text>
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, gap: 4 }}>
                   <Text style={styles.stuName}>{c.fullName}</Text>
-                  <Text style={styles.stuMeta}>
-                    {STAGE_LABEL[c.lifeStage]}
-                    {age != null ? ` · 만 ${age}세` : ""}
-                  </Text>
+                  <View style={styles.metaRow}>
+                    <StageBadge lifeStage={c.lifeStage} />
+                    {age != null ? <Text style={styles.stuMeta}>만 {age}세</Text> : null}
+                  </View>
                 </View>
                 {soon ? (
                   <Text style={styles.warnTag}>재사정 D-{c.reassessmentDday}</Text>
                 ) : null}
               </View>
+
+              {isAdult ? (
+                <Text style={styles.adultTag} accessibilityElementsHidden importantForAccessibility="no">
+                  성인 서비스 전환 필요
+                </Text>
+              ) : null}
 
               {hasIsp ? (
                 <View style={styles.stuStats}>
@@ -248,7 +262,20 @@ const styles = StyleSheet.create({
   stuTop: { flexDirection: "row", alignItems: "center", gap: SPACING.md },
   avatar: { fontSize: 34 },
   stuName: { fontSize: 17, fontWeight: "800", color: NEUTRAL.text },
-  stuMeta: { fontSize: 13, color: NEUTRAL.textMuted, marginTop: 2 },
+  metaRow: { flexDirection: "row", alignItems: "center", gap: SPACING.sm, flexWrap: "wrap" },
+  stuMeta: { fontSize: 13, color: NEUTRAL.textMuted },
+  adultTag: {
+    alignSelf: "flex-start",
+    marginTop: SPACING.sm,
+    fontSize: 12,
+    fontWeight: "700",
+    color: DOMAIN_COLORS.DAI.text,
+    backgroundColor: DOMAIN_COLORS.DAI.bg,
+    borderRadius: RADIUS.sm,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    overflow: "hidden",
+  },
   warnTag: {
     fontSize: 11,
     fontWeight: "700",

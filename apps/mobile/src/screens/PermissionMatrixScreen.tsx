@@ -17,8 +17,10 @@ import {
   type CellLevel,
   type PermissionMatrixRow,
 } from "../lib/permissions";
+import { getGuardianPersons } from "../lib/guardian";
+import { computeLifeStage } from "../lib/iep";
 import { ErrorBanner } from "../components/ui";
-import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
+import { DOMAIN_COLORS, FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { GuardianStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<GuardianStackParamList, "PermissionMatrix">;
@@ -60,11 +62,18 @@ export function PermissionMatrixScreen({ route, navigation }: Props) {
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<PermissionMatrixRow[]>([]);
+  const [isAdult, setIsAdult] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busyCell, setBusyCell] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    setRows(await getPermissionMatrix(personId));
+    const [matrix, persons] = await Promise.all([
+      getPermissionMatrix(personId),
+      getGuardianPersons(),
+    ]);
+    setRows(matrix);
+    const me = persons.find((p) => p.id === personId) ?? null;
+    setIsAdult(me?.birthDate ? computeLifeStage(me.birthDate) === "adult" : false);
     setLoading(false);
   }, [personId]);
 
@@ -120,6 +129,21 @@ export function PermissionMatrixScreen({ route, navigation }: Props) {
       <Text style={styles.subtle}>
         칩을 탭하면 없음 → 읽기 → 작성 → 편집 순으로 순환합니다.
       </Text>
+
+      {isAdult ? (
+        <View
+          style={styles.adultBanner}
+          accessibilityRole="text"
+          accessibilityLabel={`성년기 진입, 본인 동의 이관 완료. ${personName} 님은 성년기에 진입하여 기록·동의의 주체가 본인으로 이관되었습니다. 권한의 부여·회수는 당사자 본인의 동의를 전제로 신중하게 관리해주세요.`}
+          importantForAccessibility="no-hide-descendants"
+        >
+          <Text style={styles.adultBannerTitle}>성년기 진입 · 본인 동의 이관 완료</Text>
+          <Text style={styles.adultBannerBody}>
+            {personName} 님은 성년기에 진입하여 기록·동의의 주체가 본인으로 이관되었습니다. 권한의
+            부여·회수는 당사자 본인의 동의를 전제로 신중하게 관리해주세요.
+          </Text>
+        </View>
+      ) : null}
 
       <View style={styles.legend} accessibilityLabel="범례">
         {(Object.keys(LEVEL_META) as CellLevel[]).map((lv) => (
@@ -191,6 +215,16 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: NEUTRAL.bg },
   title: { fontSize: FONT.h2, fontWeight: "800", color: NEUTRAL.text },
   subtle: { fontSize: FONT.body, color: NEUTRAL.textMuted, marginTop: 4 },
+  adultBanner: {
+    marginTop: SPACING.lg,
+    padding: SPACING.md,
+    borderRadius: RADIUS.md,
+    backgroundColor: DOMAIN_COLORS.DAI.bg,
+    borderWidth: 1,
+    borderColor: DOMAIN_COLORS.DAI.accent,
+  },
+  adultBannerTitle: { fontSize: FONT.body, fontWeight: "800", color: DOMAIN_COLORS.DAI.text },
+  adultBannerBody: { fontSize: 13, color: NEUTRAL.text, marginTop: 4, lineHeight: 20 },
   legend: {
     flexDirection: "row",
     flexWrap: "wrap",

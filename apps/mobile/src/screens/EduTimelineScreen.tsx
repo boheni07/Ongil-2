@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { DomainKey } from "@ongil/validation";
-import { getTimeline, type TimelineItem } from "../lib/iep";
+import { getPersonBirthDate, getTimeline, type TimelineItem } from "../lib/iep";
 import { TimelineView } from "../components/timeline/TimelineView";
 import type { TeacherStackParamList } from "../navigation/types";
 
@@ -18,6 +18,19 @@ export function EduTimelineScreen({ route }: Props) {
   const [filter, setFilter] = useState<DomainKey | "ALL">("EDU");
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<TimelineItem[]>([]);
+  const [birthDate, setBirthDate] = useState<string | undefined>(undefined);
+
+  // 생년월일은 한 번만 조회(생애주기 배지·단계 필터·14/18세 구분선용, 필터와 무관).
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      const b = await getPersonBirthDate(personId);
+      if (alive) setBirthDate(b || undefined);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [personId]);
 
   useEffect(() => {
     let alive = true;
@@ -42,6 +55,7 @@ export function EduTimelineScreen({ route }: Props) {
       loading={loading}
       filter={filter}
       onFilterChange={setFilter}
+      birthDate={birthDate}
     />
   );
 }

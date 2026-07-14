@@ -1,5 +1,11 @@
 import Link from "next/link";
-import { hasPersonProfile, getRecentSelfExpressions } from "@/app/(app)/home/actions";
+import {
+  hasPersonProfile,
+  getRecentSelfExpressions,
+  getPersonBirthDate,
+} from "@/app/(app)/home/actions";
+import { StageBadge } from "@/components/lifecycle/StageBadge";
+import { computeLifeStage } from "@/lib/lifecycle";
 import { CreateProfileForm } from "./CreateProfileForm";
 
 /**
@@ -25,13 +31,21 @@ export async function PersonHome({ userName }: { userName: string | null }) {
     return <CreateProfileForm />;
   }
 
-  const recent = await getRecentSelfExpressions();
+  const [recent, birthDate] = await Promise.all([
+    getRecentSelfExpressions(),
+    getPersonBirthDate(),
+  ]);
   const name = userName ?? "당신";
 
   return (
     <div className="flex flex-1 flex-col">
       <section className="rounded-2xl bg-gradient-to-b from-primary-50 to-white p-6 ring-1 ring-primary-100">
-        <p className="text-person-base font-semibold text-primary-700">{formatKoreanDate(new Date())}</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-person-base font-semibold text-primary-700">
+            {formatKoreanDate(new Date())}
+          </p>
+          {birthDate && <StageBadge lifeStage={computeLifeStage(birthDate)} simple />}
+        </div>
         <h1 className="mt-2 text-3xl leading-snug font-extrabold text-foreground">
           안녕하세요, {name}님!
           <br />

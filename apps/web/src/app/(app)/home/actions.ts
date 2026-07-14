@@ -68,6 +68,24 @@ export async function hasPersonProfile(): Promise<boolean> {
 }
 
 /**
+ * P-01 헤더 StageBadge용 — 자기 persons 행의 birth_date(YYYY-MM-DD). 없으면 null.
+ * 서버 컴포넌트에서 직접 호출하는 읽기 헬퍼.
+ */
+export async function getPersonBirthDate(): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data } = await supabase
+    .from("persons")
+    .select("birth_date")
+    .eq("id", user.id)
+    .maybeSingle();
+  return (data?.birth_date as string | undefined) ?? null;
+}
+
+/**
  * "내 프로필 만들기" — persons 행이 없을 때만 생성한다(멱등). 이미 있으면 성공으로 간주.
  * primary_guardian_id는 자기 자신(auth.uid())으로 두어 "보호자 없는 셀프 가입 성인"을 표현한다.
  */

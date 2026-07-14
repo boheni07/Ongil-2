@@ -6,6 +6,8 @@ import type { EmergencyInfoInput } from "@ongil/validation";
 import type { TimelineItem } from "@/app/(app)/records/iep/actions";
 import { TimelineStream } from "@/components/timeline/TimelineStream";
 import { TimelineLane } from "@/components/timeline/TimelineLane";
+import { StageBadge, type LifeStage } from "@/components/lifecycle/StageBadge";
+import { computeLifeStage } from "@/lib/lifecycle";
 
 /**
  * 생애주기 타임라인 최상위 뷰(구 EduTimeline). T-20/W-20/TH-20/G-10 공용.
@@ -24,20 +26,32 @@ const DOMAIN_LABELS: Record<DomainKey, string> = {
 };
 
 type View = "stream" | "lane";
+type StageFilter = LifeStage | "ALL";
+
+const STAGE_FILTER_OPTIONS: { value: StageFilter; label: string }[] = [
+  { value: "ALL", label: "전체 단계" },
+  { value: "child", label: "아동기" },
+  { value: "youth_transition", label: "청소년 전환기" },
+  { value: "adult", label: "성년기" },
+];
 
 export function TimelineView({
   items,
   personName,
   emergencyInfo,
   domainFilterDefault = "ALL",
+  birthDate,
 }: {
   items: TimelineItem[];
   personName: string;
   emergencyInfo?: EmergencyInfoInput | null;
   domainFilterDefault?: DomainKey | "ALL";
+  /** 있으면 헤더 StageBadge·단계 필터·레인뷰 전환 구분선을 노출한다(없으면 하위 호환으로 생략). */
+  birthDate?: string;
 }) {
   const [view, setView] = useState<View>("stream");
   const [domainFilter, setDomainFilter] = useState<DomainKey | "ALL">(domainFilterDefault);
+  const [stageFilter, setStageFilter] = useState<StageFilter>("ALL");
 
   const domains = useMemo(() => {
     const set = new Set<DomainKey>();
@@ -45,14 +59,21 @@ export function TimelineView({
     return [...set];
   }, [items]);
 
-  const filtered = useMemo(
-    () => (domainFilter === "ALL" ? items : items.filter((it) => it.domain === domainFilter)),
-    [items, domainFilter]
-  );
+  const filtered = useMemo(() => {
+    let out = domainFilter === "ALL" ? items : items.filter((it) => it.domain === domainFilter);
+    // 단계 필터: 현재 나이가 아니라 "그 기록이 작성된 시점"의 life_stage로 분류한다.
+    if (birthDate && stageFilter !== "ALL") {
+      out = out.filter((it) => computeLifeStage(birthDate, new Date(it.date)) === stageFilter);
+    }
+    return out;
+  }, [items, domainFilter, stageFilter, birthDate]);
 
   return (
     <div className="flex flex-1 flex-col">
-      <h1 className="text-headline-2 font-extrabold text-foreground">타임라인 · {personName}</h1>
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="text-headline-2 font-extrabold text-foreground">타임라인 · {personName}</h1>
+        {birthDate && <StageBadge lifeStage={computeLifeStage(birthDate)} />}
+      </div>
       <p className="mt-1 text-body text-muted-foreground">기록을 시간순으로 확인합니다.</p>
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -69,6 +90,22 @@ export function TimelineView({
           </ViewButton>
         </div>
         <div className="flex-1" />
+        {birthDate && (
+          <label className="flex items-center gap-2">
+            <span className="text-caption font-semibold text-accent-stone">생애주기 단계</span>
+            <select
+              className="min-h-11 rounded-(--br-md) border border-border bg-white px-3 text-body outline-none focus-visible:border-primary-600"
+              value={stageFilter}
+              onChange={(e) => setStageFilter(e.target.value as StageFilter)}
+            >
+              {STAGE_FILTER_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <label className="flex items-center gap-2">
           <span className="text-caption font-semibold text-accent-stone">필터</span>
           <select
@@ -93,7 +130,7 @@ export function TimelineView({
       ) : view === "stream" ? (
         <TimelineStream items={filtered} personName={personName} emergencyInfo={emergencyInfo} />
       ) : (
-        <TimelineLane items={filtered} />
+        <TimelineLane items={filtered} birthDate={birthDate} />
       )}
     </div>
   );

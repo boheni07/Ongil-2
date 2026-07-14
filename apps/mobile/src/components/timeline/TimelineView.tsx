@@ -2,11 +2,17 @@ import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { DomainKey, EmergencyInfoInput } from "@ongil/validation";
-import type { TimelineItem } from "../../lib/iep";
+import {
+  computeLifeStage,
+  lifeStageAt,
+  type LifeStage,
+  type TimelineItem,
+} from "../../lib/iep";
 import { PinnedCard } from "./PinnedCard";
 import { MilestoneCard } from "./MilestoneCard";
 import { RecordTimelineCard } from "./RecordTimelineCard";
 import { TimelineLane } from "./TimelineLane";
+import { StageBadge } from "../lifecycle/StageBadge";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../../theme/colors";
 
 /**
@@ -31,6 +37,13 @@ const DOMAIN_FILTERS: { key: DomainKey | "ALL"; label: string }[] = [
 
 type ViewMode = "stream" | "lane";
 
+const STAGE_FILTERS: { key: LifeStage | "ALL"; label: string }[] = [
+  { key: "ALL", label: "전체" },
+  { key: "child", label: "아동기" },
+  { key: "youth_transition", label: "청소년 전환기" },
+  { key: "adult", label: "성년기" },
+];
+
 export function TimelineView({
   title,
   personName,
@@ -39,6 +52,7 @@ export function TimelineView({
   filter,
   onFilterChange,
   emergencyInfo,
+  birthDate,
 }: {
   title: string;
   personName: string;
@@ -47,15 +61,23 @@ export function TimelineView({
   filter: DomainKey | "ALL";
   onFilterChange: (f: DomainKey | "ALL") => void;
   emergencyInfo?: EmergencyInfoInput | null;
+  birthDate?: string;
 }) {
   const insets = useSafeAreaInsets();
   const [view, setView] = useState<ViewMode>("stream");
+  const [stageFilter, setStageFilter] = useState<LifeStage | "ALL">("ALL");
 
   const domains = useMemo(() => {
     const set = new Set<DomainKey>();
     for (const it of items) set.add(it.domain);
     return [...set];
   }, [items]);
+
+  // 생애주기 단계 필터는 "기록 작성 시점 나이" 기준으로 항목을 거른다(birthDate 있을 때만).
+  const visibleItems = useMemo(() => {
+    if (!birthDate || stageFilter === "ALL") return items;
+    return items.filter((it) => lifeStageAt(birthDate, it.date) === stageFilter);
+  }, [items, birthDate, stageFilter]);
 
   return (
     <ScrollView
@@ -67,6 +89,12 @@ export function TimelineView({
         {personName ? ` · ${personName}` : ""}
       </Text>
       <Text style={styles.sub}>기록을 시간순으로 확인합니다.</Text>
+
+      {birthDate ? (
+        <View style={styles.stageHeader}>
+          <StageBadge lifeStage={computeLifeStage(birthDate)} />
+        </View>
+      ) : null}
 
       <View style={styles.viewToggle} accessibilityRole="tablist" accessibilityLabel="타임라인 보기 방식">
         <ViewButton label="스트림 뷰" active={view === "stream"} onPress={() => setView("stream")} />
@@ -100,6 +128,35 @@ export function TimelineView({
         })}
       </ScrollView>
 
+      {birthDate ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.stageFilterRow}
+          accessibilityLabel="생애주기 단계 필터"
+        >
+          {STAGE_FILTERS.map((f) => {
+            const sel = stageFilter === f.key;
+            return (
+              <Pressable
+                key={f.key}
+                accessibilityRole="button"
+                accessibilityState={{ selected: sel }}
+                accessibilityLabel={`${f.label} 단계 필터`}
+                onPress={() => setStageFilter(f.key)}
+                style={({ pressed }) => [
+                  styles.filterChip,
+                  sel && styles.filterChipSel,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text style={[styles.filterText, sel && styles.filterTextSel]}>{f.label}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      ) : null}
+
       {emergencyInfo !== undefined ? (
         <View style={styles.pinnedWrap}>
           <PinnedCard personName={personName} emergencyInfo={emergencyInfo ?? null} />
@@ -108,11 +165,11 @@ export function TimelineView({
 
       {loading ? (
         <ActivityIndicator color={PRIMARY[600]} style={{ marginTop: SPACING.xl }} />
-      ) : items.length === 0 ? (
+      ) : visibleItems.length === 0 ? (
         <Text style={styles.muted}>해당 조건의 기록이 없습니다.</Text>
       ) : view === "stream" ? (
         <View style={styles.stream}>
-          {items.map((it) =>
+          {visibleItems.map((it) =>
             it.isMilestone ? (
               <MilestoneCard key={it.id} item={it} />
             ) : (
@@ -122,7 +179,7 @@ export function TimelineView({
         </View>
       ) : (
         <View style={styles.laneWrap}>
-          <TimelineLane items={items} domains={domains} />
+          <TimelineLane items={visibleItems} domains={domains} birthDate={birthDate} />
         </View>
       )}
     </ScrollView>
@@ -156,6 +213,8 @@ const styles = StyleSheet.create({
   content: { padding: SPACING.xl },
   title: { fontSize: FONT.h2, fontWeight: "800", color: NEUTRAL.text },
   sub: { fontSize: FONT.body, color: NEUTRAL.textMuted, marginTop: 2 },
+  stageHeader: { marginTop: SPACING.md, alignSelf: "flex-start" },
+  stageFilterRow: { gap: SPACING.sm, paddingBottom: SPACING.lg },
   viewToggle: {
     flexDirection: "row",
     gap: SPACING.xs,

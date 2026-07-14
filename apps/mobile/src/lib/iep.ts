@@ -36,6 +36,42 @@ export function computeLifeStage(birthDate: string): LifeStage {
 }
 
 /**
+ * 특정 시점(기록 작성일 등) 기준 생애주기 단계. 타임라인 단계 필터가 "기록 작성 시점 나이"로
+ * 항목을 분류할 때 쓴다. computeLifeStage와 동일한 만 14/18세 경계를 적용한다.
+ */
+export function lifeStageAt(birthDate: string, atISO: string): LifeStage | null {
+  const b = new Date(birthDate);
+  const at = new Date(atISO);
+  if (Number.isNaN(b.getTime()) || Number.isNaN(at.getTime())) return null;
+  let age = at.getFullYear() - b.getFullYear();
+  const m = at.getMonth() - b.getMonth();
+  if (m < 0 || (m === 0 && at.getDate() < b.getDate())) age -= 1;
+  if (age < 14) return "child";
+  if (age < 18) return "youth_transition";
+  return "adult";
+}
+
+/** 타임라인 생애주기 배지·필터·구분선용 — personId의 birth_date 단건 조회(RLS 범위 내). */
+export async function getPersonBirthDate(personId: string): Promise<string | null> {
+  if (!UUID_RE.test(personId)) return null;
+  const { data } = await supabase
+    .from("persons")
+    .select("birth_date")
+    .eq("id", personId)
+    .maybeSingle();
+  return (data?.birth_date as string | undefined) ?? null;
+}
+
+/** birthDate + years년이 되는 날(만 N세 도달일)의 ISO. 타임라인 14/18세 구분선 위치 계산용. */
+export function lifeStageBoundaryISO(birthDate: string, years: number): string | null {
+  const b = new Date(birthDate);
+  if (Number.isNaN(b.getTime())) return null;
+  const d = new Date(b);
+  d.setFullYear(b.getFullYear() + years);
+  return d.toISOString();
+}
+
+/**
  * G-40 접근 로그 기록(모바일) — access_logs INSERT(§4-4). 웹 logAccess를 옮긴 것으로,
  * next/headers(IP·UA)가 없어 ip_address/user_agent는 null로 둔다. 감사 로그는 best-effort라
  * 실패해도 사용자 작업을 막지 않도록 모든 오류를 삼킨다.

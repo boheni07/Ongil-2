@@ -20,6 +20,8 @@ export type LifeStage = Person["lifeStage"];
 
 interface StageMeta {
   label: string;
+  /** 당사자 모드(simple)용 짧고 쉬운 단어. */
+  simpleLabel: string;
   icon: string;
   description: string;
   bgClass: string;
@@ -30,6 +32,7 @@ interface StageMeta {
 const STAGE_META: Record<LifeStage, StageMeta> = {
   child: {
     label: "아동기",
+    simpleLabel: "어린이 때",
     icon: "🧒",
     description: "만 14세 미만 — 보호자가 기록·동의를 대리합니다.",
     bgClass: "bg-domain-edu-bg",
@@ -38,6 +41,7 @@ const STAGE_META: Record<LifeStage, StageMeta> = {
   },
   youth_transition: {
     label: "청소년 전환기",
+    simpleLabel: "청소년",
     icon: "🌱",
     description: "만 14세~17세 — 전환 계획과 당사자 의사 반영이 시작됩니다.",
     bgClass: "bg-domain-tra-bg",
@@ -46,6 +50,7 @@ const STAGE_META: Record<LifeStage, StageMeta> = {
   },
   adult: {
     label: "성년기",
+    simpleLabel: "어른",
     icon: "🧑",
     description: "만 18세 이상 — 당사자 본인이 기록·동의의 주체가 됩니다.",
     bgClass: "bg-domain-dai-bg",
@@ -57,10 +62,46 @@ const STAGE_META: Record<LifeStage, StageMeta> = {
 export interface StageBadgeProps {
   lifeStage: LifeStage;
   className?: string;
+  /**
+   * 당사자 모드 변형(P-01). 쉬운 단어(예: 🧒 어린이 때)만 큰 글씨로 보여주고
+   * 툴팁·설명 문구는 생략한다(인지 부담 최소화). 기본은 false — 기존 사용처는 그대로.
+   */
+  simple?: boolean;
+  /**
+   * false면 툴팁 트리거(button) 없이 순수 `<span>`으로 렌더한다.
+   * 카드 전체가 `<Link>`(`<a>`)인 목록 항목 안에 배지를 넣을 때 반드시 false로 써야
+   * `<a>` 안에 `<button>`이 중첩되는 무효 DOM/hydration 경고를 막을 수 있다.
+   * 기본은 true(기존 사용처 동작 유지).
+   */
+  interactive?: boolean;
 }
 
-export function StageBadge({ lifeStage, className }: StageBadgeProps) {
+export function StageBadge({ lifeStage, className, simple = false, interactive = true }: StageBadgeProps) {
   const meta = STAGE_META[lifeStage];
+
+  if (simple || !interactive) {
+    const label = simple ? meta.simpleLabel : meta.label;
+    return (
+      <span
+        data-slot="stage-badge"
+        role="img"
+        aria-label={`생애주기 단계: ${label}`}
+        className={cn(
+          "inline-flex min-h-11 items-center gap-2 overflow-hidden rounded-(--br-sm) pr-4 pl-0 font-bold",
+          simple ? "text-person-base" : "text-sm",
+          meta.bgClass,
+          meta.textClass,
+          className
+        )}
+      >
+        <span aria-hidden="true" className={cn("h-full w-1 self-stretch", meta.barClass)} />
+        <span aria-hidden="true" className={cn("leading-none", simple ? "text-xl" : "text-base")}>
+          {meta.icon}
+        </span>
+        <span>{label}</span>
+      </span>
+    );
+  }
 
   return (
     <Tooltip>

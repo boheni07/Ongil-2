@@ -68,7 +68,11 @@ export async function TeacherHome({ userName }: { userName: string | null }) {
                   <div className="min-w-0">
                     <p className="truncate text-body font-bold text-foreground">{s.fullName}</p>
                     <div className="mt-1">
-                      <StageBadge lifeStage={s.lifeStage} className="min-h-6 pr-2 text-[11px]" />
+                      <StageBadge
+                        lifeStage={s.lifeStage}
+                        interactive={false}
+                        className="min-h-6 pr-2 text-[11px]"
+                      />
                     </div>
                   </div>
                 </div>

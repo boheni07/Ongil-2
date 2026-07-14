@@ -23,8 +23,9 @@ export function GuardianTimelineScreen({ route }: Props) {
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<TimelineItem[]>([]);
   const [emergencyInfo, setEmergencyInfo] = useState<EmergencyInfoInput | null>(null);
+  const [birthDate, setBirthDate] = useState<string | undefined>(undefined);
 
-  // 응급정보는 한 번만 조회(당사자 프로필 기준, 필터와 무관).
+  // 응급정보·생년월일은 한 번만 조회(당사자 프로필 기준, 필터와 무관).
   useEffect(() => {
     let alive = true;
     void (async () => {
@@ -32,6 +33,7 @@ export function GuardianTimelineScreen({ route }: Props) {
       const me = persons.find((p) => p.id === personId) ?? null;
       if (alive) {
         setEmergencyInfo((me?.emergencyInfo as EmergencyInfoInput | null) ?? null);
+        setBirthDate(me?.birthDate || undefined);
       }
     })();
     return () => {
@@ -63,6 +65,7 @@ export function GuardianTimelineScreen({ route }: Props) {
       filter={filter}
       onFilterChange={setFilter}
       emergencyInfo={emergencyInfo}
+      birthDate={birthDate}
     />
   );
 }

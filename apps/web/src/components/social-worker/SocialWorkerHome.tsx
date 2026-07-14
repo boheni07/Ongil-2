@@ -20,6 +20,12 @@ export async function SocialWorkerHome({ userName }: { userName: string | null }
     (c) => c.reassessmentDday != null && c.reassessmentDday <= 30
   ).length;
 
+  // docs/02-ia.md §3-9: adult 대상은 '성인 서비스 전환 필요'가 우선이라 목록 맨 위로 정렬한다.
+  // Array.prototype.sort는 안정 정렬이라 adult 아닌 대상은 기존 순서를 유지한다.
+  const sortedClients = [...clients].sort(
+    (a, b) => Number(b.lifeStage === "adult") - Number(a.lifeStage === "adult")
+  );
+
   return (
     <div className="flex flex-1 flex-col">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -51,7 +57,7 @@ export async function SocialWorkerHome({ userName }: { userName: string | null }
         </p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {clients.map((c) => {
+          {sortedClients.map((c) => {
             const href = c.latestIspRecordId
               ? `/records/isp/${c.latestIspRecordId}/review`
               : `/records/isp/new?personId=${c.personId}`;
@@ -71,10 +77,20 @@ export async function SocialWorkerHome({ userName }: { userName: string | null }
                   <div className="min-w-0">
                     <p className="truncate text-body font-bold text-foreground">{c.fullName}</p>
                     <div className="mt-1">
-                      <StageBadge lifeStage={c.lifeStage} className="min-h-6 pr-2 text-[11px]" />
+                      <StageBadge
+                        lifeStage={c.lifeStage}
+                        interactive={false}
+                        className="min-h-6 pr-2 text-[11px]"
+                      />
                     </div>
                   </div>
                 </div>
+
+                {c.lifeStage === "adult" && (
+                  <p className="rounded-(--br-sm) bg-domain-tra-bg px-2.5 py-1.5 text-caption font-bold text-domain-tra-text">
+                    🧑 성인 서비스 전환 필요
+                  </p>
+                )}
 
                 <div className="flex gap-2">
                   <MiniStat n={c.ispGoalCount} label="ISP 목표" />

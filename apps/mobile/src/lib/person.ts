@@ -42,18 +42,23 @@ async function requirePersonUser() {
   return { user, error: null as string | null };
 }
 
-/** P-01 인사말·존재 확인용 — 자기 persons 프로필(이름). 없으면 null. */
-export async function getMyPersonProfile(): Promise<{ fullName: string } | null> {
+/** P-01 인사말·존재 확인용 — 자기 persons 프로필(이름·생년월일). 없으면 null. */
+export async function getMyPersonProfile(): Promise<{
+  fullName: string;
+  birthDate: string;
+} | null> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
   const { data } = await supabase
     .from("persons")
-    .select("full_name")
+    .select("full_name, birth_date")
     .eq("id", user.id)
     .maybeSingle();
-  return data ? { fullName: data.full_name as string } : null;
+  return data
+    ? { fullName: data.full_name as string, birthDate: data.birth_date as string }
+    : null;
 }
 
 /** P-01 진입 시 자기 persons 행 존재 여부. */

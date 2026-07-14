@@ -99,6 +99,8 @@ enum NotificationType {
   handover
   reminder
   record_confirm
+  life_stage_youth
+  life_stage_adult
 }
 
 // invitations.status 전용

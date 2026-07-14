@@ -31,10 +31,22 @@ export default async function TimelinePage({
 
   const clients =
     role === "social_worker"
-      ? (await getSocialWorkerClients()).map((c) => ({ personId: c.personId, fullName: c.fullName }))
+      ? (await getSocialWorkerClients()).map((c) => ({
+          personId: c.personId,
+          fullName: c.fullName,
+          birthDate: c.birthDate,
+        }))
       : role === "therapist"
-        ? (await getTherapistClients()).map((c) => ({ personId: c.personId, fullName: c.fullName }))
-        : (await getTeacherStudents()).map((s) => ({ personId: s.personId, fullName: s.fullName }));
+        ? (await getTherapistClients()).map((c) => ({
+            personId: c.personId,
+            fullName: c.fullName,
+            birthDate: c.birthDate,
+          }))
+        : (await getTeacherStudents()).map((s) => ({
+            personId: s.personId,
+            fullName: s.fullName,
+            birthDate: s.birthDate,
+          }));
 
   if (!personId) {
     return (
@@ -73,5 +85,11 @@ export default async function TimelinePage({
     clients.find((c) => c.personId === personId) ?? null,
   ];
 
-  return <TimelineView items={items} personName={client?.fullName ?? personLabel} />;
+  return (
+    <TimelineView
+      items={items}
+      personName={client?.fullName ?? personLabel}
+      birthDate={client?.birthDate}
+    />
+  );
 }
