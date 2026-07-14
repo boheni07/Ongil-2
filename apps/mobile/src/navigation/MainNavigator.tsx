@@ -34,6 +34,7 @@ import { TherapistHomeScreen } from "../screens/TherapistHomeScreen";
 import { TherapyPlanWizardScreen } from "../screens/TherapyPlanWizardScreen";
 import { TherapyPlanDetailScreen } from "../screens/TherapyPlanDetailScreen";
 import { SessionNoteFormScreen } from "../screens/SessionNoteFormScreen";
+import { EvalReportScreen } from "../screens/EvalReportScreen";
 import { MedTimelineScreen } from "../screens/MedTimelineScreen";
 import { GenericHomeScreen } from "../screens/GenericHomeScreen";
 import { PrivacySettingsScreen } from "../screens/PrivacySettingsScreen";
@@ -279,6 +280,11 @@ export function MainNavigator({ session }: { session: Session }) {
           name="SessionNoteForm"
           component={SessionNoteFormScreen}
           options={{ title: "회기 일지 작성" }}
+        />
+        <TherapistStack.Screen
+          name="EvalReport"
+          component={EvalReportScreen}
+          options={{ title: "평가보고서 작성" }}
         />
         <TherapistStack.Screen
           name="MedTimeline"

@@ -27,12 +27,21 @@ export async function TherapistHome({ userName }: { userName: string | null }) {
             담당 아동 {total}명 · 치료계획서를 점검하고 회기 일지를 남겨보세요.
           </p>
         </div>
-        <Button
-          render={<Link href="/records/session/new" />}
-          className="h-11 bg-accent-amber px-5 font-bold text-accent-stone hover:bg-accent-amber/85"
-        >
-          ＋ 회기 일지 작성
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            render={<Link href="/records/eval/new" />}
+            variant="outline"
+            className="h-11 px-5 font-bold"
+          >
+            ＋ 평가보고서 작성
+          </Button>
+          <Button
+            render={<Link href="/records/session/new" />}
+            className="h-11 bg-accent-amber px-5 font-bold text-accent-stone hover:bg-accent-amber/85"
+          >
+            ＋ 회기 일지 작성
+          </Button>
+        </div>
       </div>
 
       <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">

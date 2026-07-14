@@ -89,6 +89,14 @@ export function TherapistHomeScreen({ navigation }: Props) {
         >
           <Text style={styles.newBtnText}>＋ 회기 일지 작성</Text>
         </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="평가보고서 작성"
+          onPress={() => navigation.navigate("EvalReport", { personId: "", personName: "" })}
+          style={({ pressed }) => [styles.newBtn, styles.newBtnAlt, pressed && styles.pressed]}
+        >
+          <Text style={[styles.newBtnText, styles.newBtnAltText]}>＋ 평가보고서</Text>
+        </Pressable>
       </View>
 
       <Text style={styles.sectionTitle}>담당 아동</Text>
@@ -186,6 +194,8 @@ const styles = StyleSheet.create({
     backgroundColor: PRIMARY[600],
   },
   newBtnText: { fontSize: 15, fontWeight: "700", color: "#fff" },
+  newBtnAlt: { backgroundColor: NEUTRAL.bg, borderWidth: 1.5, borderColor: PRIMARY[600] },
+  newBtnAltText: { color: PRIMARY[700] },
   sectionTitle: {
     fontSize: FONT.h3,
     fontWeight: "700",

@@ -315,6 +315,39 @@ export const sessionNoteSchema = z.object({
 export type SessionNoteInput = z.infer<typeof sessionNoteSchema>;
 
 // ─────────────────────────────────────────────────────────
+// MED-007 — 평가보고서 (P2-3 TH-17, docs/05-erd.md §3 581-597)
+// ─────────────────────────────────────────────────────────
+
+/**
+ * 평가 영역별 점수(§3 MED-007 domain_scores). MED-006의 therapyDomainScoresSchema와 달리
+ * §3 MED-007은 {domain, score}[] 배열 형태다(고정 키 객체 아님) — 절대 재사용하지 말 것.
+ * domain 4종은 MED-005 goals[].area / MED-006 domain_scores 키와 동일 enum이다.
+ */
+export const evalDomainScoreSchema = z.object({
+  domain: therapyAreaSchema,
+  score: z.number().int().min(0).max(100),
+});
+
+export type EvalDomainScore = z.infer<typeof evalDomainScoreSchema>;
+
+/**
+ * 평가보고서 content(MED-007). content JSONB 키는 §3 MED-007과 1:1(snake_case).
+ * therapy_plan_id는 TH-17 진입 시 getEvalComposeContext가 최근 확정 MED-005를 자동 연결해 채운다.
+ * §4-6 확인 대상 표에 MED-007이 없어 requires_confirmation=false(회기일지와 동급 일상 기록).
+ * eval_type(초기/중간/최종)은 같은 therapy_plan_id당 각 1건 가정 — TH-17 3열 비교 뷰의 열 키.
+ */
+export const evalReportSchema = z.object({
+  eval_type: z.enum(["initial", "interim", "final"]),
+  eval_date: z.string().regex(dateRegex, "평가 일자는 YYYY-MM-DD 형식이어야 합니다."),
+  therapy_plan_id: z.string().uuid("연결된 치료계획서 ID가 올바르지 않습니다."),
+  domain_scores: z.array(evalDomainScoreSchema).min(1, "평가 영역 점수를 1개 이상 입력해주세요."),
+  summary: z.string().min(1, "종합 평가 요약을 입력해주세요.").max(3000, "요약은 3000자 이내여야 합니다."),
+  recommendations: z.string().max(2000).optional(),
+});
+
+export type EvalReportInput = z.infer<typeof evalReportSchema>;
+
+// ─────────────────────────────────────────────────────────
 // WEL-004 — ISP 개별지원계획 (P2-2 W-13/W-14, docs/05-erd.md §3)
 // ─────────────────────────────────────────────────────────
 

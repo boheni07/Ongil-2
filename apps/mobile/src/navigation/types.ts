@@ -71,6 +71,7 @@ export type TherapistStackParamList = {
   TherapyPlanWizard: { personId: string; personName: string };
   TherapyPlanDetail: { recordId: string };
   SessionNoteForm: { personId: string; personName: string };
+  EvalReport: { personId: string; personName: string };
   MedTimeline: { personId: string; personName: string };
 };
 
