@@ -1234,6 +1234,63 @@ REVOKE DELETE ON notifications FROM authenticated;
 
 > pgTAP 회귀: `supabase/tests/09_handover_notifications.sql`(20 asserts)이 §4-10·§4-11 정책을 커버한다.
 
+### 4-12. 알림 실제 발송 파이프라인 (Flow-SYS-03 — FCM v1 + Resend 폴백)
+
+§4-11까지는 `notifications` INSERT(=인앱 알림함 적재)만 다뤘다. 실제 **FCM 푸시·이메일 발송**은 이 절에서 구현한다. 아키텍처는 Supabase 표준 패턴인 **Database Webhook via pg_net + Vault + Edge Function**이다.
+
+```
+notifications AFTER INSERT
+  → trg_zz_dispatch_notification → dispatch_notification() (SECURITY DEFINER)
+  → Vault 에서 project_url/service_role_key 조회
+  → net.http_post(.../functions/v1/dispatch-notification, body := to_jsonb(NEW))  ← fire-and-forget
+  → [Edge Function] notification_preferences 조회 → users.fcm_token/email 조회
+      → fcm_enabled && fcm_token 이면 FCM v1 시도
+      → 실패 시 email_enabled && email 이면 Resend 폴백
+      → 성공/실패 console 로그(배송 상태 저장 컬럼 없음)
+```
+
+**왜 Edge Function 인가(pg_cron 대체 불가):** 이 프로젝트는 그동안 Deno Edge Function 대신 `pg_cron + plpgsql` 로 대체해 왔으나(생애주기 전환), FCM 실패 → Resend 폴백의 **조건부 순차 로직**은 pg_net 의 비동기(fire-and-forget) 특성상 같은 트랜잭션에서 "응답 보고 분기"가 불가능하다. 따라서 이번이 실제 Deno Edge Function 이 필요한 최초 케이스다.
+
+**트리거 범위:** `notifications` 의 **모든** INSERT(record_new / permission_grant / handover / reminder / record_confirm / life_stage_youth / life_stage_adult)에 균일하게 발동한다. 타입별 분기 없음.
+
+**채널 설정 해석:** `notification_preferences(user_id, type)` 행이 **없으면** 컬럼 기본값(`fcm_enabled=true`, `email_enabled=true`)과 동일하게 "둘 다 활성"으로 간주(§2-11-1과 일관).
+
+**필요한 시크릿:**
+
+| 이름 | 위치 | 용도 |
+|------|------|------|
+| `SUPABASE_URL` | Edge Function 기본 제공 | service-role 클라이언트 |
+| `SUPABASE_SERVICE_ROLE_KEY` | Edge Function 기본 제공 | service-role 클라이언트 |
+| `FCM_SERVICE_ACCOUNT_JSON` | Edge Function 시크릿 | 서비스 계정 JSON 전체(JWT bearer flow) |
+| `FCM_PROJECT_ID` | Edge Function 시크릿 | FCM v1 엔드포인트 프로젝트 ID |
+| `RESEND_API_KEY` | Edge Function 시크릿 | Resend 이메일 폴백 |
+| `RESEND_FROM_EMAIL` | Edge Function 시크릿 | 발신 주소 |
+| `project_url` | **Supabase Vault** | 트리거가 Edge Function URL 조립 |
+| `service_role_key` | **Supabase Vault** | 트리거의 웹훅 호출 Authorization |
+
+FCM 은 **HTTP v1 API**를 쓴다(레거시 서버 키 API 는 2024년 폐지). 서비스 계정 private_key(PKCS#8 PEM)를 `crypto.subtle` 로 RS256 서명해 OAuth2 access token 을 발급받은 뒤 `.../messages:send` 를 호출한다.
+
+**응답 정책:** FCM/Resend 자체의 "실패"는 이미 폴백까지 시도한 정상 처리이므로 Edge Function 은 200 을 반환한다(웹훅 재시도 불필요). 예상 못 한 내부 오류만 500(자동 재시도 유도). 트리거 함수도 발송 실패가 알림 INSERT 트랜잭션을 깨지 않도록 `EXCEPTION WHEN OTHERS` 로 통과한다.
+
+**로컬 방어:** pg_net/Vault 미탑재 환경에서는 `CREATE EXTENSION`·트리거 등록을 `DO ... EXCEPTION` 으로 감싸 마이그레이션이 깨지지 않고, Vault 시크릿이 없으면 트리거가 no-op 로 종료한다.
+
+> ⚠️ **수동 운영 작업(이 세션에서 실행 불가):** 마이그레이션 적용만으로는 발송이 동작하지 않는다. 아래를 수동 수행해야 한다.
+> ```bash
+> supabase functions deploy dispatch-notification
+> supabase secrets set FCM_SERVICE_ACCOUNT_JSON="$(cat service-account.json)" \
+>                      FCM_PROJECT_ID=<project-id> \
+>                      RESEND_API_KEY=<key> RESEND_FROM_EMAIL=<from>
+> ```
+> ```sql
+> -- Vault(마이그레이션 적용 후 1회)
+> select vault.create_secret('https://<PROJECT-REF>.supabase.co', 'project_url');
+> select vault.create_secret('<SERVICE-ROLE-KEY>',                'service_role_key');
+> ```
+
+> pgTAP 회귀: `supabase/tests/13_notification_dispatch_trigger.sql`(3 asserts)이 트리거 등록·EXECUTE 권한·net.http_post 발화를 커버한다(Edge Function 내부 HTTP 로직은 코드 리뷰로 검증 — 함수를 `getFcmAccessToken`/`sendFcm`/`sendEmailFallback` 로 분리).
+
+**구현 산출물:** `supabase/functions/dispatch-notification/index.ts`, `supabase/prisma/migrations/20260714030000_p3_notification_dispatch/migration.sql`
+
 ---
 
 ## 5. 인덱스 전략
