@@ -5,7 +5,8 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getPersonRecords, type RecordListItem } from "../lib/records";
 import { DomainChip } from "../components/DomainChip";
-import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING, TOUCH_MIN } from "../theme/colors";
+import { ConfirmBadge } from "../components/records/ConfirmBadge";
+import { FONT, NEUTRAL, RADIUS, SPACING, TOUCH_MIN } from "../theme/colors";
 import type { GuardianStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<GuardianStackParamList, "RecordManager">;
@@ -96,11 +97,7 @@ export function RecordManagerScreen({ route, navigation }: Props) {
                   <Text style={styles.draftText}>임시저장</Text>
                 </View>
               )}
-              {item.requiresConfirmation && (
-                <View style={[styles.confirmBadge, item.confirmedAt ? styles.confirmDone : styles.confirmPending]}>
-                  <Text style={styles.confirmText}>{item.confirmedAt ? "✓ 확인됨" : "⏳ 확인 대기"}</Text>
-                </View>
-              )}
+              {item.requiresConfirmation && <ConfirmBadge confirmedAt={item.confirmedAt} />}
             </View>
           </Pressable>
         )}
@@ -150,8 +147,4 @@ const styles = StyleSheet.create({
   rowMeta: { fontSize: FONT.caption, color: NEUTRAL.textMuted },
   draftBadge: { backgroundColor: "#FFF5E6", borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 2 },
   draftText: { fontSize: 11, fontWeight: "700", color: "#B56F10" },
-  confirmBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 2 },
-  confirmPending: { backgroundColor: "#F3F4F6" },
-  confirmDone: { backgroundColor: PRIMARY[50] },
-  confirmText: { fontSize: 11, fontWeight: "700", color: NEUTRAL.text },
 });

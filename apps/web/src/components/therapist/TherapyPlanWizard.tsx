@@ -354,9 +354,11 @@ export function TherapyPlanWizard({
             <SummaryRow k="치료 목표" v={`${filledGoals.length}개 영역`} last />
           </div>
           <div className="rounded-(--br-md) bg-primary-50 p-4 text-body text-primary-700">
-            ✅ 치료계획서는 공식 문서로 저장 시 확인(Confirmation) 절차가 시작됩니다. 확인 요청 대상은
-            {client?.lifeStage === "adult" ? " 본인" : " 주보호자"}입니다. 저장 후 아동 타임라인과 계획서
-            상세에 기록됩니다.
+            ✅ 치료계획서는 공식 문서로 저장 시 확인(Confirmation) 절차가 시작됩니다. 저장 후 아동
+            타임라인과 계획서 상세에 기록됩니다.
+            <span className="mt-2 block font-bold">
+              📋 확인 요청 대상: {client?.lifeStage === "adult" ? "본인" : "보호자"}
+            </span>
           </div>
         </div>
       )}

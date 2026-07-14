@@ -13,6 +13,7 @@ import {
 } from "../lib/guardian";
 import { koreanAge, relativeDay } from "../lib/date";
 import { DomainChip } from "../components/DomainChip";
+import { PendingConfirmCard } from "../components/dashboard/PendingConfirmCard";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { GuardianStackParamList } from "../navigation/types";
 
@@ -144,6 +145,16 @@ export function GuardianDashboardScreen({ navigation }: Props) {
                 .join("\n")}
             />
           </View>
+
+          <PendingConfirmCard
+            count={summary?.pendingConfirmationCount ?? 0}
+            onPress={() =>
+              navigation.navigate("RecordManager", {
+                personId: selected.id,
+                personName: selected.fullName,
+              })
+            }
+          />
 
           <View style={styles.card}>
             <Text style={styles.cardTitle}>최근 기록</Text>

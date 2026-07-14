@@ -35,6 +35,7 @@ export interface RecordListItem {
   isDraft: boolean;
   requiresConfirmation: boolean;
   confirmedAt: string | null;
+  confirmerId: string | null;
 }
 
 export interface RecordDetail extends RecordListItem {
@@ -42,7 +43,6 @@ export interface RecordDetail extends RecordListItem {
   content: unknown;
   isGuardianRecord: boolean;
   guardianNote: GuardianNote | null;
-  confirmerId: string | null;
 }
 
 function firstIssue(error: { issues: { message: string }[] }): string {
@@ -86,6 +86,7 @@ function toListItem(row: RawRecordRow): RecordListItem {
     isDraft: Boolean(row.is_draft),
     requiresConfirmation: Boolean(row.requires_confirmation),
     confirmedAt: row.confirmed_at,
+    confirmerId: row.confirmer_id,
   };
 }
 
@@ -142,7 +143,6 @@ export async function getRecordDetail(recordId: string): Promise<RecordDetail | 
     content: row.content,
     isGuardianRecord,
     guardianNote: isGuardianRecord ? null : extractGuardianNote(row.content),
-    confirmerId: row.confirmer_id,
   };
 }
 

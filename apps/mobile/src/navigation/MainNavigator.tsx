@@ -4,6 +4,7 @@ import type { Role } from "@ongil/validation";
 import { NEUTRAL, PRIMARY } from "../theme/colors";
 import { PersonHomeScreen } from "../screens/PersonHomeScreen";
 import { SelfExpressionScreen } from "../screens/SelfExpressionScreen";
+import { MyRecordsScreen } from "../screens/MyRecordsScreen";
 import { SupporterHomeScreen } from "../screens/SupporterHomeScreen";
 import { JournalComposeScreen } from "../screens/JournalComposeScreen";
 import { JournalDetailScreen } from "../screens/JournalDetailScreen";
@@ -81,6 +82,11 @@ export function MainNavigator({ session }: { session: Session }) {
           name="SelfExpression"
           component={SelfExpressionScreen}
           options={{ headerShown: false }}
+        />
+        <PersonStack.Screen
+          name="MyRecords"
+          component={MyRecordsScreen}
+          options={{ title: "내 기록" }}
         />
       </PersonStack.Navigator>
     );

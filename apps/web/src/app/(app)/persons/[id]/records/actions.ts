@@ -43,6 +43,8 @@ export interface RecordListItem {
   isDraft: boolean;
   requiresConfirmation: boolean;
   confirmedAt: string | null;
+  /** 확인 주체 user id(없으면 null). P-10에서 "본인 확인 대상 여부" 판별에 쓴다. */
+  confirmerId: string | null;
 }
 
 /** G-20 우측 상세. content 원본과 구조화기록 여부를 프론트가 분기할 수 있게 노출한다. */
@@ -53,7 +55,6 @@ export interface RecordDetail extends RecordListItem {
   isGuardianRecord: boolean;
   /** 구조화 기록에 병합돼 있던 보호자 메모(없으면 null). 프론트 "보호자 메모" 섹션 초기값. */
   guardianNote: GuardianNote | null;
-  confirmerId: string | null;
 }
 
 function firstIssue(error: { issues: { message: string }[] }): string {
@@ -97,6 +98,7 @@ function toListItem(row: RawRecordRow): RecordListItem {
     isDraft: Boolean(row.is_draft),
     requiresConfirmation: Boolean(row.requires_confirmation),
     confirmedAt: row.confirmed_at,
+    confirmerId: row.confirmer_id,
   };
 }
 
@@ -163,7 +165,6 @@ export async function getRecordDetail(recordId: string): Promise<RecordDetail | 
     content: row.content,
     isGuardianRecord,
     guardianNote: isGuardianRecord ? null : extractGuardianNote(row.content),
-    confirmerId: row.confirmer_id,
   };
 }
 

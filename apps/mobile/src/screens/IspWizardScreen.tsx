@@ -477,6 +477,7 @@ export function IspWizardScreen({ navigation, route }: Props) {
             <SumRow k="욕구 영역" v={needAreas.length ? `${needAreas.length}개` : "미선택"} />
             <SumRow k="목표" v={`${goals.filter((g) => g.area.trim() && g.longTerm.trim()).length}개`} />
             <SumRow k="서비스" v={`${services.filter((s) => s.service.trim()).length}개`} />
+            <SumRow k="확인 요청 대상" v={selectedClient?.lifeStage === "adult" ? "본인" : "보호자"} />
           </View>
           <InfoBanner message="ISP는 공식 문서입니다. 제출 시 당사자·보호자 확인 절차가 시작됩니다." />
         </View>

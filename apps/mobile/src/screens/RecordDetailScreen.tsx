@@ -5,6 +5,8 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { confirmRecord, getRecordDetail, type RecordDetail } from "../lib/records";
 import { DomainChip } from "../components/DomainChip";
+import { ConfirmBadge } from "../components/records/ConfirmBadge";
+import { ConfirmCTA } from "../components/records/ConfirmCTA";
 import { ErrorBanner } from "../components/ui";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING, TOUCH_MIN } from "../theme/colors";
 import type { GuardianStackParamList } from "../navigation/types";
@@ -87,24 +89,15 @@ export function RecordDetailScreen({ route, navigation }: Props) {
       {detail.requiresConfirmation && !detail.confirmedAt && (
         <View style={styles.confirmBox}>
           <Text style={styles.confirmText}>
-            🔑 이 기록은 공식 문서로 확인이 필요합니다. 승인·반려가 아니라 내용을 확인했음을 남기는
-            절차입니다.
+            🔑 이 기록은 공식 문서로 확인이 필요합니다. 내용을 확인했음을 남기는 절차입니다.
           </Text>
           {error ? <ErrorBanner message={error} /> : null}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="확인했습니다"
-            onPress={() => void handleConfirm()}
-            disabled={confirmBusy}
-            style={({ pressed }) => [styles.confirmBtn, pressed && styles.pressed]}
-          >
-            <Text style={styles.confirmBtnText}>{confirmBusy ? "처리 중..." : "확인했습니다"}</Text>
-          </Pressable>
+          <ConfirmCTA onConfirm={() => void handleConfirm()} busy={confirmBusy} />
         </View>
       )}
       {detail.requiresConfirmation && detail.confirmedAt && (
-        <View style={styles.confirmedBadge}>
-          <Text style={styles.confirmedText}>✓ 확인됨 · {detail.confirmedAt.slice(0, 10)}</Text>
+        <View style={styles.confirmedRow}>
+          <ConfirmBadge confirmedAt={detail.confirmedAt} />
         </View>
       )}
 
@@ -163,24 +156,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF5E6",
   },
   confirmText: { fontSize: FONT.body, color: NEUTRAL.text },
-  confirmBtn: {
-    marginTop: SPACING.md,
-    minHeight: TOUCH_MIN,
-    borderRadius: RADIUS.md,
-    backgroundColor: PRIMARY[600],
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  confirmBtnText: { fontSize: 15, fontWeight: "800", color: "#fff" },
-  confirmedBadge: {
-    marginTop: SPACING.lg,
-    alignSelf: "flex-start",
-    backgroundColor: PRIMARY[50],
-    borderRadius: RADIUS.sm,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  confirmedText: { fontSize: 12, fontWeight: "700", color: PRIMARY[700] },
+  confirmedRow: { marginTop: SPACING.lg, alignItems: "flex-start" },
   block: { marginTop: SPACING.lg, padding: SPACING.md, borderRadius: RADIUS.md, borderWidth: 1, borderColor: NEUTRAL.border },
   noteBlock: { backgroundColor: PRIMARY[50], borderWidth: 0 },
   blockLabel: { fontSize: FONT.label, fontWeight: "700", color: NEUTRAL.textMuted },

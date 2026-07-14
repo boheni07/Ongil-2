@@ -24,6 +24,7 @@ export type AuthStackParamList = {
 export type PersonStackParamList = {
   PersonHome: undefined;
   SelfExpression: undefined;
+  MyRecords: undefined;
 };
 
 export type SupporterStackParamList = {

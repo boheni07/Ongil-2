@@ -10,6 +10,7 @@ import {
 } from "@/app/(app)/persons/[id]/records/actions";
 import { DomainChip } from "@/components/timeline/DomainChip";
 import { ConfirmBadge } from "@/components/records/ConfirmBadge";
+import { ConfirmCTA } from "@/components/records/ConfirmCTA";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -175,14 +176,11 @@ export function RecordManager({
                       {confirmError}
                     </p>
                   )}
-                  <Button
-                    type="button"
+                  <ConfirmCTA
+                    onConfirm={handleConfirm}
+                    busy={confirmBusy}
                     className="mt-3 h-10 font-bold"
-                    disabled={confirmBusy}
-                    onClick={() => void handleConfirm()}
-                  >
-                    {confirmBusy ? "처리 중..." : "확인했습니다"}
-                  </Button>
+                  />
                 </div>
               )}
               {detail.requiresConfirmation && detail.confirmedAt && (

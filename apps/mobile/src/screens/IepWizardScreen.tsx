@@ -529,6 +529,7 @@ export function IepWizardScreen({ navigation, route }: Props) {
               k="전환 계획"
               v={showTransition ? (transitionGoal.trim() ? "포함" : "미입력") : "해당 없음"}
             />
+            <SumRow k="확인 요청 대상" v={lifeStage === "adult" ? "본인" : "보호자"} />
           </View>
           <InfoBanner message="IEP는 공식 문서입니다. 저장(제출) 시 보호자·당사자 확인 절차가 시작됩니다." />
         </View>

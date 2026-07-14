@@ -126,6 +126,15 @@ function HomeBody({
         <Text style={styles.ctaSub}>기분·밥·활동을 눌러서 알려주세요</Text>
       </Pressable>
 
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="내 기록 보기. 나에 대한 기록을 볼 수 있어요."
+        onPress={() => navigation.navigate("MyRecords")}
+        style={({ pressed }) => [styles.secondaryCta, pressed && styles.pressed]}
+      >
+        <Text style={styles.secondaryCtaText}>📁 내 기록 보기</Text>
+      </Pressable>
+
       <Text style={styles.sectionTitle}>최근 7일</Text>
       {recent.length === 0 ? (
         <Text style={styles.emptyText}>아직 남긴 이야기가 없어요. 첫 이야기를 들려주세요!</Text>
@@ -252,6 +261,17 @@ const styles = StyleSheet.create({
   ctaEmoji: { fontSize: 56 },
   ctaTitle: { fontSize: 26, fontWeight: "800", color: "#fff" },
   ctaSub: { fontSize: 18, color: "#D9F2E7", textAlign: "center" },
+  secondaryCta: {
+    marginTop: SPACING.md,
+    minHeight: 56,
+    borderRadius: RADIUS.lg,
+    borderWidth: 2,
+    borderColor: PRIMARY[400],
+    backgroundColor: PRIMARY[50],
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  secondaryCtaText: { fontSize: 20, fontWeight: "800", color: PRIMARY[800] },
   pressed: { opacity: 0.85 },
   sectionTitle: { fontSize: 20, fontWeight: "700", color: NEUTRAL.text, marginTop: SPACING.xl },
   emptyText: { fontSize: 18, color: NEUTRAL.textMuted, marginTop: SPACING.md, lineHeight: 26 },

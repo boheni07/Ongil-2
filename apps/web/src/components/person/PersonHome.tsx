@@ -66,6 +66,13 @@ export async function PersonHome({ userName }: { userName: string | null }) {
         </span>
       </Link>
 
+      <Link
+        href="/records"
+        className="mt-4 inline-block text-person-base font-semibold text-primary-700 underline"
+      >
+        내 기록 보기 →
+      </Link>
+
       <section className="mt-8">
         <h2 className="mb-3 text-person-base font-bold text-accent-stone">최근 7일 기록</h2>
         {recent.length === 0 ? (

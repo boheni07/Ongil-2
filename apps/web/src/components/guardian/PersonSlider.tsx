@@ -11,6 +11,7 @@ import {
 } from "@/app/(app)/dashboard/actions";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { DomainChip } from "@/components/timeline/DomainChip";
+import { PendingConfirmCard } from "@/components/dashboard/PendingConfirmCard";
 import type { DomainKey } from "@ongil/shared";
 import { computeAge, computeLifeStage } from "@/lib/lifecycle";
 
@@ -167,9 +168,11 @@ export function PersonSlider({ persons }: { persons: GuardianPerson[] }) {
 
       <section className="rounded-xl bg-white p-5 ring-1 ring-foreground/10">
         <h3 className="text-headline-3 font-bold text-accent-stone">⏳ 확인 대기 기록</h3>
-        <p className="mt-2 text-caption text-muted-foreground">
-          IEP·ISP·치료계획서 등 공식 문서 확인 절차는 준비 중입니다.
-        </p>
+        {loading ? (
+          <Muted>불러오는 중...</Muted>
+        ) : (
+          <PendingConfirmCard count={summary?.pendingConfirmationCount ?? 0} personId={selected.id} />
+        )}
       </section>
     </div>
   );

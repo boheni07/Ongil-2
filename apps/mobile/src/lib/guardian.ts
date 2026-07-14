@@ -37,6 +37,7 @@ export interface PersonSummaryCards {
     recordDate: string;
   }[];
   permissionCount: number;
+  pendingConfirmationCount: number;
 }
 
 function firstIssue(error: { issues: { message: string }[] }): string {
@@ -155,7 +156,12 @@ export async function getGuardianPersons(): Promise<GuardianPerson[]> {
 
 /** G-01 요약 카드 — 특정 당사자의 최근 기록 5건 + 활성 권한 개수. */
 export async function getPersonSummaryCards(personId: string): Promise<PersonSummaryCards> {
-  const empty: PersonSummaryCards = { personId, recentRecords: [], permissionCount: 0 };
+  const empty: PersonSummaryCards = {
+    personId,
+    recentRecords: [],
+    permissionCount: 0,
+    pendingConfirmationCount: 0,
+  };
   if (!UUID_RE.test(personId)) return empty;
 
   const {
@@ -163,7 +169,7 @@ export async function getPersonSummaryCards(personId: string): Promise<PersonSum
   } = await supabase.auth.getUser();
   if (!user) return empty;
 
-  const [recordsRes, permsRes] = await Promise.all([
+  const [recordsRes, permsRes, pendingRes] = await Promise.all([
     supabase
       .from("records")
       .select("id, domain, record_type, record_date")
@@ -176,6 +182,12 @@ export async function getPersonSummaryCards(personId: string): Promise<PersonSum
       .select("id", { count: "exact", head: true })
       .eq("person_id", personId)
       .eq("is_active", true),
+    supabase
+      .from("records")
+      .select("id", { count: "exact", head: true })
+      .eq("person_id", personId)
+      .eq("requires_confirmation", true)
+      .is("confirmed_at", null),
   ]);
 
   const recentRecords = (recordsRes.data ?? []).map((row) => ({
@@ -189,5 +201,6 @@ export async function getPersonSummaryCards(personId: string): Promise<PersonSum
     personId,
     recentRecords,
     permissionCount: permsRes.count ?? 0,
+    pendingConfirmationCount: pendingRes.count ?? 0,
   };
 }
