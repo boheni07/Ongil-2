@@ -1326,6 +1326,54 @@ FCM 은 **HTTP v1 API**를 쓴다(레거시 서버 키 API 는 2024년 폐지). 
 
 **구현 산출물:** `supabase/functions/dispatch-notification/index.ts`, `supabase/prisma/migrations/20260714030000_p3_notification_dispatch/migration.sql`
 
+### 4-13. notification_preferences 테이블 (사용자별 알림 채널 설정)
+
+> ⚠️ **정정 이력:** 이 프로젝트에서 **6번째로 반복된** 동일 계열 결함. `notification_preferences`는 `20260709035541_init_13_tables`에서 테이블만 생성되고 **RLS 미활성**, `20260709041005_p0_4_rls_grants`에서 `authenticated` **전권 GRANT** 상태였으며, 이후 전체 마이그레이션에 ENABLE RLS·정책이 전무했다. → 임의 인증 사용자가 **타인의 알림 채널 설정을 열람·변조**(F-G-10 등 보안 알림 임의 비활성화)할 수 있었다. `20260715030000_p3_notif_prefs_presets_rls`에서 폐쇄하고, 재발은 §4-메타(아래) pgTAP 로 차단한다.
+
+```sql
+ALTER TABLE notification_preferences ENABLE ROW LEVEL SECURITY;
+
+-- SELECT/INSERT/UPDATE: 본인 설정만 (user_id = auth.uid())
+CREATE POLICY notif_prefs_select ON notification_preferences FOR SELECT
+  USING (user_id = auth.uid());
+CREATE POLICY notif_prefs_insert ON notification_preferences FOR INSERT
+  WITH CHECK (user_id = auth.uid());
+CREATE POLICY notif_prefs_update ON notification_preferences FOR UPDATE
+  USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+
+-- user_id(소유권 컬럼)는 UPDATE 대상에서 제외 → 소유권 이관 위조 차단
+REVOKE UPDATE ON notification_preferences FROM authenticated;
+GRANT  UPDATE (type, fcm_enabled, email_enabled, updated_at) ON notification_preferences TO authenticated;
+-- DELETE 정책 없음 → 행 삭제 대신 채널을 false 로. privilege 도 회수.
+REVOKE DELETE ON notification_preferences FROM authenticated;
+```
+
+- **행이 없으면 기본 활성:** §2-11-1과 일관 — 설정 행이 없으면 `fcm_enabled=true, email_enabled=true`로 해석하므로 DELETE 는 불필요하며, 삭제 대신 채널 값을 `false`로 둔다.
+
+### 4-14. permission_presets 테이블 (역할별 기본 프리셋 — G-32 위자드 참조 데이터)
+
+> ⚠️ **정정 이력:** §4-13과 같은 라운드에서 함께 발견된 6번째 결함의 다른 축. `permission_presets`도 RLS 미활성 + `authenticated` 전권 GRANT 상태였다. → 임의 인증 사용자가 위자드가 참조하는 역할별 기본 프리셋을 **UPDATE(§3-2 자동채움에 과다권한 주입)/DELETE(위자드 파손)** 할 수 있었다.
+
+이 테이블은 사용자별 데이터가 아니라 **모든 인증 사용자가 공유 참조하는 읽기 전용 참조 데이터**(PK `(role, domain)`, user/person 컬럼 없음)다. 따라서 사용자별 RLS 가 아니라 **"읽기=인증 사용자 전체 허용 / 쓰기=관리자(service_role)만"** 패턴을 적용한다.
+
+```sql
+ALTER TABLE permission_presets ENABLE ROW LEVEL SECURITY;
+
+-- SELECT: 인증 사용자 전체 허용(공유 참조)
+CREATE POLICY permission_presets_select ON permission_presets FOR SELECT
+  USING (true);
+
+-- INSERT/UPDATE/DELETE 정책 없음 → RLS 기본 거부. 쓰기는 service_role(BYPASSRLS) 경로로만.
+--   authenticated 의 쓰기 privilege 자체를 회수해 이중 봉쇄.
+REVOKE INSERT, UPDATE, DELETE ON permission_presets FROM authenticated;
+```
+
+> pgTAP 회귀: `supabase/tests/16_notification_preferences_permission_presets_rls.sql`(12 asserts)이 §4-13·§4-14 정책을 커버한다.
+
+### 4-메타. 전 테이블 RLS 강제 (NF-SEC-01 메타 회귀)
+
+개별 테이블 테스트만으로는 **새로 추가되는 테이블**의 "ENABLE RLS 누락 + 전권 GRANT" 결함(이 프로젝트에서 6회 반복)을 사전에 못 잡는다. `supabase/tests/17_meta_all_tables_rls_enabled.sql`(1 assert)은 `pg_class.relrowsecurity`를 순회하여 `public` 스키마의 모든 실테이블(뷰·`_prisma_migrations` 등 내부 테이블 제외)이 RLS on 인지 단정한다 → 신규 테이블이 RLS 없이 들어오면 즉시 실패하여 7번째 재발을 근본 차단한다.
+
 ---
 
 ## 5. 인덱스 전략
