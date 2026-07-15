@@ -101,6 +101,8 @@ enum NotificationType {
   record_confirm
   life_stage_youth
   life_stage_adult
+  permission_expiry_warning
+  permission_audit_summary
 }
 
 // invitations.status 전용
@@ -216,6 +218,9 @@ model PermissionLog {
   permissionId String?             @map("permission_id") @db.Uuid
   action       PermissionLogAction
   actorId      String?             @map("actor_id") @db.Uuid
+  // 'user'(요청 컨텍스트, auth.uid() 존재) | 'system'(cron 배치, auth.uid() NULL).
+  // log_permission_change() 트리거가 자동 판정 — 애플리케이션에서 직접 쓰지 않는다.
+  actorType    String              @default("user") @map("actor_type")
   beforeState  Json?               @map("before_state")
   afterState   Json?               @map("after_state")
   createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz
