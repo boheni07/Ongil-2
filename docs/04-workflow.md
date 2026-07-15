@@ -31,6 +31,45 @@
 [역할별 홈 진입]  ← middleware.ts 라우팅
 ```
 
+### Flow-0-S: 소셜 OAuth 로그인·가입 (F-AUTH-02, P2)
+
+랜딩(A-01)·로그인(A-02)에 카카오·네이버 버튼을 노출한다. 이메일 위저드의 A-04(기본정보)·A-05(이메일 OTP)를 **건너뛰고** A-03(역할)·A-08(동의)만 재사용한다. provider별 인증 경로가 비대칭이다(`01-prd.md` §5-1-1).
+
+```
+[랜딩 A-01 / 로그인 A-02]
+    │  [카카오로 시작] / [네이버로 시작] 클릭
+    ▼
+┌─ 카카오: OIDC 인가 ──────────────┐   ┌─ 네이버: OAuth2 인가코드 ─────────┐
+│ GoTrue Custom OIDC /             │   │ 자체 콜백 Route Handler가          │
+│ signInWithIdToken(id_token)      │   │ code→access_token 교환 → 프로필    │
+│                                  │   │ 조회 → admin.createUser+generateLink│
+└──────────────┬───────────────────┘   └──────────────┬────────────────────┘
+               ▼  (세션 확보 = auth.uid() 존재)         ▼
+        [OAuth 콜백 처리 A-11]
+               │  (auth_provider, oauth_subject)로 users 조회
+               ├── [기존 사용자] ───────────────────────▶ [역할별 홈 진입]
+               │
+               └── [신규 사용자]
+                        ▼
+                 [역할 선택 A-03]   ← 이메일 위저드 재사용, 단 invite 고정 시 스킵
+                        ▼
+                 (A-04 기본정보 · A-05 이메일 OTP 스킵 — provider가 이미 인증)
+                        ▼
+                 [동의 수집 A-08]   ← PIPA §22/§23, 세션 존재하므로 consents 즉시 INSERT
+                        │              (이메일 경로처럼 OTP까지 미루지 않음)
+                        ▼
+                 [role=person이면 persons 셀프 생성]
+                        │              persons.id = primary_guardian_id = auth.uid()
+                        ▼
+                 [역할별 홈 진입]
+```
+
+**설계 주석**
+
+- **이메일 미제공**: 카카오·네이버가 이메일 미동의 시, `users.email`을 provider ID placeholder로 채우고 온보딩에서 실제 이메일 입력(선택)을 유도(`01-prd.md` §5-1-1).
+- **계정 연결 금지**: 소셜 이메일이 기존 이메일 계정과 일치해도 자동 연결하지 않고 이메일 로그인으로 안내한다(탈취 방지).
+- **초대(invite) 연동**: A-06에서 온 소셜 가입은 role이 고정되므로 A-03을 스킵하고 A-08 동의만 받은 뒤 `accept_invitation` RPC로 권한 전개.
+
 ### Flow-1: 이해관계자 초대 수락
 
 ```

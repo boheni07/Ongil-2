@@ -182,16 +182,33 @@ erDiagram
 
 ```sql
 CREATE TABLE users (
-  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  email       text UNIQUE NOT NULL,
-  role        text NOT NULL CHECK (role IN ('person','guardian','supporter','teacher','social_worker','therapist')),
-  full_name   text NOT NULL,
-  avatar_url  text,
-  fcm_token   text,
-  created_at  timestamptz DEFAULT now(),
-  updated_at  timestamptz DEFAULT now()
+  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  email          text UNIQUE NOT NULL,
+  role           text NOT NULL CHECK (role IN ('person','guardian','supporter','teacher','social_worker','therapist')),
+  full_name      text NOT NULL,
+  avatar_url     text,
+  fcm_token      text,
+  -- F-AUTH-02 소셜 OAuth (설계 2026-07-15, 마이그레이션은 후속 라운드)
+  auth_provider  text NOT NULL DEFAULT 'email'
+                 CHECK (auth_provider IN ('email','kakao','naver')),
+  oauth_subject  text,           -- provider 고유 ID(kakao sub / naver id). email 가입은 NULL
+  email_verified boolean NOT NULL DEFAULT true,  -- OAuth 이메일 미제공 시 placeholder면 false
+  created_at     timestamptz DEFAULT now(),
+  updated_at     timestamptz DEFAULT now(),
+  -- 동일 provider 내 고유 식별자 유일성. email 가입(oauth_subject IS NULL)에는 적용 안 됨
+  CONSTRAINT users_provider_subject_unique UNIQUE (auth_provider, oauth_subject)
 );
+
+-- 소셜 계정 조회 인덱스 (로그인 시 (auth_provider, oauth_subject) 정확 일치 조회)
+CREATE INDEX idx_users_oauth ON users (auth_provider, oauth_subject)
+  WHERE oauth_subject IS NOT NULL;
 ```
+
+> **F-AUTH-02 스키마 변경안 주석** (설계만 — 실제 마이그레이션 미적용)
+> - **계정 동일성 신뢰 소스**는 `email`이 아니라 `(auth_provider, oauth_subject)`다. 소셜 이메일이 기존 이메일 계정과 일치해도 자동 연결(account linking)하지 않는다 — 탈취 방지(`01-prd.md` §5-1-1).
+> - `email UNIQUE NOT NULL`은 유지한다. 카카오·네이버 이메일 미제공 시 provider ID 기반 placeholder(`kakao_<sub>@oauth.ongil.local`)로 채우고 `email_verified=false`로 표시한다.
+> - `UNIQUE (auth_provider, oauth_subject)`: PostgreSQL은 UNIQUE에서 NULL을 서로 다른 값으로 취급하므로 `auth_provider='email'`(oauth_subject NULL) 다중 행이 제약에 걸리지 않는다.
+> - **RLS 영향 없음**: 기존 `users` 정책은 `id = auth.uid()` 기준이라 provider 컬럼 추가는 정책 변경을 요구하지 않는다. 단, placeholder 이메일이 다른 화면(초대 invitee_email 매칭 등)의 이메일 비교 로직에 새는지 security-rls가 후속 검토.
 
 ### 2-2. persons (당사자)
 

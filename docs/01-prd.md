@@ -133,6 +133,30 @@
 | F-AUTH-07 | 비밀번호 재설정 | P1 |
 | F-AUTH-08 | PIPA §23 민감정보(장애·건강) 별도 동의 | P0 |
 
+#### 5-1-1. F-AUTH-02 소셜 OAuth 상세 (카카오·네이버)
+
+> 설계 확정일 2026-07-15. 실제 구현(Route Handler·콜백·UI 버튼)은 후속 라운드로 분리. Supabase가 카카오·네이버를 네이티브 external provider로 지원하지 않아 provider별 통합 경로가 비대칭이다.
+
+**지원 provider 및 인증 방식**
+
+| Provider | 방식 | 근거 | Supabase 연동 경로 |
+|----------|------|------|-------------------|
+| 카카오 | **OpenID Connect (OIDC)** | 카카오 로그인은 OIDC를 지원(`.well-known/openid-configuration`, `id_token` 발급) | GoTrue **Custom OIDC provider** 등록 또는 `signInWithIdToken({ provider: 'kakao', token: id_token })` 패턴. `config.toml [auth.external.*]` 표준 목록에 없으므로 커스텀 OIDC로 붙인다 |
+| 네이버 | **순수 OAuth2 Authorization Code** (커스텀 브리지) | 네이버는 표준 OIDC discovery 엔드포인트·`id_token`을 제공하지 않음 | Supabase 표준/커스텀 OIDC로 붙지 않음. **자체 콜백 Route Handler**가 인가코드를 `access_token`으로 교환 → `/v1/nid/me`로 프로필 조회 → 서비스 롤로 `admin.createUser`(신규) 후 `admin.generateLink`(magiclink/OTP) 또는 동등 패턴으로 세션을 성립시키는 **브리지**가 필요 |
+
+**신규/기존 계정 판별 기준**
+
+1. **1차 키 — provider 고유 ID**: 계정 동일성의 신뢰 소스는 이메일이 아니라 provider가 발급하는 안정적 고유 식별자(`kakao_sub`, `naver_id`)다. `users.oauth_subject`(§05-erd §2-1)에 저장하고, 로그인 시 `(auth_provider, oauth_subject)` 조합으로 기존 계정을 조회한다.
+2. **2차 참고 — 이메일 매칭**: provider가 이메일을 제공하고 그 이메일이 기존 `email` 로그인 계정과 일치하면 **자동 계정 연결(account linking)을 하지 않는다** — 소셜 계정 탈취를 통한 기존 계정 접근을 차단하기 위함. 대신 "이미 이메일로 가입된 계정이 있습니다. 이메일 로그인 후 설정에서 소셜 연결하세요"로 안내(계정 연결은 로그인 상태에서만 허용, 별도 후속 기능).
+3. **이메일 미제공 케이스**: 카카오·네이버는 사용자가 이메일 제공에 동의하지 않으면 이메일을 주지 않는다. 이 경우 `users.email`은 provider 고유 ID 기반 placeholder(예: `kakao_<sub>@oauth.ongil.local`)로 채우되 `email_verified=false`로 표시하고, 최초 온보딩에서 실제 이메일 입력(선택)을 유도한다. `email UNIQUE NOT NULL` 제약은 placeholder로 충족한다.
+
+**최초 로그인 온보딩 (Flow-0 재사용)**
+
+- 콜백에서 `(auth_provider, oauth_subject)`로 조회 → **기존 사용자면 역할별 홈 직행**, **신규면 A-03 역할 선택부터** 기존 위저드에 재진입한다.
+- OAuth 신규 사용자는 계정이 이미 provider 인증으로 생성되므로 **A-04 기본 정보(이메일·비밀번호) 단계와 A-05 이메일 OTP 인증 단계를 건너뛴다.** 재사용 단계는 **A-03 역할 선택 → A-08 동의 수집(PIPA §22/§23)** 뿐이다.
+- **PIPA 동의 시점 이동**: 기존 이메일 위저드는 `verifyEmailOtp`(세션 확보 후)에서 consents를 INSERT한다. OAuth는 OTP 단계가 없고 콜백에서 이미 세션이 확보되므로, **동의 INSERT를 A-08 제출 시점(세션 존재)으로 옮긴 전용 완료 액션**이 필요하다(`(auth)/actions.ts` 후속 구현).
+- **role=person 셀프 가입 인바리언트**: OAuth로 `role=person`을 선택한 사용자도 셀프 가입 당사자 모델(`persons.id = primary_guardian_id = auth.uid()`)을 그대로 따른다. 최초 온보딩 완료 시 이 인바리언트로 `persons` 행을 생성해야 하며, provider 경로와 무관하게 동일하게 적용한다.
+
 ### 5-2. 당사자 (Person)
 
 | ID | 요구사항 | 우선순위 |
