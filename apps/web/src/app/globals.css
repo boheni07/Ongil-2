@@ -214,6 +214,23 @@
   }
 }
 
+/*
+ * docs/10-livinglab-uiux-workshop.md Wave UI-4 — 모션(트랜지션·애니메이션)은
+ * prefers-reduced-motion을 존중해야 한다(§5 접근성 기준). 컴포넌트마다 개별 처리하는 대신
+ * 전역 규칙 하나로 Sidebar 접힘/펼침, DropdownMenu/TooltipContent 열림·닫힘 등 모든
+ * transition/animation 유틸리티에 일괄 적용한다 — 신규 컴포넌트가 추가돼도 자동으로 적용된다.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 .main-content {
   margin-left: var(--sw);
   padding-top: calc(var(--rb) + var(--hh));

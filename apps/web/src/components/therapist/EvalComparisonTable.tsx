@@ -30,25 +30,30 @@ function ScoreCell({ col, domain }: { col: EvalColumn | null; domain: string }) 
   );
 }
 
-/** 변화(최종-초기) 셀 — 증가=초록/긍정, 감소=주의(빨강), 변화없음=중립, 값 없음="-". */
+/**
+ * 변화(최종-초기) 셀 — 텍스트 색만으로는 표를 스캔할 때 놓치기 쉽다는 리빙랩 워크숍 피드백
+ * (docs/10-livinglab-uiux-workshop.md §3 치료사)에 따라 배경 칩(pill)으로 시각적 무게를 준다.
+ * 증가=도메인(MED) accent 톤, 감소=경고색(별도 시맨틱, 도메인 accent와 혼동 금지), 변화없음/값
+ * 없음=중립.
+ */
 function DeltaCell({ value }: { value: number | null }) {
   if (value === null) return <span className="text-muted-foreground">-</span>;
   if (value > 0)
     return (
-      <span className="font-bold text-primary-700">
+      <span className="inline-flex items-center gap-1 rounded-full bg-domain-med-bg px-2.5 py-1 font-bold text-domain-med-text">
         +{value} <span aria-hidden="true">↑</span>
         <span className="sr-only">증가</span>
       </span>
     );
   if (value < 0)
     return (
-      <span className="font-bold text-red-600">
+      <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 font-bold text-red-600">
         {value} <span aria-hidden="true">↓</span>
         <span className="sr-only">감소</span>
       </span>
     );
   return (
-    <span className="text-muted-foreground">
+    <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-muted-foreground">
       0 <span aria-hidden="true">−</span>
       <span className="sr-only">변화 없음</span>
     </span>

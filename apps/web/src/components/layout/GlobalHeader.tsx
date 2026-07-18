@@ -49,7 +49,7 @@ export function GlobalHeader({
     <header
       data-slot="global-header"
       className={cn(
-        "flex h-(--hh) items-center justify-between border-b border-border bg-white px-4",
+        "relative z-10 flex h-(--hh) items-center justify-between border-b border-border bg-white px-4 shadow-sm",
         className
       )}
     >

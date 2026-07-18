@@ -108,6 +108,22 @@ body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
 
 ---
 
+### 4-1. Elevation(그림자) 스케일
+
+`docs/10-livinglab-uiux-workshop.md` Wave UI-1 — 로그인 후 화면이 랜딩 대비 밋밋해 보이는 근본 원인 중 하나로 elevation 토큰 자체가 이 스펙에 없었던 점이 지목됐다. Tailwind v4의 기본 `shadow-sm`/`shadow-md`/`shadow-lg` 유틸리티를 아래 의미로 표준화한다(별도 CSS 변수 신설 없이 기존 유틸리티에 용도를 못박는 방식 — `AuthCard`가 이미 `shadow-sm`을 쓰고 있어 신규 도입 비용이 없다).
+
+| 클래스 | 용도 | 적용 대상(예) |
+|--------|------|--------------|
+| `shadow-sm` | 리스트 아이템, 인풋 포커스 상태 | RecordManager 좌측 목록 항목, 폼 인풋 |
+| `shadow-md` | 카드 | PersonSlider 카드, RecordContentView 배열 아이템 카드, 위자드 스텝 카드 |
+| `shadow-lg` | 부유 레이어(드롭다운/팝오버/모달) | DropdownMenu, TooltipContent, 모달 |
+
+- 원칙: 흰 배경 위 흰 카드는 `border` 단독이 아니라 반드시 `shadow-sm` 이상을 함께 준다(테두리만으로 구분하지 않음).
+- 당사자 모드(§7-1, WCAG AAA 목표)는 예외 — 그림자로 인한 시각적 노이즈보다 고대비 단색 구분을 우선하며 이 스케일을 적용하지 않는다.
+- `prefers-reduced-motion`과 무관한 정적 속성이라 모션 설정에 영향받지 않는다.
+
+---
+
 ## 5. 접근성 기준 (WCAG 2.1)
 
 | 항목 | 일반 모드 | 당사자 모드 |

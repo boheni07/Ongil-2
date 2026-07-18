@@ -209,9 +209,9 @@ function RenderValue({ fieldKey, value, depth }: { fieldKey: string; value: unkn
       return <span>{value.map((v) => formatPrimitive(fieldKey, v)).join(", ")}</span>;
     }
     return (
-      <ul className="flex flex-col gap-2">
+      <ul className="flex flex-col gap-3">
         {value.map((item, i) => (
-          <li key={i} className="rounded-(--br-sm) border border-border p-2.5">
+          <li key={i} className="rounded-(--br-sm) border border-border p-3 shadow-sm">
             {isPlainObject(item) ? (
               <ObjectFields obj={item} depth={depth + 1} />
             ) : (
@@ -234,11 +234,11 @@ function ObjectFields({ obj, depth }: { obj: Record<string, unknown>; depth: num
   const entries = Object.entries(obj);
   if (entries.length === 0) return <span className="text-muted-foreground">-</span>;
   return (
-    <dl className={depth > 0 ? "flex flex-col gap-1.5" : "flex flex-col gap-2"}>
+    <dl className={depth > 0 ? "flex flex-col gap-2" : "flex flex-col gap-3.5"}>
       {entries.map(([k, v]) => (
         <div key={k}>
           <dt className="text-caption font-semibold text-muted-foreground">{fieldLabel(k)}</dt>
-          <dd className="mt-0.5 text-body text-foreground">
+          <dd className="mt-1 text-body text-foreground">
             <RenderValue fieldKey={k} value={v} depth={depth} />
           </dd>
         </div>

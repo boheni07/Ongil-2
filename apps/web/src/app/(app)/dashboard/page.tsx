@@ -14,7 +14,10 @@ export default async function DashboardPage() {
           <h1 className="text-headline-1 font-extrabold text-foreground">대시보드</h1>
           <p className="mt-1 text-body text-muted-foreground">피보호자 현황을 한눈에 확인하세요.</p>
         </div>
-        <Button render={<Link href="/dashboard/persons/new" />} className="h-11 font-bold">
+        <Button
+          render={<Link href="/dashboard/persons/new" />}
+          className="h-11 bg-accent-amber px-5 font-bold text-accent-stone hover:bg-accent-amber/85"
+        >
           + 당사자 추가
         </Button>
       </div>
@@ -29,7 +32,10 @@ export default async function DashboardPage() {
             <p className="mt-2 text-body text-muted-foreground">
               먼저 돌보는 당사자를 등록하면 기록과 권한을 관리할 수 있습니다.
             </p>
-            <Button render={<Link href="/dashboard/persons/new" />} className="mt-5 h-11 font-bold">
+            <Button
+              render={<Link href="/dashboard/persons/new" />}
+              className="mt-5 h-11 bg-accent-amber px-5 font-bold text-accent-stone hover:bg-accent-amber/85"
+            >
               당사자 등록하기
             </Button>
           </div>

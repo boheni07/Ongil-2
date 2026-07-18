@@ -104,7 +104,7 @@ export function RecordManager({
         </div>
       </div>
 
-      <div className="mt-6 grid min-w-0 gap-0 rounded-xl bg-white ring-1 ring-foreground/10 lg:grid-cols-[320px_1fr]">
+      <div className="mt-6 grid min-w-0 gap-0 rounded-xl bg-white shadow-md ring-1 ring-foreground/10 lg:grid-cols-[320px_1fr]">
         <div className="min-h-0 overflow-y-auto border-b border-border lg:border-b-0 lg:border-r">
           <div className="p-3">
             <input

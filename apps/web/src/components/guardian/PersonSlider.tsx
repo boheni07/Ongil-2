@@ -12,6 +12,7 @@ import {
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { DomainChip } from "@/components/timeline/DomainChip";
 import { PendingConfirmCard } from "@/components/dashboard/PendingConfirmCard";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import type { DomainKey } from "@ongil/shared";
 import { computeAge, computeLifeStage } from "@/lib/lifecycle";
 
@@ -68,14 +69,17 @@ export function PersonSlider({ persons }: { persons: GuardianPerson[] }) {
                 type="button"
                 aria-pressed={i === index}
                 onClick={() => setIndex(i)}
-                className={`w-64 rounded-xl border-2 bg-white p-4 text-left transition-colors ${
+                className={`w-64 rounded-xl border-2 bg-white p-4 text-left shadow-md transition-colors ${
                   i === index ? "border-primary-600 ring-2 ring-primary-100" : "border-border hover:border-primary-400"
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <span aria-hidden="true" className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-50 text-2xl">
-                    {p.avatarUrl ? "🧑" : p.isAdult ? "🧑" : "🧒"}
-                  </span>
+                  <Avatar size="lg" className="bg-primary-50">
+                    {p.avatarUrl ? <AvatarImage src={p.avatarUrl} alt="" /> : null}
+                    <AvatarFallback aria-hidden="true" className="bg-primary-50 text-2xl">
+                      {p.isAdult ? "🧑" : "🧒"}
+                    </AvatarFallback>
+                  </Avatar>
                   <div className="min-w-0">
                     <h3 className="truncate text-body font-bold text-foreground">{p.fullName}</h3>
                     <p className="text-caption text-muted-foreground">
@@ -103,7 +107,7 @@ export function PersonSlider({ persons }: { persons: GuardianPerson[] }) {
         />
       </div>
 
-      <section className="rounded-xl bg-domain-med-bg p-5 ring-1 ring-domain-med-accent/40" aria-label="응급 정보">
+      <section className="rounded-xl bg-domain-med-bg p-5 shadow-md ring-1 ring-domain-med-accent/40" aria-label="응급 정보">
         <h3 className="text-headline-3 font-bold text-domain-med-text">🚨 응급 대응 정보 — {selected.fullName}</h3>
         {emergency && (emergency.allergies?.length || emergency.medications?.length || emergency.contacts?.length) ? (
           <div className="mt-3 grid gap-x-6 gap-y-2 text-body sm:grid-cols-2">
@@ -169,11 +173,13 @@ export function PersonSlider({ persons }: { persons: GuardianPerson[] }) {
         </Card>
 
         <Card title="알림">
-          <Muted>새 알림이 없습니다. (알림 시스템 준비 중)</Muted>
+          <Link href="/notifications" className="inline-block text-caption font-semibold text-primary-700 underline">
+            알림함 보기 →
+          </Link>
         </Card>
       </div>
 
-      <section className="rounded-xl bg-white p-5 ring-1 ring-foreground/10">
+      <section className="rounded-xl bg-white p-5 shadow-md ring-1 ring-foreground/10">
         <h3 className="text-headline-3 font-bold text-accent-stone">⏳ 확인 대기 기록</h3>
         {loading ? (
           <Muted>불러오는 중...</Muted>
@@ -193,7 +199,7 @@ function SliderButton({ dir, disabled, onClick }: { dir: "prev" | "next"; disabl
       onClick={onClick}
       disabled={disabled}
       aria-label={dir === "prev" ? "이전 당사자" : "다음 당사자"}
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-white text-accent-stone disabled:opacity-30"
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-white text-accent-stone shadow-sm disabled:opacity-30"
     >
       <Icon className="size-5" aria-hidden="true" />
     </button>
@@ -202,7 +208,7 @@ function SliderButton({ dir, disabled, onClick }: { dir: "prev" | "next"; disabl
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl bg-white p-4 ring-1 ring-foreground/10">
+    <div className="rounded-xl bg-white p-4 shadow-md ring-1 ring-foreground/10">
       <h3 className="mb-3 text-headline-3 font-bold text-accent-stone">{title}</h3>
       {children}
     </div>

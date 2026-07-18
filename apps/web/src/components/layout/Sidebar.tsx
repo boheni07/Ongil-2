@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -12,12 +13,15 @@ import { cn } from "@/lib/utils";
  * icon은 컴포넌트 참조(LucideIcon)가 아니라 이미 렌더링된 JSX를 받는다 — Server Component인
  * layout.tsx가 Client Component인 이 컴포넌트로 원시 함수 참조를 props로 넘기면 RSC 직렬화
  * 경계 위반으로 크래시한다("Functions cannot be passed directly to Client Components").
+ *
+ * 현재 위치 표시는 `usePathname()`으로 이 컴포넌트가 직접 판정한다 — layout.tsx(Server
+ * Component)는 pathname을 모르므로 이전엔 `SidebarItem.active`를 아무도 채워주지 않아
+ * 사이드바가 현재 페이지를 한 번도 강조 표시한 적이 없었다(2026-07-18 리빙랩 워크숍에서 발견).
  */
 export interface SidebarItem {
   label: string;
   href: string;
   icon: ReactNode;
-  active?: boolean;
 }
 
 export interface SidebarProps {
@@ -28,6 +32,8 @@ export interface SidebarProps {
 }
 
 export function Sidebar({ items, collapsed = false, onToggleCollapsed, className }: SidebarProps) {
+  const pathname = usePathname();
+
   return (
     <nav
       aria-label="주 메뉴"
@@ -39,24 +45,29 @@ export function Sidebar({ items, collapsed = false, onToggleCollapsed, className
       )}
     >
       <ul className="flex flex-1 flex-col gap-1 p-2">
-        {items.map((item) => (
-          <li key={item.href}>
-            <Link
-              href={item.href}
-              aria-current={item.active ? "page" : undefined}
-              className={cn(
-                "flex min-h-11 items-center gap-3 rounded-(--br-md) px-3 text-sm font-medium transition-colors",
-                item.active ? "bg-primary-700 text-white" : "text-primary-100 hover:bg-primary-700/60",
-                collapsed && "justify-center px-0"
-              )}
-            >
-              <span className="size-5 shrink-0 [&_svg]:size-5" aria-hidden="true">
-                {item.icon}
-              </span>
-              <span className={cn(collapsed && "sr-only")}>{item.label}</span>
-            </Link>
-          </li>
-        ))}
+        {items.map((item) => {
+          const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
+          return (
+            <li key={item.href}>
+              <Link
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "relative flex min-h-11 items-center gap-3 rounded-(--br-md) px-3 text-sm font-medium transition-colors",
+                  active
+                    ? "bg-primary-700 text-white before:absolute before:top-1.5 before:bottom-1.5 before:left-0 before:w-1 before:rounded-full before:bg-accent-amber"
+                    : "text-primary-100 hover:bg-primary-700/60",
+                  collapsed && "justify-center px-0"
+                )}
+              >
+                <span className="size-5 shrink-0 [&_svg]:size-5" aria-hidden="true">
+                  {item.icon}
+                </span>
+                <span className={cn(collapsed && "sr-only")}>{item.label}</span>
+              </Link>
+            </li>
+          );
+        })}
       </ul>
 
       {onToggleCollapsed ? (
