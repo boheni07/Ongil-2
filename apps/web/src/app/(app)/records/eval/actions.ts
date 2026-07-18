@@ -3,6 +3,7 @@
 import { evalReportSchema, type EvalReportInput } from "@ongil/validation";
 import { createClient } from "@/lib/supabase/server";
 import { logAccess } from "@/lib/access-log";
+import { notifyRecipients } from "@/lib/notify";
 
 /**
  * P2-3 치료사(therapist) 평가보고서 스위트 Server Action 모음(TH-17, `/records/eval/new`).
@@ -176,46 +177,37 @@ export async function createEvalReport(
   await logAccess(personId, "create", { recordId, domain: "MED" });
 
   // 보호자·담당 사회복지사 알림 — best-effort. 실패해도 저장은 유지한다(Flow-TH-02).
-  try {
-    const recipientIds = new Set<string>();
+  const recipientIds = new Set<string>();
 
-    const { data: person } = await supabase
-      .from("persons")
-      .select("primary_guardian_id")
-      .eq("id", personId)
-      .maybeSingle();
-    const guardianId = person?.primary_guardian_id as string | null | undefined;
-    if (guardianId) recipientIds.add(guardianId);
+  const { data: person } = await supabase
+    .from("persons")
+    .select("primary_guardian_id")
+    .eq("id", personId)
+    .maybeSingle();
+  const guardianId = person?.primary_guardian_id as string | null | undefined;
+  if (guardianId) recipientIds.add(guardianId);
 
-    // 이 person에 WEL write/edit 활성 권한을 가진 사회복지사 전원.
-    const { data: perms } = await supabase
-      .from("permissions")
-      .select("grantee_id, grantee:users!grantee_id(role)")
-      .eq("person_id", personId)
-      .eq("domain", "WEL")
-      .eq("is_active", true)
-      .in("access_level", ["write", "edit"]);
-    for (const p of perms ?? []) {
-      const rel = p.grantee as { role?: string } | { role?: string }[] | null;
-      const role = Array.isArray(rel) ? rel[0]?.role : rel?.role;
-      if (role === "social_worker") recipientIds.add(p.grantee_id as string);
-    }
-    recipientIds.delete(user.id);
-
-    if (recipientIds.size > 0) {
-      await supabase.from("notifications").insert(
-        [...recipientIds].map((rid) => ({
-          recipient_id: rid,
-          type: "record_new",
-          title: "새 평가보고서",
-          body: "평가보고서가 등록되었습니다.",
-          data: { record_id: recordId, person_id: personId, record_type: "MED-007" },
-        }))
-      );
-    }
-  } catch {
-    // 알림 실패는 무시(부가 기능).
+  // 이 person에 WEL write/edit 활성 권한을 가진 사회복지사 전원.
+  const { data: perms } = await supabase
+    .from("permissions")
+    .select("grantee_id, grantee:users!grantee_id(role)")
+    .eq("person_id", personId)
+    .eq("domain", "WEL")
+    .eq("is_active", true)
+    .in("access_level", ["write", "edit"]);
+  for (const p of perms ?? []) {
+    const rel = p.grantee as { role?: string } | { role?: string }[] | null;
+    const role = Array.isArray(rel) ? rel[0]?.role : rel?.role;
+    if (role === "social_worker") recipientIds.add(p.grantee_id as string);
   }
+  recipientIds.delete(user.id);
+
+  await notifyRecipients(recipientIds, {
+    type: "record_new",
+    title: "새 평가보고서",
+    body: "평가보고서가 등록되었습니다.",
+    data: { record_id: recordId, person_id: personId, record_type: "MED-007" },
+  });
 
   return { ok: true, recordId };
 }

@@ -5,11 +5,12 @@ import { RADIUS } from "../../theme/colors";
 
 /**
  * docs/03-uiux.md §6-6 생애주기 단계 배지(모바일) — 웹 StageBadge.tsx의 RN 이식본.
- * life_stage(child/youth_transition/adult)에 아이콘+라벨+색상을 표시한다. 색상은 웹과 동일하게
- * 도메인 톤(edu/tra/dai)을 재사용하고 좌측 4px 색상 바로 "상태 배지"임을 시각적으로 구분한다.
+ * life_stage(infant/child/youth_transition/adult/senior, 5단계) 에 아이콘+라벨+색상을 표시한다.
+ * 색상은 웹과 동일하게 도메인 톤(wel/edu/tra/dai/leg)을 재사용하고 좌측 4px 색상 바로
+ * "상태 배지"임을 시각적으로 구분한다.
  * 접근성(WCAG 1.4.1): 색상만이 아니라 항상 아이콘+텍스트 라벨을 함께 노출한다.
  *
- * simple=true면 당사자 모드용 쉬운 문구("어린이 때"/"청소년"/"어른")를 쓴다(웹과 값 일치).
+ * simple=true면 당사자 모드용 쉬운 문구("아기 때"/"어린이 때"/"청소년"/"어른"/"어르신")를 쓴다(웹과 값 일치).
  */
 
 interface StageMeta {
@@ -22,6 +23,14 @@ interface StageMeta {
 }
 
 const STAGE_META: Record<LifeStage, StageMeta> = {
+  infant: {
+    label: "영유아기",
+    simpleLabel: "아기 때",
+    icon: "🍼",
+    bg: DOMAIN_COLORS.WEL.bg,
+    text: DOMAIN_COLORS.WEL.text,
+    bar: DOMAIN_COLORS.WEL.accent,
+  },
   child: {
     label: "아동기",
     simpleLabel: "어린이 때",
@@ -39,12 +48,20 @@ const STAGE_META: Record<LifeStage, StageMeta> = {
     bar: DOMAIN_COLORS.TRA.accent,
   },
   adult: {
-    label: "성년기",
+    label: "성인기",
     simpleLabel: "어른",
     icon: "🧑",
     bg: DOMAIN_COLORS.DAI.bg,
     text: DOMAIN_COLORS.DAI.text,
     bar: DOMAIN_COLORS.DAI.accent,
+  },
+  senior: {
+    label: "노년기",
+    simpleLabel: "어르신",
+    icon: "👵",
+    bg: DOMAIN_COLORS.LEG.bg,
+    text: DOMAIN_COLORS.LEG.text,
+    bar: DOMAIN_COLORS.LEG.accent,
   },
 };
 

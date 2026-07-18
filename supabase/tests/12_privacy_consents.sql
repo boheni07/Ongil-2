@@ -37,20 +37,20 @@ SELECT throws_ok(
 
 -- ── 타인 users 행 비활성화 차단(RLS → 0행) ──────────────────────────────────
 RESET ROLE; SELECT tests.login('c2000000-0000-0000-0000-000000000002');  -- U2
-SELECT is(
-  (WITH u AS (
+WITH u AS (
      UPDATE users SET deactivated_at = now()
      WHERE id = 'c2000000-0000-0000-0000-000000000001' RETURNING 1)
-   SELECT count(*) FROM u),
+SELECT is(
+  (SELECT count(*) FROM u),
   0::bigint,
   '타인 users 행 deactivated_at UPDATE 불가(RLS 로 0행)');
 
 -- ── 타인 consents 철회 차단(RLS → 0행) ──────────────────────────────────────
-SELECT is(
-  (WITH c AS (
+WITH c AS (
      UPDATE consents SET revoked_at = now()
      WHERE user_id = 'c2000000-0000-0000-0000-000000000001' RETURNING 1)
-   SELECT count(*) FROM c),
+SELECT is(
+  (SELECT count(*) FROM c),
   0::bigint,
   '타인 consents revoked_at UPDATE 불가(RLS 로 0행)');
 

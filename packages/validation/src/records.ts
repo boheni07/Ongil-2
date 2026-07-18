@@ -58,12 +58,20 @@ export const journalActivitySchema = z.object({
 /**
  * 활동지원 일지 입력 스키마. service_hours는 서버가 start_time/end_time으로 재계산하므로
  * 입력에 포함하지 않는다(F-S-04 — 클라이언트 계산값은 표시용, DB 저장값은 서버 산출).
+ *
+ * 활동지원 실무는 "일정표(사전계획)"와 "제공기록지(사후실적)"를 구분한다(docs/07 §5 갭④).
+ *  - scheduled_hours: 계획(사전 일정) 시간. 사전 일정 없이 실적만 남길 수도 있어 optional.
+ *  - service_hours(content 저장 시 서버가 채움): "실적 시간" — start/end로 재계산한 실제 제공 시간.
+ * 두 값은 의미가 다르므로 절대 혼용하지 말 것. service_hours 필드명은 이미 저장된 DAI-002
+ * 레코드(목업 포함)와의 하위호환을 위해 그대로 유지한다(actual_hours 등으로 개명 금지).
  */
 export const supportJournalSchema = z
   .object({
     service_date: z.string().regex(dateRegex, "서비스 일자는 YYYY-MM-DD 형식이어야 합니다."),
     start_time: z.string().regex(timeRegex, "시작 시간은 HH:MM 형식이어야 합니다."),
     end_time: z.string().regex(timeRegex, "종료 시간은 HH:MM 형식이어야 합니다."),
+    /** 계획(사전 일정) 시간 — 사전 일정이 없을 수도 있어 optional. 실적(service_hours)과 별개. */
+    scheduled_hours: z.number().min(0).max(24).optional(),
     activities: z.array(journalActivitySchema).default([]),
     health_status: z.enum(["good", "sick", "tired"]),
     meal_status: z.enum(["full", "partial", "none"]),
@@ -227,6 +235,92 @@ export const observationSchema = z.object({
 });
 
 export type ObservationInput = z.infer<typeof observationSchema>;
+
+// ─────────────────────────────────────────────────────────
+// EDU-003 — 행동중재계획 BIP (docs/07 §5 갭③, docs/05-erd.md §3)
+// ─────────────────────────────────────────────────────────
+
+/**
+ * 행동의 기능(§3 EDU-003 behavior_function) — BIP 기능평가(FBA) 관행의 4대 분류.
+ * 관심획득(attention)/회피(escape)/감각추구(sensory)/기타(other).
+ */
+export const behaviorFunctionSchema = z.enum(["attention", "escape", "sensory", "other"]);
+export type BehaviorFunction = z.infer<typeof behaviorFunctionSchema>;
+
+/**
+ * 기능평가 근거(§3 EDU-003 fba_basis, 2026-07-17 워크숍 안건2-1 병합) — 복수선택.
+ * 별도 FBA record_type(EDU-004 후보) 대신, behavior_function 판정에 쓴 근거 자료 유형을
+ * BIP 자체에 선택 필드로 흡수했다. 신설 없이 기존 유형 확장으로 갭을 해소한 사례.
+ */
+export const fbaBasisSchema = z.enum(["observation", "guardian_interview", "teacher_interview", "checklist"]);
+export type FbaBasis = z.infer<typeof fbaBasisSchema>;
+
+/**
+ * BIP content(EDU-003). content JSONB 키는 §3 EDU-003과 1:1(snake_case).
+ * 특수교사(teacher)가 작성하는 공식 지원계획 문서라 requires_confirmation=true(§4-6① —
+ * IEP·ISP·치료계획서와 동일 분류). 제출(is_draft=false) 시 trg_assign_confirmer가 확인 주체를
+ * 자동 지정한다(성년=본인, 미성년=주보호자). 스키마 스타일은 동급 공식 문서 EDU-001(IEP)의
+ * snake_case를 따른다. crisis_procedure만 optional(위기대응 절차가 불필요한 경도 사례도 있음).
+ */
+export const bipSchema = z.object({
+  target_behavior: z
+    .string()
+    .min(1, "중재 대상 행동을 입력해주세요.")
+    .max(2000, "중재 대상 행동은 2000자 이내여야 합니다."),
+  behavior_function: behaviorFunctionSchema,
+  fba_basis: z.array(fbaBasisSchema).optional(),
+  antecedent_strategies: z
+    .string()
+    .min(1, "선행사건 중재 전략을 입력해주세요.")
+    .max(3000, "선행사건 중재 전략은 3000자 이내여야 합니다."),
+  replacement_behavior: z
+    .string()
+    .min(1, "대체행동을 입력해주세요.")
+    .max(2000, "대체행동은 2000자 이내여야 합니다."),
+  reinforcement_plan: z
+    .string()
+    .min(1, "강화 계획을 입력해주세요.")
+    .max(3000, "강화 계획은 3000자 이내여야 합니다."),
+  crisis_procedure: z.string().max(3000).optional(),
+  review_date: z.string().regex(dateRegex, "재검토 예정일은 YYYY-MM-DD 형식이어야 합니다."),
+});
+
+export type BipInput = z.infer<typeof bipSchema>;
+
+// ─────────────────────────────────────────────────────────
+// EDU-005 — 개별화전환계획 ITP (특수교사, docs/08-record-taxonomy-workshop.md 안건2-2 신설)
+// ─────────────────────────────────────────────────────────
+
+/** 현장실습·직업체험 이력 항목(§3 EDU-005 work_experience_log[]). */
+export const workExperienceEntrySchema = z.object({
+  activity: z.string().min(1, "실습/체험 활동명을 입력해주세요."),
+  period: z.object({ start: z.string(), end: z.string() }),
+  note: z.string().max(1000).optional(),
+});
+export type WorkExperienceEntry = z.infer<typeof workExperienceEntrySchema>;
+
+/**
+ * 개별화전환계획(ITP) content(EDU-005). content JSONB 키는 snake_case — 동급 공식 문서
+ * EDU-001(IEP)·EDU-003(BIP)과 일관된 스타일.
+ * 특수교사가 작성하는 학교 단위 전환교육계획(진로·직업 탐색, 현장실습 이력). TRA-001(사회복지사,
+ * 성인기 "실행" 로드맵)과는 별개 레코드 — person_id로만 느슨하게 연결한다(FK 없음, TRA-001↔EDU-001.
+ * transition_plan과 동일 관행). 활성 단계는 청소년 전환기(만 13~18세)만 — `isItpActiveStage`.
+ * 공식 지원계획 문서라 requires_confirmation=true(§4-6①) — 제출 시 trg_assign_confirmer가
+ * 확인 주체(성년=본인, 미성년=주보호자)를 자동 지정한다. PM 합의에 따라 최소 스키마로 시작한다
+ * (docs/08 안건2-2 "범위 최소화").
+ */
+export const itpSchema = z.object({
+  career_interest_areas: z
+    .array(z.string().min(1))
+    .min(1, "진로 흥미영역을 1개 이상 입력해주세요."),
+  work_experience_log: z.array(workExperienceEntrySchema).default([]),
+  next_step_note: z.string().max(2000).optional(),
+  next_review_date: z
+    .string()
+    .regex(dateRegex, "다음 검토일은 YYYY-MM-DD 형식이어야 합니다."),
+});
+
+export type ItpInput = z.infer<typeof itpSchema>;
 
 // ─────────────────────────────────────────────────────────
 // MED-005 — 치료계획서 (P2-3 TH-13/TH-14, docs/05-erd.md §3)
@@ -489,6 +583,111 @@ export const transitionPlanSchema = z.object({
 
 export type TransitionPlanInput = z.infer<typeof transitionPlanSchema>;
 
+// ─────────────────────────────────────────────────────────
+// LEG-001 — 후견감독보고서 (social_worker, docs/05-erd.md §3)
+// ─────────────────────────────────────────────────────────
+
+/** 후견 유형(§3 LEG-001 guardian_type) — 성년/한정/특정/임의후견. */
+export const guardianTypeSchema = z.enum(["adult", "limited", "specific", "voluntary"]);
+export type GuardianType = z.infer<typeof guardianTypeSchema>;
+
+/**
+ * 후견감독보고서 content(LEG-001). content JSONB 키는 §3 LEG-001과 1:1(snake_case).
+ * 성년후견인이 정기적으로 법원에 제출하는 후견감독보고서를 플랫폼에 기록한다.
+ * 법정·공식 서류라 requires_confirmation=true(§4-6 표) — 제출(is_draft=false) 시
+ * trg_assign_confirmer가 확인 주체(성인기·노년기=본인, 그 외=주보호자)를 자동 지정한다.
+ * 스키마 스타일은 동급 공식 문서인 WEL-004(ISP)·MED-005(치료계획서)의 snake_case를 따른다
+ * (period 객체 + type enum + 담당자 성명 + 서술 요약 + optional 특이사항 + 다음 기한).
+ */
+/**
+ * 보고 구분(§3 LEG-001 report_kind, 2026-07-17 워크숍 안건2-4 병합) — 후견개시 직후 법원에
+ * 내는 최초 재산목록보고(initial)와 정기 후견사무보고(periodic)를 하나의 record_type 안에서
+ * 구분한다. 별도 record_type(LEG-003 후보) 대신 판별 필드로 흡수해 RLS·권한 프리셋을 그대로
+ * 재사용한다. 기본값은 periodic(기존 레코드는 필드 없어도 정기 보고로 간주해 하위호환).
+ */
+export const legReportKindSchema = z.enum(["initial", "periodic"]);
+export type LegReportKind = z.infer<typeof legReportKindSchema>;
+
+export const guardianshipReportSchema = z.object({
+  report_kind: legReportKindSchema.default("periodic"),
+  report_period: z.object({
+    start: z.string().regex(dateRegex, "보고 시작일은 YYYY-MM-DD 형식이어야 합니다."),
+    end: z.string().regex(dateRegex, "보고 종료일은 YYYY-MM-DD 형식이어야 합니다."),
+  }),
+  guardian_type: guardianTypeSchema,
+  guardian_name: z.string().min(1, "후견인 성명을 입력해주세요."),
+  property_management_summary: z
+    .string()
+    .min(1, "재산관리 현황을 입력해주세요.")
+    .max(3000, "재산관리 현황은 3000자 이내여야 합니다."),
+  personal_care_summary: z
+    .string()
+    .min(1, "신상보호 현황을 입력해주세요.")
+    .max(3000, "신상보호 현황은 3000자 이내여야 합니다."),
+  incidents: z.string().max(2000).optional(),
+  next_report_due: z
+    .string()
+    .regex(dateRegex, "다음 보고 예정일은 YYYY-MM-DD 형식이어야 합니다."),
+});
+
+export type GuardianshipReportInput = z.infer<typeof guardianshipReportSchema>;
+
+// ─────────────────────────────────────────────────────────
+// LEG-002 — 권익옹호 상담기록 (social_worker, docs/05-erd.md §3)
+// ─────────────────────────────────────────────────────────
+
+/** 상담 유형(§3 LEG-002 issueType) — 인권침해/차별/학대의심/기타. */
+export const advocacyIssueTypeSchema = z.enum([
+  "rights_violation",
+  "discrimination",
+  "abuse_suspected",
+  "other",
+]);
+export type AdvocacyIssueType = z.infer<typeof advocacyIssueTypeSchema>;
+
+/**
+ * 권익옹호 상담기록 content(LEG-002). 일상 기록이라 requires_confirmation=false(§4-6 —
+ * 관찰기록·활동지원일지와 동급). EDU-002(관찰기록) 스타일을 참고해 camelCase 키를 쓴다
+ * — EDU-001 등 snake_case 구조화 문서와 달리, 확인 절차가 없는 일상 관찰성 기록의 유일한
+ * 선례(EDU-002)와 일관되게 맞춘다. consultedAt은 record_date로도 사용한다.
+ */
+export const advocacyConsultationSchema = z.object({
+  consultedAt: z.string(),
+  issueType: advocacyIssueTypeSchema,
+  content: z
+    .string()
+    .min(1, "상담 내용을 입력해주세요.")
+    .max(3000, "상담 내용은 3000자 이내여야 합니다."),
+  actionTaken: z.string().max(2000).optional(),
+  referralAgency: z.string().optional(),
+});
+
+export type AdvocacyConsultationInput = z.infer<typeof advocacyConsultationSchema>;
+
+// ─────────────────────────────────────────────────────────
+// WEL-006 — 사례회의록 (social_worker, docs/08-record-taxonomy-workshop.md 안건2-3)
+// ─────────────────────────────────────────────────────────
+
+/**
+ * 사례회의록 content(WEL-006). 일상 기록이라 requires_confirmation=false(§4-6 — 관찰기록·
+ * 권익옹호 상담기록과 동급) — ISP(WEL-004) 수립·재사정 시 논의 과정·결정사항을 남기되,
+ * 확인 절차로 알림 피로를 키우지 않는다(워크숍 안건2-3). camelCase 키를 써서 확인 절차 없는
+ * 일상 기록의 기존 관행(EDU-002·LEG-002)과 맞춘다. 위자드가 아니라 단일 폼으로 빠르게 기록한다.
+ */
+export const caseConferenceNoteSchema = z.object({
+  meetingDate: z.string(),
+  participants: z
+    .array(z.string().min(1))
+    .min(1, "참석자를 1명 이상 입력해주세요."),
+  discussion: z
+    .string()
+    .min(1, "논의 내용을 입력해주세요.")
+    .max(3000, "논의 내용은 3000자 이내여야 합니다."),
+  decisions: z.string().max(2000).optional(),
+});
+
+export type CaseConferenceNoteInput = z.infer<typeof caseConferenceNoteSchema>;
+
 /** record_type → 목록/상세 표시용 한글 라벨(docs/05-erd.md §3). */
 export const RECORD_TYPE_LABEL: Record<string, string> = {
   "GEN-001": "보호자 기록",
@@ -496,12 +695,17 @@ export const RECORD_TYPE_LABEL: Record<string, string> = {
   "DAI-002": "활동지원 일지",
   "EDU-001": "IEP",
   "EDU-002": "관찰기록",
+  "EDU-003": "행동중재계획(BIP)",
+  "EDU-005": "개별화전환계획(ITP)",
   "MED-005": "치료계획서",
   "MED-006": "회기 일지",
   "MED-007": "평가보고서",
   "WEL-004": "ISP",
   "WEL-005": "서비스 이용계획",
   "TRA-001": "전환계획",
+  "LEG-001": "후견감독보고서",
+  "LEG-002": "권익옹호 상담기록",
+  "WEL-006": "사례회의록",
 };
 
 /**

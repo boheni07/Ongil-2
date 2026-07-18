@@ -24,3 +24,6 @@ apps/mobile/android/
 # OS/editor
 .DS_Store
 Thumbs.db
+
+# ongil-dev skill agent handoff scratch notes (not deliverables)
+_workspace/

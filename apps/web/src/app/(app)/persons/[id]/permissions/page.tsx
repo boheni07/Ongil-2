@@ -2,13 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getGuardianPersons } from "@/app/(app)/dashboard/actions";
 import { getPermissionMatrix } from "./actions";
-import { computeLifeStage } from "@/lib/lifecycle";
+import { computeLifeStage, isSelfConfirmingStage } from "@/lib/lifecycle";
 import { PermissionMatrix } from "@/components/guardian/PermissionMatrix";
 import { Button } from "@/components/ui/button";
 
 /**
  * G-30 권한 매트릭스 — 행=협력자, 열=6도메인. 셀 클릭 시 회색→읽기→작성→편집 순환.
- * docs/02-ia.md §3-9(성년기 동의 이관 배너), 프로토타입 web-guardian.html 569~598줄.
+ * docs/02-ia.md §3-9(성인기 동의 이관 배너), 프로토타입 web-guardian.html 569~598줄.
  */
 export default async function PermissionsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -18,7 +18,7 @@ export default async function PermissionsPage({ params }: { params: Promise<{ id
   if (!person) notFound();
 
   const rows = await getPermissionMatrix(id);
-  const isAdult = computeLifeStage(person.birthDate) === "adult";
+  const isAdult = isSelfConfirmingStage(computeLifeStage(person.birthDate));
 
   return (
     <div className="max-w-4xl">
@@ -32,9 +32,9 @@ export default async function PermissionsPage({ params }: { params: Promise<{ id
           role="note"
           className="mt-5 rounded-(--br-md) bg-domain-dai-bg p-4 text-body text-domain-dai-text ring-1 ring-domain-dai-accent/30"
         >
-          <p className="font-bold">성년기 진입 · 본인 동의 이관 완료</p>
+          <p className="font-bold">성인기 진입 · 본인 동의 이관 완료</p>
           <p className="mt-1 leading-relaxed text-foreground/80">
-            {person.fullName} 님은 성년기에 진입하여 기록·동의의 주체가 본인으로 이관되었습니다. 권한의 부여·회수는
+            {person.fullName} 님은 성인기에 진입하여 기록·동의의 주체가 본인으로 이관되었습니다. 권한의 부여·회수는
             당사자 본인의 동의를 전제로 신중하게 관리해주세요.
           </p>
         </div>

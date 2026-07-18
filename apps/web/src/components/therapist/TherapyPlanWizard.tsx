@@ -6,7 +6,7 @@ import type { TherapyArea, TherapyPlanInput } from "@ongil/validation";
 import { createTherapyPlan, type TherapistClient } from "@/app/(app)/records/therapy/actions";
 import { WizardProgress } from "@/components/form/WizardProgress";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
-import { computeAge } from "@/lib/lifecycle";
+import { computeAge, isSelfConfirmingStage } from "@/lib/lifecycle";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -357,7 +357,7 @@ export function TherapyPlanWizard({
             ✅ 치료계획서는 공식 문서로 저장 시 확인(Confirmation) 절차가 시작됩니다. 저장 후 아동
             타임라인과 계획서 상세에 기록됩니다.
             <span className="mt-2 block font-bold">
-              📋 확인 요청 대상: {client?.lifeStage === "adult" ? "본인" : "보호자"}
+              📋 확인 요청 대상: {client && isSelfConfirmingStage(client.lifeStage) ? "본인" : "보호자"}
             </span>
           </div>
         </div>

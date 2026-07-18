@@ -51,7 +51,6 @@ export function ExpressWizard() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [health, setHealth] = useState<Health | null>(null);
   const [memo, setMemo] = useState("");
-  const [showMemo, setShowMemo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -131,27 +130,19 @@ export function ExpressWizard() {
               <IconOption key={o.value} emoji={o.emoji} label={o.label} selected={health === o.value} onSelect={() => setHealth(o.value)} />
             ))}
           </div>
-          {showMemo ? (
-            <label className="mt-6 block">
-              <span className="mb-2 block text-person-base font-semibold text-accent-stone">하고 싶은 말</span>
-              <textarea
-                value={memo}
-                onChange={(e) => setMemo(e.target.value)}
-                maxLength={1000}
-                rows={3}
-                placeholder="오늘 있었던 일을 자유롭게 적어요"
-                className="w-full rounded-(--br-md) border-2 border-border bg-white p-4 text-person-base outline-none focus-visible:border-primary-600"
-              />
-            </label>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setShowMemo(true)}
-              className="mt-6 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-(--br-md) border-2 border-dashed border-border text-person-base font-semibold text-accent-stone hover:border-primary-400"
-            >
-              <span aria-hidden="true">📝</span> 메모 남기기
-            </button>
-          )}
+          <label className="mt-6 block">
+            <span className="mb-2 block text-person-base font-semibold text-accent-stone">
+              <span aria-hidden="true">📝</span> 하고 싶은 말 (자유롭게 적어도 돼요)
+            </span>
+            <textarea
+              value={memo}
+              onChange={(e) => setMemo(e.target.value)}
+              maxLength={1000}
+              rows={3}
+              placeholder="오늘 있었던 일을 자유롭게 적어요"
+              className="w-full rounded-(--br-md) border-2 border-border bg-white p-4 text-person-base outline-none focus-visible:border-primary-600"
+            />
+          </label>
         </Question>
       )}
 

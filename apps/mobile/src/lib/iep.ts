@@ -25,19 +25,47 @@ import { koreanAge } from "./date";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** 생애주기 3단계 — 웹 computeLifeStage(docs/05-erd.md §2-2-1)와 동일 경계. */
-export type LifeStage = "child" | "youth_transition" | "adult";
+/**
+ * 생애주기 5단계(2026-07-17 개정, docs/07-lifecycle-record-permission-proposal.md v0.2) —
+ * 웹 computeLifeStage(apps/web/src/lib/lifecycle.ts)와 동일 경계.
+ * 0~5 영유아기 · 6~12 아동기 · 13~18 청소년 전환기 · 19~64 성인기 · 65+ 노년기.
+ */
+export type LifeStage = "infant" | "child" | "youth_transition" | "adult" | "senior";
+
+function stageFromAge(age: number): LifeStage {
+  if (age < 6) return "infant";
+  if (age < 13) return "child";
+  if (age < 19) return "youth_transition";
+  if (age < 65) return "adult";
+  return "senior";
+}
 
 export function computeLifeStage(birthDate: string): LifeStage {
-  const age = koreanAge(birthDate) ?? 0;
-  if (age < 14) return "child";
-  if (age < 18) return "youth_transition";
-  return "adult";
+  return stageFromAge(koreanAge(birthDate) ?? 0);
+}
+
+/** 확인 주체가 "본인"인 단계인지 — 성인기·노년기(만 19세 이상). */
+export function isSelfConfirmingStage(stage: LifeStage): boolean {
+  return stage === "adult" || stage === "senior";
+}
+
+/** 전환계획·전환 섹션이 아직 잠겨 있는 단계인지 — 영유아기·아동기(만 12세 이하). */
+export function isPreTransitionStage(stage: LifeStage): boolean {
+  return stage === "infant" || stage === "child";
+}
+
+/**
+ * 개별화전환계획(ITP, EDU-005)이 활성인 단계인지 — 청소년 전환기(만 13~18세)만.
+ * 웹 isItpActiveStage(apps/web/src/lib/lifecycle.ts)와 동일. TRA-001의 isPreTransitionStage와
+ * 달리 "전환기 그 자체"에서만 true다(성인기 이후엔 TRA-001 실행 로드맵으로 넘어감).
+ */
+export function isItpActiveStage(stage: LifeStage): boolean {
+  return stage === "youth_transition";
 }
 
 /**
  * 특정 시점(기록 작성일 등) 기준 생애주기 단계. 타임라인 단계 필터가 "기록 작성 시점 나이"로
- * 항목을 분류할 때 쓴다. computeLifeStage와 동일한 만 14/18세 경계를 적용한다.
+ * 항목을 분류할 때 쓴다. computeLifeStage와 동일한 5단계 경계를 적용한다.
  */
 export function lifeStageAt(birthDate: string, atISO: string): LifeStage | null {
   const b = new Date(birthDate);
@@ -46,9 +74,7 @@ export function lifeStageAt(birthDate: string, atISO: string): LifeStage | null 
   let age = at.getFullYear() - b.getFullYear();
   const m = at.getMonth() - b.getMonth();
   if (m < 0 || (m === 0 && at.getDate() < b.getDate())) age -= 1;
-  if (age < 14) return "child";
-  if (age < 18) return "youth_transition";
-  return "adult";
+  return stageFromAge(age);
 }
 
 /** 타임라인 생애주기 배지·필터·구분선용 — personId의 birth_date 단건 조회(RLS 범위 내). */
@@ -242,7 +268,7 @@ export async function getTeacherStudents(): Promise<TeacherStudent[]> {
 /**
  * T-13 IEP 작성 — records INSERT(domain='EDU', record_type='EDU-001').
  * IEP는 공식 문서라 requires_confirmation=true(§4-6). 제출(is_draft=false) 시
- * trg_assign_confirmer가 확인 주체를 자동 지정한다. transition_plan은 프론트가 만 14세+에서만 전송.
+ * trg_assign_confirmer가 확인 주체를 자동 지정한다. transition_plan은 프론트가 만 13세+에서만 전송.
  */
 export async function createIep(
   input: IepInput & { personId: string }

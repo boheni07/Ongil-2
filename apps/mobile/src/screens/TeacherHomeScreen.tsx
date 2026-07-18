@@ -4,7 +4,12 @@ import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
-import { getTeacherStudents, type TeacherStudent } from "../lib/iep";
+import {
+  getTeacherStudents,
+  isPreTransitionStage,
+  isItpActiveStage,
+  type TeacherStudent,
+} from "../lib/iep";
 import { koreanAge } from "../lib/date";
 import { StageBadge } from "../components/lifecycle/StageBadge";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
@@ -43,8 +48,9 @@ export function TeacherHomeScreen({ navigation }: Props) {
     );
   }
 
-  const transitionCount = students.filter((s) => s.lifeStage !== "child").length;
+  const transitionCount = students.filter((s) => !isPreTransitionStage(s.lifeStage)).length;
   const withIepCount = students.filter((s) => s.latestIepRecordId).length;
+  const itpTargetCount = students.filter((s) => isItpActiveStage(s.lifeStage)).length;
 
   const openStudent = (s: TeacherStudent) => {
     if (s.latestIepRecordId) {
@@ -80,6 +86,27 @@ export function TeacherHomeScreen({ navigation }: Props) {
         <Stat n={transitionCount} label="전환계획 대상" />
       </View>
 
+      <View style={styles.quickRow}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="행동중재계획(BIP) 작성"
+          onPress={() => navigation.navigate("BipForm", {})}
+          style={({ pressed }) => [styles.quickBtn, pressed && styles.pressed]}
+        >
+          <Text style={styles.quickBtnText}>🧩 행동중재계획(BIP)</Text>
+        </Pressable>
+        {itpTargetCount > 0 ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="개별화전환계획(ITP) 작성"
+            onPress={() => navigation.navigate("ItpWizard", {})}
+            style={({ pressed }) => [styles.quickBtn, pressed && styles.pressed]}
+          >
+            <Text style={styles.quickBtnText}>🎓 개별화전환계획(ITP)</Text>
+          </Pressable>
+        ) : null}
+      </View>
+
       <Text style={styles.sectionTitle}>담당 학생</Text>
       {students.length === 0 ? (
         <View style={styles.emptyBox}>
@@ -111,7 +138,7 @@ export function TeacherHomeScreen({ navigation }: Props) {
                     {age != null ? <Text style={styles.stuMeta}>만 {age}세</Text> : null}
                   </View>
                 </View>
-                {s.lifeStage !== "child" ? (
+                {!isPreTransitionStage(s.lifeStage) ? (
                   <Text style={styles.transTag}>전환</Text>
                 ) : null}
               </View>
@@ -177,6 +204,16 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xl,
     marginBottom: SPACING.sm,
   },
+  quickRow: { flexDirection: "row", flexWrap: "wrap", gap: SPACING.sm, marginTop: SPACING.lg },
+  quickBtn: {
+    borderWidth: 1,
+    borderColor: NEUTRAL.border,
+    borderRadius: RADIUS.md,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    backgroundColor: NEUTRAL.bg,
+  },
+  quickBtnText: { fontSize: 14, fontWeight: "700", color: PRIMARY[700] },
   emptyBox: {
     padding: SPACING.xl,
     alignItems: "center",

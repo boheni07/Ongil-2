@@ -4,10 +4,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import {
   loginSchema,
-  signupSchema,
-  roleSelectSchema,
-  profileSchema,
-  consentSchema,
+  signupFormSchema,
   otpVerifySchema,
   resetRequestSchema,
   resetConfirmSchema,
@@ -90,125 +87,29 @@ export async function login(
   redirect(role ? ROLE_HOME[role] : "/home");
 }
 
+// ─────────────────────────────────────────────────────────
+// Flow-0 신규 회원가입 (A-03+A-04+A-08 통합 단일 화면 → A-05)
+// ─────────────────────────────────────────────────────────
+
 /**
- * @deprecated 단일 스텝 회원가입 — 구 signup/page.tsx 전용. Flow-0 위저드
- * (selectRole→submitProfile→submitConsents→verifyEmailOtp)로 대체된다.
+ * 통합 회원가입 — 역할 선택·기본 정보·약관 동의를 한 화면/한 제출로 처리한다
+ * (2026-07-18, 이전 4단계 위저드 selectRole→submitProfile→submitConsents를 하나로 병합).
+ * signUp() 직후에는 email-confirm 세션이 없어(data.session === null) auth.uid()가 NULL이고
+ * consents_insert RLS(WITH CHECK user_id = auth.uid())가 이 시점의 INSERT를 항상 거부한다 —
+ * 그래서 이전과 동일하게 동의 여부만 verify 단계로 넘기고, 실제 INSERT는 verifyEmailOtp가
+ * verifyOtp로 세션을 확보한 직후에 수행한다(옛 submitConsents와 동일한 이유).
  */
-export async function signup(
+export async function submitSignupForm(
   _prevState: AuthActionState | undefined,
   formData: FormData
 ): Promise<AuthActionState> {
-  const parsed = signupSchema.safeParse({
-    email: formData.get("email"),
-    password: formData.get("password"),
+  const parsed = signupFormSchema.safeParse({
     role: formData.get("role"),
-    requiredConsent: formData.get("requiredConsent") === "on",
-    marketingConsent: formData.get("marketingConsent") === "on",
-  });
-
-  if (!parsed.success) {
-    return { error: firstIssue(parsed.error) };
-  }
-
-  const { email, password, role } = parsed.data;
-  const fullName = String(formData.get("fullName") ?? "").trim() || email.split("@")[0];
-
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: { data: { role, full_name: fullName } },
-  });
-
-  if (error) {
-    return { error: error.message };
-  }
-  if (!data.session) {
-    return { error: "가입 확인 이메일을 확인해주세요." };
-  }
-
-  redirect(ROLE_HOME[role]);
-}
-
-// ─────────────────────────────────────────────────────────
-// Flow-0 신규 회원가입 위저드 (A-03 → A-04 → A-08 → A-05)
-// ─────────────────────────────────────────────────────────
-
-/**
- * A-03 역할 선택 — 서버에 영속 저장하지 않고 role을 다음 단계로 전달만 한다.
- * invite가 있으면 역할이 고정되므로 함께 이어붙인다.
- */
-export async function selectRole(
-  _prevState: AuthActionState | undefined,
-  formData: FormData
-): Promise<AuthActionState> {
-  const parsed = roleSelectSchema.safeParse({ role: formData.get("role") });
-  if (!parsed.success) {
-    return { error: "역할을 선택해주세요." };
-  }
-  const invite = (formData.get("invite") as string | null) || null;
-  redirect(withInvite(`/signup/profile?role=${parsed.data.role}`, invite));
-}
-
-/**
- * A-04 기본 정보 — profileSchema 검증 후 supabase.auth.signUp()으로 계정 즉시 생성.
- * role은 hidden 필드(직전 A-03에서 전달)에서 읽어 user_metadata에 저장한다.
- */
-export async function submitProfile(
-  _prevState: AuthActionState | undefined,
-  formData: FormData
-): Promise<AuthActionState> {
-  const parsed = profileSchema.safeParse({
     fullName: formData.get("fullName"),
     email: formData.get("email"),
     password: formData.get("password"),
     passwordConfirm: formData.get("passwordConfirm"),
     phone: formData.get("phone"),
-  });
-  if (!parsed.success) {
-    return { error: firstIssue(parsed.error) };
-  }
-
-  const roleParsed = roleSelectSchema.safeParse({ role: formData.get("role") });
-  if (!roleParsed.success) {
-    return { error: "역할 정보가 없습니다. 처음부터 다시 진행해주세요." };
-  }
-
-  const { fullName, email, password, phone } = parsed.data;
-  const invite = (formData.get("invite") as string | null) || null;
-
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { role: roleParsed.data.role, full_name: fullName, phone },
-    },
-  });
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  redirect(withInvite("/signup/consent", invite));
-}
-
-/**
- * A-08 동의 수집 — consentSchema 검증만 하고 DB에는 쓰지 않는다.
- *
- * submitProfile이 만든 계정은 email-confirm 설정에서 세션이 없는(signUp 직후
- * data.session === null) 상태라 auth.uid()가 NULL이고, consents_insert RLS
- * (WITH CHECK user_id = auth.uid())가 이 시점의 INSERT를 항상 거부한다.
- * 그래서 필수/선택 동의 여부만 A-05로 넘기고, 실제 INSERT는 verifyEmailOtp가
- * verifyOtp로 세션을 확보한 직후에 수행한다(terms/privacy/sensitive는 이
- * 시점에 이미 필수 검증을 통과했으므로 항상 true로 간주 — marketing만 값을
- * 넘기면 된다).
- */
-export async function submitConsents(
-  _prevState: AuthActionState | undefined,
-  formData: FormData
-): Promise<AuthActionState> {
-  const parsed = consentSchema.safeParse({
     ageOver14: formData.get("ageOver14") === "on",
     termsAgreed: formData.get("termsAgreed") === "on",
     privacyAgreed: formData.get("privacyAgreed") === "on",
@@ -216,12 +117,23 @@ export async function submitConsents(
     marketingAgreed: formData.get("marketingAgreed") === "on",
   });
   if (!parsed.success) {
-    return { error: "필수 항목(만 14세 이상·약관·개인정보·민감정보)에 모두 동의해야 합니다." };
+    return { error: firstIssue(parsed.error) };
   }
 
+  const { role, fullName, email, password, phone, marketingAgreed } = parsed.data;
   const invite = (formData.get("invite") as string | null) || null;
-  const marketing = parsed.data.marketingAgreed ? "1" : "0";
-  redirect(withInvite(`/signup/verify?marketing=${marketing}`, invite));
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { role, full_name: fullName, phone } },
+  });
+  if (error) {
+    return { error: error.message };
+  }
+
+  redirect(withInvite(`/signup/verify?marketing=${marketingAgreed ? "1" : "0"}`, invite));
 }
 
 /** verifyEmailOtp 성공 직후(세션 확보 후) 호출 — A-08에서 미룬 consents INSERT를 수행. */

@@ -7,6 +7,7 @@ import { createIsp, type SocialWorkerClient } from "@/app/(app)/records/isp/acti
 import { WizardProgress } from "@/components/form/WizardProgress";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
+import { isSelfConfirmingStage } from "@/lib/lifecycle";
 
 /**
  * W-13 ISP 작성 5단계 위저드(프로토타입 web-social-worker.html 282~328줄).
@@ -473,7 +474,7 @@ export function IspWizard({
             ✅ ISP는 공식 문서로 저장 시 확인(Confirmation) 절차가 시작됩니다. 저장 후 당사자
             타임라인과 ISP 점검 화면에 기록됩니다.
             <span className="mt-2 block font-bold">
-              📋 확인 요청 대상: {client?.lifeStage === "adult" ? "본인" : "보호자"}
+              📋 확인 요청 대상: {client && isSelfConfirmingStage(client.lifeStage) ? "본인" : "보호자"}
             </span>
           </div>
         </div>

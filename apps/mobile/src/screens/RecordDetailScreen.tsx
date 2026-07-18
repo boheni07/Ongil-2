@@ -7,6 +7,7 @@ import { confirmRecord, getRecordDetail, type RecordDetail } from "../lib/record
 import { DomainChip } from "../components/DomainChip";
 import { ConfirmBadge } from "../components/records/ConfirmBadge";
 import { ConfirmCTA } from "../components/records/ConfirmCTA";
+import { RecordContentView } from "../components/records/RecordContentView";
 import { ErrorBanner } from "../components/ui";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING, TOUCH_MIN } from "../theme/colors";
 import type { GuardianStackParamList } from "../navigation/types";
@@ -63,7 +64,8 @@ export function RecordDetailScreen({ route, navigation }: Props) {
   }
 
   const content = detail.content as Record<string, unknown> | null;
-  const structuredEntries = Object.entries(content ?? {}).filter(([k]) => k !== "guardianNote");
+  const structuredContent = { ...(content ?? {}) };
+  delete structuredContent.guardianNote;
 
   return (
     <ScrollView
@@ -110,12 +112,9 @@ export function RecordDetailScreen({ route, navigation }: Props) {
         <>
           <View style={styles.block}>
             <Text style={styles.blockLabel}>원본 기록 내용</Text>
-            {structuredEntries.map(([k, v]) => (
-              <View key={k} style={{ marginTop: SPACING.xs }}>
-                <Text style={styles.fieldKey}>{k}</Text>
-                <Text style={styles.blockBody}>{typeof v === "string" ? v : JSON.stringify(v)}</Text>
-              </View>
-            ))}
+            <View style={{ marginTop: SPACING.xs }}>
+              <RecordContentView content={structuredContent} />
+            </View>
           </View>
           {detail.guardianNote && (
             <View style={[styles.block, styles.noteBlock]}>
@@ -161,6 +160,5 @@ const styles = StyleSheet.create({
   noteBlock: { backgroundColor: PRIMARY[50], borderWidth: 0 },
   blockLabel: { fontSize: FONT.label, fontWeight: "700", color: NEUTRAL.textMuted },
   blockBody: { marginTop: 4, fontSize: FONT.body, color: NEUTRAL.text },
-  fieldKey: { fontSize: FONT.caption, fontWeight: "700", color: NEUTRAL.textMuted },
   noteTitle: { marginTop: 4, fontSize: FONT.body, fontWeight: "800", color: NEUTRAL.text },
 });

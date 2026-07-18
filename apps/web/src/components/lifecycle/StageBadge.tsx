@@ -30,11 +30,20 @@ interface StageMeta {
 }
 
 const STAGE_META: Record<LifeStage, StageMeta> = {
+  infant: {
+    label: "영유아기",
+    simpleLabel: "아기 때",
+    icon: "🍼",
+    description: "만 0~5세 — 조기 진단·개입 시기로, 보호자가 기록·동의를 대리합니다.",
+    bgClass: "bg-domain-wel-bg",
+    textClass: "text-domain-wel-text",
+    barClass: "bg-domain-wel-accent",
+  },
   child: {
     label: "아동기",
     simpleLabel: "어린이 때",
     icon: "🧒",
-    description: "만 14세 미만 — 보호자가 기록·동의를 대리합니다.",
+    description: "만 6~12세 — 보호자가 기록·동의를 대리합니다.",
     bgClass: "bg-domain-edu-bg",
     textClass: "text-domain-edu-text",
     barClass: "bg-domain-edu-accent",
@@ -43,19 +52,28 @@ const STAGE_META: Record<LifeStage, StageMeta> = {
     label: "청소년 전환기",
     simpleLabel: "청소년",
     icon: "🌱",
-    description: "만 14세~17세 — 전환 계획과 당사자 의사 반영이 시작됩니다.",
+    description: "만 13세~18세 — 전환 계획과 당사자 의사 반영이 시작됩니다.",
     bgClass: "bg-domain-tra-bg",
     textClass: "text-domain-tra-text",
     barClass: "bg-domain-tra-accent",
   },
   adult: {
-    label: "성년기",
+    label: "성인기",
     simpleLabel: "어른",
     icon: "🧑",
-    description: "만 18세 이상 — 당사자 본인이 기록·동의의 주체가 됩니다.",
+    description: "만 19세~64세 — 당사자 본인이 기록·동의의 주체가 됩니다.",
     bgClass: "bg-domain-dai-bg",
     textClass: "text-domain-dai-text",
     barClass: "bg-domain-dai-accent",
+  },
+  senior: {
+    label: "노년기",
+    simpleLabel: "어르신",
+    icon: "👵",
+    description: "만 65세 이상 — 돌봄·후견 관련 지원이 중요해지는 시기입니다. 당사자 본인이 계속 주체입니다.",
+    bgClass: "bg-domain-leg-bg",
+    textClass: "text-domain-leg-text",
+    barClass: "bg-domain-leg-accent",
   },
 };
 

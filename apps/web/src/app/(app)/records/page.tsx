@@ -8,7 +8,7 @@ import { PersonRecordsView } from "@/components/person/PersonRecordsView";
 /**
  * P-10 기록 보기(당사자 본인) — docs/02-ia.md §3-10.
  * 로그인한 당사자 본인(person_id = auth.uid())의 기록을 시간순으로 보여준다. RLS가 본인 기록만
- * 반환하므로 personId에 자기 auth.uid()를 넘겨도 안전하다. 성년기 본인 확인 CTA는 뷰에서 분기한다.
+ * 반환하므로 personId에 자기 auth.uid()를 넘겨도 안전하다. 성인기·노년기 본인 확인 CTA는 뷰에서 분기한다.
  */
 export default async function PersonRecordsPage() {
   const supabase = await createClient();

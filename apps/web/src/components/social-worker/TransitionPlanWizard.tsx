@@ -1,22 +1,24 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { RoadmapStage, TransitionPlanInput } from "@ongil/validation";
 import {
   createTransitionPlan,
   type TransitionClient,
 } from "@/app/(app)/records/transition/actions";
+import { getLatestItpSummary, type ItpReferenceSummary } from "@/app/(app)/records/itp/actions";
 import { WizardProgress } from "@/components/form/WizardProgress";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { ConfirmBadge } from "@/components/records/ConfirmBadge";
 import { RoadmapProgress } from "@/components/social-worker/RoadmapProgress";
 import { Button } from "@/components/ui/button";
+import { isPreTransitionStage, isSelfConfirmingStage } from "@/lib/lifecycle";
 
 /**
  * W-16 전환계획(TRA-001) 작성 위저드 — IspWizard.tsx와 동일 구조.
  * 당사자 선택 → 진로·로드맵 → 훈련 이력 → 연계·검토 → 확인·저장.
- * 만 14세 미만(life_stage==='child')은 폼을 렌더하지 않고 안내 메시지로 막는다
+ * 만 13세 미만(영유아기·아동기)은 폼을 렌더하지 않고 안내 메시지로 막는다
  * (docs/02-ia.md §3-9 진입가드 — 서버가 최종 방어선이지만 UX상 미리 알린다).
  * 매 제출은 새 레코드 INSERT다(기존 레코드 수정 아님 — ISP와 동일).
  */
@@ -74,7 +76,20 @@ export function TransitionPlanWizard({
     () => clients.find((c) => c.personId === personId) ?? null,
     [clients, personId]
   );
-  const blocked = client?.lifeStage === "child";
+  const blocked = client ? isPreTransitionStage(client.lifeStage) : false;
+
+  const [itpRef, setItpRef] = useState<ItpReferenceSummary | null>(null);
+  useEffect(() => {
+    setItpRef(null);
+    if (!personId) return;
+    let cancelled = false;
+    getLatestItpSummary(personId).then((r) => {
+      if (!cancelled) setItpRef(r);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [personId]);
 
   function updateTraining(i: number, patch: Partial<TrainingDraft>) {
     setTrainings((prev) => prev.map((t, idx) => (idx === i ? { ...t, ...patch } : t)));
@@ -184,6 +199,19 @@ export function TransitionPlanWizard({
         </div>
       )}
 
+      {/* 참고 — 학교 개별화전환계획(EDU-005) 소프트 링크(FK 아님, person_id로만 연결) */}
+      {itpRef && (
+        <div className="mb-5 flex flex-col gap-1 rounded-xl border border-domain-edu-accent/40 bg-domain-edu-bg/50 p-4">
+          <span className="text-label font-bold text-domain-edu-text">
+            🎓 참고 — 학교 개별화전환계획(ITP)
+          </span>
+          <p className="text-caption text-muted-foreground">
+            진로 흥미영역: {itpRef.careerInterestAreas.join(", ") || "-"} · 다음 검토일{" "}
+            {itpRef.nextReviewDate ?? "-"}
+          </p>
+        </div>
+      )}
+
       {step === 1 && (
         <div className="flex flex-col gap-4">
           <Field label="대상 당사자" required>
@@ -202,7 +230,7 @@ export function TransitionPlanWizard({
 
           {blocked ? (
             <div className="rounded-(--br-md) bg-domain-med-bg p-4 text-body font-semibold text-domain-med-text">
-              🧒 만 14세 이상부터 전환계획을 작성할 수 있습니다. 이 당사자는 아직 아동기 단계라
+              🧒 만 13세 이상부터 전환계획을 작성할 수 있습니다. 이 당사자는 아직 영유아기·아동기 단계라
               전환계획 대상이 아닙니다.
             </div>
           ) : (
@@ -365,7 +393,7 @@ export function TransitionPlanWizard({
             ✅ 전환계획은 공식 문서로 저장 시 확인(Confirmation) 절차가 시작됩니다. 저장 후 당사자
             타임라인에 기록됩니다.
             <span className="mt-2 block font-bold">
-              📋 확인 요청 대상: {client?.lifeStage === "adult" ? "본인" : "보호자"}
+              📋 확인 요청 대상: {client && isSelfConfirmingStage(client.lifeStage) ? "본인" : "보호자"}
             </span>
           </div>
         </div>

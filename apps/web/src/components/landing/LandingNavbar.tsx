@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const MENU = [
   { href: "#s-intro", label: "플랫폼 소개" },
@@ -58,11 +59,22 @@ export function LandingNavbar() {
 
       <div className="flex items-center gap-2">
         <Button
+          render={<Link href="/login" />}
+          variant="ghost"
+          size="lg"
+          className={cn(
+            "rounded-full px-4 font-bold hover:bg-white/10",
+            scrolled ? "text-accent-stone hover:bg-primary-50" : "text-white"
+          )}
+        >
+          로그인
+        </Button>
+        <Button
           render={<Link href="/signup" />}
           size="lg"
           className="rounded-full bg-accent-amber px-5 font-bold text-primary-900 hover:bg-accent-amber/90"
         >
-          시작하기 →
+          회원가입
         </Button>
         <button
           type="button"

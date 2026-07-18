@@ -8,6 +8,7 @@ import {
   getTransitionPlanClients,
   type TransitionClient,
 } from "../lib/transition";
+import { isPreTransitionStage, isSelfConfirmingStage } from "../lib/iep";
 import { useAsyncAction } from "../hooks/useAsyncAction";
 import { useWizardDraft } from "../hooks/useWizardDraft";
 import { CategoryChip } from "../components/IconSelector";
@@ -69,7 +70,7 @@ function isoPlusMonths(months: number): string {
 
 /**
  * W-16 전환계획(TRA-001) 작성 5단계 위저드(사회복지사).
- * 만 14세 미만(life_stage==='child') 당사자를 선택하면 폼 대신 진입 가드 안내로 대체한다
+ * 만 13세 미만(영유아기·아동기) 당사자를 선택하면 폼 대신 진입 가드 안내로 대체한다
  * (docs/02-ia.md §3-9). 제출 전 마지막 단계에서 확인 요청 대상(성년=본인/미성년=보호자)을 안내한다.
  */
 export function TransitionPlanWizardScreen({ navigation, route }: Props) {
@@ -90,8 +91,8 @@ export function TransitionPlanWizardScreen({ navigation, route }: Props) {
   const { checkRestore, saveDraft, clearDraft } = useWizardDraft<Draft>("transition:draft");
 
   const selectedClient = clients.find((c) => c.personId === personId) ?? null;
-  const isChild = selectedClient?.lifeStage === "child";
-  const isAdult = selectedClient?.lifeStage === "adult";
+  const isChild = !!selectedClient && isPreTransitionStage(selectedClient.lifeStage);
+  const isAdult = !!selectedClient && isSelfConfirmingStage(selectedClient.lifeStage);
 
   const [step, setStep] = useState(1);
 
@@ -253,9 +254,9 @@ export function TransitionPlanWizardScreen({ navigation, route }: Props) {
           {isChild ? (
             <View style={styles.guard}>
               <Text style={styles.guardIcon}>🌱</Text>
-              <Text style={styles.guardTitle}>만 14세 이상부터 전환계획을 작성할 수 있습니다</Text>
+              <Text style={styles.guardTitle}>만 13세 이상부터 전환계획을 작성할 수 있습니다</Text>
               <Text style={styles.guardText}>
-                전환계획(TRA-001)은 청소년 전환기(만 14세) 이후 당사자를 대상으로 합니다. 다른 당사자를
+                전환계획(TRA-001)은 청소년 전환기(만 13세) 이후 당사자를 대상으로 합니다. 다른 당사자를
                 선택하거나, 아동기 당사자는 교육·활동 기록으로 준비를 시작하세요.
               </Text>
             </View>

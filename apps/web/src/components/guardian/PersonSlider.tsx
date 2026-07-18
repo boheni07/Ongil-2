@@ -48,7 +48,14 @@ export function PersonSlider({ persons }: { persons: GuardianPerson[] }) {
     };
   }, [selected.id]);
 
-  const emergency = (selected.emergencyInfo ?? null) as EmergencyInfoInput | null;
+  // emergency_info는 JSONB라 DB가 배열 형태를 강제하지 않는다 — Zod 스키마 도입 전에 쓰인
+  // 구형 행(문자열 등)이 있어도 .join()에서 크래시하지 않도록 방어적으로 배열만 취한다.
+  const rawEmergency = (selected.emergencyInfo ?? null) as EmergencyInfoInput | null;
+  const emergency = rawEmergency && {
+    allergies: Array.isArray(rawEmergency.allergies) ? rawEmergency.allergies : [],
+    medications: Array.isArray(rawEmergency.medications) ? rawEmergency.medications : [],
+    contacts: Array.isArray(rawEmergency.contacts) ? rawEmergency.contacts : [],
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -78,7 +85,7 @@ export function PersonSlider({ persons }: { persons: GuardianPerson[] }) {
                   </div>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <StageBadge lifeStage={computeLifeStage(p.birthDate)} />
+                  <StageBadge lifeStage={computeLifeStage(p.birthDate)} interactive={false} />
                   {p.disabilityTypes.slice(0, 2).map((t) => (
                     <span key={t} className="rounded-(--br-sm) bg-muted px-2 py-0.5 text-caption text-accent-stone">
                       {t}

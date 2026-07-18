@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { computeServiceHours, type SupportJournalInput } from "@ongil/validation";
 import { submitSupportJournal, getPreviousJournal } from "@/app/(app)/journal/actions";
@@ -57,6 +57,8 @@ export function JournalWizard({ persons }: { persons: JournalPersonOption[] }) {
   const [serviceDate, setServiceDate] = useState(todayISO());
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  // 계획(사전 일정) 시간 — 선택 입력. 실적(service_hours: start/end 자동 계산)과 별개(docs/07 §5 갭④).
+  const [scheduledHours, setScheduledHours] = useState("");
   const [minutes, setMinutes] = useState<Record<string, number>>({});
   const [health, setHealth] = useState<Health>("good");
   const [meal, setMeal] = useState<Meal>("full");
@@ -94,6 +96,15 @@ export function JournalWizard({ persons }: { persons: JournalPersonOption[] }) {
     setPrev(res ?? undefined);
   }
 
+  // 2단계(활동 내역) 진입 시 이전 일지를 자동으로 불러온다 — 최근 사용 카테고리를 클릭 한 번 없이
+  // 바로 보여줘 매번 다시 고르는 번거로움을 줄인다(2026-07-17, docs/08 §6 Wave1-5).
+  useEffect(() => {
+    if (step === 2 && prev === null && personId) {
+      loadPrevious();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, personId]);
+
   function applyPrevious() {
     if (!prev || prev === "loading") return;
     const c = prev.content;
@@ -106,6 +117,8 @@ export function JournalWizard({ persons }: { persons: JournalPersonOption[] }) {
   }
 
   function buildInput(): SupportJournalInput {
+    const scheduled = Number(scheduledHours);
+    const hasScheduled = scheduledHours.trim() !== "" && !Number.isNaN(scheduled);
     return {
       service_date: serviceDate,
       start_time: startTime,
@@ -113,6 +126,7 @@ export function JournalWizard({ persons }: { persons: JournalPersonOption[] }) {
       activities,
       health_status: health,
       meal_status: meal,
+      ...(hasScheduled ? { scheduled_hours: scheduled } : {}),
       ...(incidents.trim() ? { incidents: incidents.trim() } : {}),
       ...(handover.trim() ? { handover_note: handover.trim() } : {}),
       ...(referenceId ? { reference_journal_id: referenceId } : {}),
@@ -184,6 +198,19 @@ export function JournalWizard({ persons }: { persons: JournalPersonOption[] }) {
               <input type="time" className={fieldClass} value={startTime} onChange={(e) => setStartTime(e.target.value)} />
             </Field>
           </div>
+          <Field label="계획 시간 (선택)">
+            <input
+              type="number"
+              min={0}
+              max={24}
+              step={0.5}
+              inputMode="decimal"
+              className={fieldClass}
+              value={scheduledHours}
+              onChange={(e) => setScheduledHours(e.target.value)}
+              placeholder="사전 일정표상 계획된 지원 시간(시간 단위). 실적은 종료 시간으로 자동 계산됩니다."
+            />
+          </Field>
         </div>
       )}
 

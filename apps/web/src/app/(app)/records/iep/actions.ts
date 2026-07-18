@@ -171,8 +171,8 @@ export async function getTeacherStudents(): Promise<TeacherStudent[]> {
 /**
  * T-13 IEP 작성 — records INSERT(domain='EDU', record_type='EDU-001').
  * IEP는 공식 문서라 requires_confirmation=true(§4-6 표) — 제출(is_draft=false) 시
- * trg_assign_confirmer가 확인 주체(성년=본인, 미성년=주보호자)를 자동 지정한다.
- * transition_plan은 프론트가 만 14세+에서만 전송하며, 없으면 그대로 생략 저장된다.
+ * trg_assign_confirmer가 확인 주체(성인기·노년기=본인, 그 이전=주보호자)를 자동 지정한다.
+ * transition_plan은 프론트가 만 13세+에서만 전송하며, 없으면 그대로 생략 저장된다.
  */
 export async function createIep(
   input: IepInput & { personId: string }

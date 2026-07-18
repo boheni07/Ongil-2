@@ -33,6 +33,9 @@ export interface SupportJournalSummary {
   personId: string;
   personName: string | null;
   serviceDate: string | null;
+  /** 계획(사전 일정) 시간. 없으면 null(사전 일정 없이 실적만 남긴 일지). */
+  scheduledHours: number | null;
+  /** 실적 시간 — 서버가 start/end로 재계산해 저장한 실제 제공 시간. */
   serviceHours: number | null;
   isDraft: boolean;
   recordDate: string;
@@ -66,6 +69,8 @@ export async function submitSupportJournal(
   } = await supabase.auth.getUser();
   if (!user) return { error: "로그인이 필요합니다." };
 
+  // content = 검증된 입력(scheduled_hours 계획 시간 optional 포함) + 서버가 재계산한 service_hours(실적 시간).
+  // scheduled_hours(사전 일정)와 service_hours(사후 실적)는 의미가 다른 별개 필드다(docs/07 §5 갭④).
   const serviceHours = computeServiceHours(parsed.data.start_time, parsed.data.end_time);
   const content = { ...parsed.data, service_hours: serviceHours };
 
@@ -155,6 +160,7 @@ export async function getSupporterJournals(limit = 20): Promise<SupportJournalSu
       personId: row.person_id as string,
       personName,
       serviceDate: content?.service_date ?? null,
+      scheduledHours: content?.scheduled_hours ?? null,
       serviceHours: content?.service_hours ?? null,
       isDraft: Boolean(row.is_draft),
       recordDate: row.record_date as string,

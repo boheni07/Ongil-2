@@ -26,7 +26,7 @@ import { computeLifeStage, type LifeStage } from "./iep";
  * logAccess는 iep.ts와 동일하게 여기서도 재정의한다(모듈 경계상 iep.ts의 것은 export되지 않음).
  */
 
-export { getTimeline, computeLifeStage, getPersonBirthDate } from "./iep";
+export { getTimeline, computeLifeStage, getPersonBirthDate, isSelfConfirmingStage, isPreTransitionStage } from "./iep";
 export type { TimelineItem, LifeStage } from "./iep";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

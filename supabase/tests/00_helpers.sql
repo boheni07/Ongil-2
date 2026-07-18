@@ -56,9 +56,14 @@ $$;
 CREATE OR REPLACE FUNCTION tests.mk_user(p_id uuid, p_role text, p_email text DEFAULT NULL)
 RETURNS uuid LANGUAGE plpgsql AS $$
 BEGIN
+  -- email 은 users.email UNIQUE 제약이 걸려 있다. 과거 left(p_id::text,8) 로 앞 8자만 잘라 썼는데,
+  -- 이 스위트의 픽스처 UUID들은 관례상 앞부분을 의도적으로 공유한다(예: 'bbbbbbbb-...-b1'과
+  -- 'bbbbbbbb-...-b2'는 첫 8자가 둘 다 'bbbbbbbb') — 그래서 서로 다른 두 사용자를 만들 때
+  -- unique violation 이 나 테스트 파일이 중간에 죽는 결함이 있었다(2026-07-18, CTO팀 갭분석 발견).
+  -- p_id 전체는 애초에 PK 로 유일하므로 그대로 이메일 로컬파트에 써서 충돌을 원천 차단한다.
   INSERT INTO public.users(id, email, role, full_name, updated_at)
   VALUES (p_id,
-          COALESCE(p_email, left(p_id::text,8) || '@test.dev'),
+          COALESCE(p_email, p_id::text || '@test.dev'),
           p_role::public."UserRole",
           'T-' || left(p_id::text,8),
           now())

@@ -54,13 +54,15 @@ SELECT throws_ok(
 
 -- ── UPDATE/DELETE 정책 부재 → 변경 불가 ─────────────────────────────────────
 RESET ROLE; SELECT tests.login('a8000000-0000-0000-0000-00000000000a');  -- GP
-SELECT is((WITH u AS (UPDATE guardians SET is_primary=false
+WITH u AS (UPDATE guardians SET is_primary=false
                       WHERE user_id='a8000000-0000-0000-0000-00000000000a' AND person_id='a8000000-0000-0000-0000-00000000000c'
-                      RETURNING 1) SELECT count(*) FROM u),
+                      RETURNING 1)
+SELECT is((SELECT count(*) FROM u),
           0::bigint, 'guardians UPDATE 정책 부재 → 변경 불가(관계 변경은 service_role)');
-SELECT is((WITH d AS (DELETE FROM guardians
+WITH d AS (DELETE FROM guardians
                       WHERE user_id='a8000000-0000-0000-0000-00000000000a' AND person_id='a8000000-0000-0000-0000-00000000000c'
-                      RETURNING 1) SELECT count(*) FROM d),
+                      RETURNING 1)
+SELECT is((SELECT count(*) FROM d),
           0::bigint, 'guardians DELETE 정책 부재 → 해제 불가(관계 해제는 service_role)');
 
 SELECT * FROM finish();

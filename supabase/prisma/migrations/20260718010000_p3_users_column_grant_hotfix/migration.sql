@@ -1,0 +1,33 @@
+-- P3: users 테이블 컬럼 단위 GRANT 누락 — 자기 role 임의 승격(권한 상승) 취약점 핫픽스
+-- 참조: supabase/tests/12_privacy_consents.sql, docs/05-erd.md §2-1
+--
+-- 발견 경위(2026-07-18, CTO팀 갭분석 Wave B-1 — pgTAP 하네스를 처음으로 실제 완주시키는 과정에서
+--   12_privacy_consents.sql 테스트3 "deactivated_at 외 컬럼(full_name) UPDATE 는 컬럼 권한으로
+--   차단"이 throws_ok(42501)을 기대했으나 예외가 발생하지 않아 발견. information_schema.column_privileges
+--   조회 결과 public.users 의 모든 컬럼(id/email/role 포함)에 authenticated 앞으로 UPDATE 권한이
+--   부여되어 있었다. 실제 라이브 세션으로 재현 확인:
+--     teacher1(a0000000-0000-0000-0000-000000000005) 로 로그인한 트랜잭션에서
+--     UPDATE users SET role='social_worker' WHERE id='...005' 실행 → 성공(role 변경 확인 후 ROLLBACK).
+--
+-- 근본 원인: 20260709041005_p0_4_rls_grants 가 users 테이블에
+--   GRANT SELECT, INSERT, UPDATE, DELETE ON users TO authenticated 를 전 컬럼 대상으로 실행했다.
+--   이후 20260714020000_p2_privacy_settings 가 "본인은 deactivated_at 만 UPDATE 가능"하도록
+--   좁히려 했으나 GRANT UPDATE (deactivated_at) 만 추가했을 뿐 선행 REVOKE UPDATE 가 없었다.
+--   PostgreSQL 컬럼 권한은 가산적(additive)이라 테이블 단위 GRANT가 이미 전 컬럼을 포함하면
+--   이후의 좁은 컬럼 GRANT 는 아무 것도 제한하지 못한다(권한을 "더" 줄 뿐 빼앗지 않음).
+--   즉 p2 마이그레이션이 "제한"이라고 주석에 적었던 조치가 실제로는 no-op 이었다.
+--   이 프로젝트에서 반복돼 온 동일 계열 결함(consents/guardians/permission_logs/handover_notes·
+--   notifications/notification_preferences·permission_presets, CLAUDE.md 변경이력 참고)과 달리
+--   이번엔 RLS 자체는 켜져 있었지만 "선행 REVOKE 누락"이라는 다른 실수로 같은 결과(과다권한)에
+--   도달한 사례 — 이후 유사 컬럼 제한 작업 시 REVOKE→GRANT(컬럼) 순서를 반드시 지켜야 한다.
+--
+-- 영향: role 컬럼은 permission_presets 조회·RLS 정책·앱 전역 화면 분기의 신뢰 소스이므로,
+--   임의 인증 사용자(당사자 포함)가 자기 role 을 social_worker/therapist/teacher/supporter/
+--   guardian 등으로 자유롭게 바꿔 해당 역할의 기본 권한 프리셋과 화면 접근권을 획득할 수 있는
+--   심각한 권한 상승(privilege escalation) 취약점이었다.
+--
+-- 조치: p0_4 가 부여한 테이블 단위 UPDATE 를 회수하고, 기존 설계 의도대로 deactivated_at
+--   단일 컬럼만 재부여한다(REVOKE 후 GRANT 순서 — handover_notes/notifications 패턴과 동일).
+
+REVOKE UPDATE ON public.users FROM authenticated;
+GRANT UPDATE (deactivated_at) ON public.users TO authenticated;

@@ -44,11 +44,15 @@ function Button({
   className,
   variant = "default",
   size = "default",
+  nativeButton,
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
   return (
     <ButtonPrimitive
       data-slot="button"
+      // render로 <button>이 아닌 요소(주로 next/link의 <Link>)를 넘기는 호출부가 대다수라
+      // render가 있으면 기본값을 false로 둔다 — 필요하면 호출부에서 명시적으로 덮어쓸 수 있다.
+      nativeButton={nativeButton ?? !props.render}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />

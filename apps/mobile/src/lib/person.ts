@@ -98,6 +98,7 @@ export async function ensurePersonProfile(input: PersonProfileInput): Promise<Ac
     full_name: fullName,
     birth_date: birthDate,
     gender: gender ?? null,
+    updated_at: new Date().toISOString(),
   });
   if (insErr) {
     return { error: `프로필 생성에 실패했습니다: ${insErr.message}` };

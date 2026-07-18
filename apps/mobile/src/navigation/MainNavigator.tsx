@@ -23,6 +23,8 @@ import { TeacherHomeScreen } from "../screens/TeacherHomeScreen";
 import { IepWizardScreen } from "../screens/IepWizardScreen";
 import { IepReviewScreen } from "../screens/IepReviewScreen";
 import { ObservationFormScreen } from "../screens/ObservationFormScreen";
+import { BipFormScreen } from "../screens/BipFormScreen";
+import { ItpWizardScreen } from "../screens/ItpWizardScreen";
 import { EduTimelineScreen } from "../screens/EduTimelineScreen";
 import { SocialWorkerHomeScreen } from "../screens/SocialWorkerHomeScreen";
 import { IspWizardScreen } from "../screens/IspWizardScreen";
@@ -30,6 +32,10 @@ import { IspReviewScreen } from "../screens/IspReviewScreen";
 import { TransitionPlanWizardScreen } from "../screens/TransitionPlanWizardScreen";
 import { ServiceUsageScreen } from "../screens/ServiceUsageScreen";
 import { WelTimelineScreen } from "../screens/WelTimelineScreen";
+import { CaseConferenceFormScreen } from "../screens/CaseConferenceFormScreen";
+import { LegBoardScreen } from "../screens/LegBoardScreen";
+import { GuardianshipReportWizardScreen } from "../screens/GuardianshipReportWizardScreen";
+import { AdvocacyConsultationFormScreen } from "../screens/AdvocacyConsultationFormScreen";
 import { TherapistHomeScreen } from "../screens/TherapistHomeScreen";
 import { TherapyPlanWizardScreen } from "../screens/TherapyPlanWizardScreen";
 import { TherapyPlanDetailScreen } from "../screens/TherapyPlanDetailScreen";
@@ -213,6 +219,16 @@ export function MainNavigator({ session }: { session: Session }) {
           options={{ title: "관찰기록 작성" }}
         />
         <TeacherStack.Screen
+          name="BipForm"
+          component={BipFormScreen}
+          options={{ title: "행동중재계획(BIP) 작성" }}
+        />
+        <TeacherStack.Screen
+          name="ItpWizard"
+          component={ItpWizardScreen}
+          options={{ title: "개별화전환계획(ITP) 작성" }}
+        />
+        <TeacherStack.Screen
           name="EduTimeline"
           component={EduTimelineScreen}
           options={{ title: "교육 타임라인" }}
@@ -253,6 +269,26 @@ export function MainNavigator({ session }: { session: Session }) {
           name="WelTimeline"
           component={WelTimelineScreen}
           options={{ title: "복지 타임라인" }}
+        />
+        <SocialWorkerStack.Screen
+          name="CaseConferenceForm"
+          component={CaseConferenceFormScreen}
+          options={{ title: "사례회의록 작성" }}
+        />
+        <SocialWorkerStack.Screen
+          name="LegBoard"
+          component={LegBoardScreen}
+          options={{ title: "법률·권리 기록" }}
+        />
+        <SocialWorkerStack.Screen
+          name="GuardianshipReportWizard"
+          component={GuardianshipReportWizardScreen}
+          options={{ title: "후견감독보고서 작성" }}
+        />
+        <SocialWorkerStack.Screen
+          name="AdvocacyConsultationForm"
+          component={AdvocacyConsultationFormScreen}
+          options={{ title: "권익옹호 상담기록 작성" }}
         />
       </SocialWorkerStack.Navigator>
     );

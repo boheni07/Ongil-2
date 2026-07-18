@@ -99,8 +99,8 @@ export default function TermsPage() {
       </section>
 
       <div className="mt-8 text-center">
-        <Link href="/signup/consent" className="text-sm text-primary-700 underline">
-          ← 동의 화면으로
+        <Link href="/signup" className="text-sm text-primary-700 underline">
+          ← 가입 화면으로
         </Link>
       </div>
     </article>

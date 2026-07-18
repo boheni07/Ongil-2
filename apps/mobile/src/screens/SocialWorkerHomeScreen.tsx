@@ -30,7 +30,7 @@ export function SocialWorkerHomeScreen({ navigation }: Props) {
     } = await supabase.auth.getUser();
     const meta = user?.user_metadata ?? {};
     setName((meta.full_name as string) || (meta.name as string) || "");
-    // 성년기 당사자는 성인 서비스 전환 검토 대상이라 목록 최상단으로 끌어올린다(안정 정렬).
+    // 성인기 당사자는 성인 서비스 전환 검토 대상이라 목록 최상단으로 끌어올린다(안정 정렬).
     const list = await getSocialWorkerClients();
     const sorted = list
       .map((c, i) => ({ c, i }))
@@ -120,8 +120,27 @@ export function SocialWorkerHomeScreen({ navigation }: Props) {
         onPress={() => navigation.navigate("TransitionPlanWizard", { personId: "", personName: "" })}
         style={({ pressed }) => [styles.transitionBtn, pressed && styles.pressed]}
       >
-        <Text style={styles.transitionBtnText}>🌱 전환계획 작성 (만 14세+)</Text>
+        <Text style={styles.transitionBtnText}>🌱 전환계획 작성 (만 13세+)</Text>
       </Pressable>
+
+      <View style={styles.newRow}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="사례회의록 작성"
+          onPress={() => navigation.navigate("CaseConferenceForm")}
+          style={({ pressed }) => [styles.altBtn, pressed && styles.pressed]}
+        >
+          <Text style={styles.altBtnText}>📝 사례회의록</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="법률·권리 기록"
+          onPress={() => navigation.navigate("LegBoard")}
+          style={({ pressed }) => [styles.altBtn, pressed && styles.pressed]}
+        >
+          <Text style={styles.altBtnText}>⚖️ 법률·권리 기록</Text>
+        </Pressable>
+      </View>
 
       <Text style={styles.sectionTitle}>담당 당사자</Text>
       {clients.length === 0 ? (
@@ -256,6 +275,18 @@ const styles = StyleSheet.create({
     backgroundColor: PRIMARY[50],
   },
   transitionBtnText: { fontSize: 15, fontWeight: "700", color: PRIMARY[700] },
+  altBtn: {
+    flex: 1,
+    minHeight: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: SPACING.sm,
+    borderRadius: RADIUS.md,
+    borderWidth: 1.5,
+    borderColor: PRIMARY[400],
+    backgroundColor: PRIMARY[50],
+  },
+  altBtnText: { fontSize: 14, fontWeight: "700", color: PRIMARY[700] },
   sectionTitle: {
     fontSize: FONT.h3,
     fontWeight: "700",

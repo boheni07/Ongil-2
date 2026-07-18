@@ -6,12 +6,13 @@ import type { LifeStage } from "@/components/lifecycle/StageBadge";
 import { DomainChip } from "@/components/timeline/DomainChip";
 import { ConfirmBadge } from "@/components/records/ConfirmBadge";
 import { ConfirmCTA } from "@/components/records/ConfirmCTA";
+import { isSelfConfirmingStage } from "@/lib/lifecycle";
 
 /**
  * P-10 기록 보기(당사자 본인) — docs/02-ia.md §3-10.
  * 본인 기록을 시간순으로 나열하고, 공식 문서에는 ConfirmBadge를 붙인다.
- * "이 기록을 봤어요" 확인 CTA는 성년기(adult) 본인이 확인 주체(confirmerId===userId)인
- * 미확인 기록에만 노출한다 — 미성년(child/youth_transition)은 확인 주체가 보호자이므로
+ * "이 기록을 봤어요" 확인 CTA는 성인기·노년기(만 19세 이상) 본인이 확인 주체(confirmerId===userId)인
+ * 미확인 기록에만 노출한다 — 그 이전 단계(infant/child/youth_transition)는 확인 주체가 보호자이므로
  * 배지만 표시하고 이 화면에서는 액션이 없다. "승인/반려" 개념은 두지 않는다.
  */
 export function PersonRecordsView({
@@ -54,7 +55,7 @@ export function PersonRecordsView({
     <ul className="flex flex-col gap-3">
       {records.map((r) => {
         const isPending = r.requiresConfirmation && !r.confirmedAt;
-        const canConfirm = lifeStage === "adult" && r.confirmerId === userId && isPending;
+        const canConfirm = isSelfConfirmingStage(lifeStage) && r.confirmerId === userId && isPending;
         return (
           <li
             key={r.id}

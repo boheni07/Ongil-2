@@ -11,6 +11,8 @@
 
 **온길**은 장애인의 생애주기(의료·교육·복지·일상·전환·법률) 기록을 **당사자 중심**으로 관리하는 다역할 협업 플랫폼이다.
 
+> **스코프 경계(2026-07-17, `docs/08-record-taxonomy-workshop.md` 안건2-5 확정)**: 온길은 **서비스 이용 개시 이후**의 지원 기록 관리 도구다. 발달재활서비스 바우처 신청·자격심사 같은 **신청 단계** 문서(의뢰서·세부영역검사지 등)는 지자체·사회서비스 전자바우처 시스템의 소관이라 의도적으로 다루지 않는다.
+
 ### 1-2. 핵심 가치
 
 | 가치 | 설명 |
@@ -50,15 +52,19 @@
 | TRA | 성인전환 | `#8A5DC6` | 진로탐색, 자립생활계획, 직업훈련 기록 |
 | LEG | 법률·권리 | `#5A7FA0` | 후견 기록, 권익옹호, 법적 지원 현황 |
 
-### 3-1. 생애주기 3단계 (life_stage)
+### 3-1. 생애주기 5단계 (life_stage) — 2026-07-17 3단계→5단계 개정
 
-당사자의 `birth_date` 기준으로 계산되는 파생 상태이며, 도메인별 기록 활성화 시점과 동의 주체를 결정한다 (계산 로직: `05-erd.md` §2-2-1).
+당사자의 `birth_date` 기준으로 계산되는 파생 상태이며, 도메인별 기록 활성화 시점과 동의 주체를 결정한다 (계산 로직: `05-erd.md` §2-2-1). 실제 특수교육·장애복지 현장의 생애주기 구분(국립특수교육원·보건복지부 등)에 맞춰 기존 3단계(아동기/청소년 전환기/성년기)를 5단계로 확장했다 — 근거와 채택 과정은 `07-lifecycle-record-permission-proposal.md` 참조.
 
 | 단계 | 연령 기준 | 당사자 상태 변화 | 주요 기록대상 | 주도 도메인 |
 |------|---------|----------------|-------------|-----------|
-| 아동기 (`child`) | 만 13세 이하 | 보호자 대리동의 전체 | 진단·재활계획, IEP 기본 5영역, 관찰기록, 활동지원 일지, 자기표현 | MED·EDU·DAI |
-| 청소년 전환기 (`youth`) | 만 14~17세 | 전환계획 수립 개시 | 위 항목 + 전환 목표영역·희망 진로·전환 활동계획·연계기관 | MED·EDU·DAI·**TRA** |
-| 성년기 (`adult`) | 만 18세 이상 | 동의 주체 보호자→**본인** 이관 (`is_adult=true`) | 본인 동의 재취득, 성인 ISP/서비스이용계획, 전환 로드맵 실행(취업/자립), 후견·권익옹호 | WEL·**TRA**(실행)·**LEG** |
+| 영유아기 (`infant`) | 만 0~5세 | 보호자 대리동의 전체 | 진단·조기개입·재활치료(발달재활서비스), 관찰기록(만 3세~) | MED·**WEL**·DAI |
+| 아동기 (`child`) | 만 6~12세 | 보호자 대리동의 전체 | 진단·재활계획, IEP 기본 5영역, 관찰기록, 활동지원 일지, 자기표현 | MED·EDU·DAI·**WEL** |
+| 청소년 전환기 (`youth`) | 만 13~18세 | 전환계획 수립 개시 | 위 항목 + 전환 목표영역·희망 진로·전환 활동계획·연계기관 | MED·EDU·DAI·WEL·**TRA** |
+| 성인기 (`adult`) | 만 19~64세 | 동의 주체 보호자→**본인** 이관 (`is_adult=true`, 기존 만 18세에서 **19세로 상향** — 민법상 성년 기준 정합) | 본인 동의 재취득, 성인 ISP/서비스이용계획, 전환 로드맵 실행(취업/자립), 후견·권익옹호 | WEL·**TRA**(실행)·**LEG** |
+| 노년기 (`senior`) | 만 65세 이상 | 동의 주체는 계속 본인 | 돌봄 성격 강화, 만성질환 관리, 후견감독 관련 지원 밀도 증가 | WEL·**LEG**·MED |
+
+> ⚠️ **경계값 변경 주의**: 성년(동의 주체 이관) 기준이 기존 "만 18세"에서 **"만 19세"**로 상향됐다. 만 18세 당사자는 기존 설계에서 `adult`(본인 확인주체)였으나 이번 개정으로 `youth`(보호자 확인주체)로 바뀐다. WEL 도메인도 영유아기·아동기부터 주도 도메인에 포함됐다(발달재활서비스가 만 18세 미만 전체 대상이라는 현장 실무 반영).
 
 ### 3-2. 역할별 권한 매트릭스 — 권장안
 
@@ -67,7 +73,7 @@
 | 역할 | 의료 MED | 교육 EDU | 복지 WEL | 일상 DAI | 전환 TRA | 법률 LEG | 권장 유효기간 |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|---|
 | 활동지원사 | read | – | – | **write** | – | – | 서비스 계약기간 |
-| 특수교사 | – | **edit** | – | read | **write**(`life_stage≠child`만 선택 가능) | – | 학년도 단위(3/1~익년 2/28) |
+| 특수교사 | – | **edit** | – | read | **write**(만 13세 이상만 선택 가능, §3-1 5단계 기준 `youth` 이상) | – | 학년도 단위(3/1~익년 2/28) |
 | 사회복지사 | read | – | **edit** | – | **write** | read | 사례관리 기간(무기한 지양) |
 | 치료사 | **edit** | – | – | read | – | – | 치료 계약기간 |
 | 당사자 | read(본인) | read(본인) | read(본인) | write(자기표현) | read(본인) | read(본인) | 해당 없음(구조적 권한) |
@@ -80,6 +86,254 @@
 | MED | 진단, 처방 | 치료계획서, 회기일지, 평가보고서 |
 | WEL | ISP 승인·종결 처리 | 서비스 이용계획 초안, 진행 메모 |
 | LEG | 후견 관련 결정 기록 | 권익옹호 상담 이력 |
+
+### 3-2-1. 역할×기록유형(record_type) 매트릭스 (2026-07-17 추가)
+
+위 §3-2는 **도메인** 단위 권한이다. 실제 DB RLS(`05-erd.md` §4-2 `records_select/insert/update`)도 도메인 단위로만 강제하며, **record_type 단위 구분은 앱 레이어(화면별 작성 폼 + `packages/validation`의 Zod 스키마)가 담당**한다 — 즉 아래 표의 "열람"·"작성 불가" 칸 상당수는 DB가 막는 게 아니라 해당 역할의 화면에 그 record_type 작성 폼이 없어서 지켜지는 것이다. `docs/05-erd.md` §3(record_type별 content JSONB 스키마)의 16개 유형 전체를 대상으로 한다.
+
+| record_type (도메인) | 당사자 | 보호자 | 활동지원사 | 특수교사 | 사회복지사 | 치료사 |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| SELF-001 자기표현 (DAI) | **작성·수정**(본인) | 열람+수정(구조적) | 열람 | 열람 | – | 열람 |
+| DAI-002 활동지원일지 (DAI) | 열람(본인) | 열람+수정(구조적) | **작성**(주 작성자) | 열람 | – | 열람 |
+| EDU-001 IEP (EDU) | 열람(본인) | 열람+수정(구조적) | – | **작성·수정**(주 작성자) | – | – |
+| EDU-002 관찰기록 (EDU) | 열람(본인) | 열람+수정(구조적) | – | **작성·수정**(주 작성자) | – | – |
+| EDU-003 행동중재계획 BIP (EDU) | 열람(본인) | 열람+수정(구조적) | – | **작성**(주 작성자) | – | – |
+| EDU-005 개별화전환계획 ITP (EDU) | 열람(본인) | 열람+수정(구조적) | – | **작성**(청소년 전환기만) | – | – |
+| MED-005 치료계획서 (MED) | 열람(본인) | 열람+수정(구조적) | 열람 | – | 열람 | **작성·수정**(주 작성자) |
+| MED-006 회기일지 (MED) | 열람(본인) | 열람+수정(구조적) | 열람 | – | 열람 | **작성·수정**(주 작성자) |
+| MED-007 평가보고서 (MED) | 열람(본인) | 열람+수정(구조적) | 열람 | – | 열람 | **작성·수정**(주 작성자) |
+| WEL-004 ISP (WEL) | 열람(본인) | 열람+수정(구조적) | – | – | **작성·수정**(주 작성자) | – |
+| WEL-005 서비스이용계획 (WEL) | 열람(본인) | 열람+수정(구조적) | – | – | **작성·수정**(주 작성자) | – |
+| WEL-006 사례회의록 (WEL) | 열람(본인) | 열람+수정(구조적) | – | – | **작성**(주 작성자) | – |
+| TRA-001 전환계획 (TRA) | 열람(본인) | 열람+수정(구조적) | – | **작성**(청소년 전환기 이상, TRA write 권한 보유 시) | **작성**(주 작성자) | – |
+| LEG-001 후견감독보고서 (LEG) | 열람(본인) | 열람+수정(구조적) | – | – | **작성·수정**(주 작성자) | – |
+| LEG-002 권익옹호 상담기록 (LEG) | 열람(본인) | 열람+수정(구조적) | – | – | **작성·수정**(주 작성자) | – |
+| GEN-001 보호자메모 (선택도메인) | 열람(대상 시) | **작성·수정**(구조적, 도메인 무관) | – | – | – | – |
+
+**범례**: 작성=write 권한으로 신규 기록만 / 작성·수정=edit 권한으로 신규+기존 수정 / 열람=해당 도메인 read 이상 보유로 SELECT만 가능(그 record_type 작성 폼은 앱이 제공하지 않음) / 구조적=`guardians` 관계 기반, 도메인·`permissions` 테이블과 무관하게 항상 전체 접근(F-G-04) / 본인=`author_id=person_id=자기 auth.uid()`로 한정된 self-branch.
+
+**주의할 점 2가지**
+1. **TRA-001과 특수교사**: §3-2 프리셋상 특수교사도 TRA write를 받을 수 있어(청소년 전환기 이상 조건부) DB RLS 자체가 특수교사의 TRA-001 INSERT를 막지 않는다는 점은 원래부터 사실이었다. 2026-07-17 이전에는 전환계획 작성 폼이 사회복지사 화면(W-16, `/records/transition/new`)에만 노출돼 이 경로가 실제로 쓰이지 않았으나, 같은 날 특수교사 화면(T 계열 `TeacherHome`)에도 동일 진입점을 추가해 앱 레이어 갭을 해소했다 — 서버 액션(`getTransitionPlanClients`/`createTransitionPlan`)은 원래 role을 가리지 않으므로 별도 teacher 전용 액션 없이 그대로 재사용된다. IEP 내 `transition_plan` 서브섹션(교육 목표 관점, `05-erd.md` §3 EDU-001)과는 별개 레코드다.
+2. **보호자의 "구조적 전체"**: RLS는 record_type을 구분하지 않으므로 이론상 보호자는 IEP/ISP 같은 전문 기록도 DB 레벨에서 직접 쓸 수 있지만, 실제 보호자 전용 작성 화면(G-21)은 GEN-001(범용 기록)만 노출한다 — 전문 기록 폼은 해당 전문가 역할에만 제공된다. 단 보호자는 `createSelfExpressionForPerson`(2026-07-17 신설, `persons/[id]/records/express`)를 통해 SELF-001(자기표현)만은 당사자를 대신해 작성할 수 있다 — `author_id`는 항상 보호자 자신으로 pin되어(위조방지 마이그레이션 `p3_records_author_id_antiforge`) SELF-001 특유의 "본인 목소리" 자체를 대신 만들어내지는 못한다.
+3. **LEG-001/002 연령 가드(2026-07-17)**: 후견감독보고서·권익옹호 상담기록은 성인기·노년기(만 19세 이상) 당사자에게만 작성할 수 있다(§3-1 생애주기 매트릭스와 정합). `records/leg/actions.ts`가 `isSelfConfirmingStage`로 서버 재검증하며, 위자드·폼도 그 이전 단계 당사자를 선택하면 작성을 차단한다 — TRA-001의 `isPreTransitionStage` 가드와 동형.
+
+### 3-2-2. 기록유형 카탈로그 (2026-07-17 추가)
+
+§3-2-1이 "누가 어떤 record_type을 쓰고 읽을 수 있는가"를 역할 축으로 정리한 표라면, 아래는 16개 기록유형 각각이 **무엇을 담는 기록인지**를 한 줄로 정리한 것이다. "주작성자"는 그 유형의 신규 작성을 실제로 수행하는 역할, "보조작성자"는 주작성자가 아니면서도 예외적으로 쓸 수 있는 경로(대리 작성·조건부 권한)를 뜻한다. content 필드 전체(서식)는 §3-2-3 참조.
+
+| 분야 | 유형 | 기록명 | 기록설명 | 주작성자 | 보조작성자 | 열람가능자 |
+|---|---|---|---|---|---|---|
+| DAI | SELF-001 | 자기표현 | 당사자가 그날의 기분·식사·활동·건강 상태를 스스로 남기는 일일 기록. 음성 메모·식사 사진 첨부 가능. | 당사자(본인) | 보호자(대리 작성) | 보호자, 활동지원사, 특수교사, 치료사 |
+| DAI | DAI-002 | 활동지원 일지 | 활동지원사가 방문 지원 내용·계획시간(사전)과 실적시간(사후)·식사·건강·특이사항을 기록. | 활동지원사 | – | 당사자(본인), 보호자, 특수교사, 치료사 |
+| EDU | EDU-001 | IEP (개별화교육계획) | 특수교사가 5개 영역 현재 수준과 연간목표를 수립하는 공식 문서. 청소년기부터 전환계획 서브섹션 잠금 해제. | 특수교사 | – | 당사자(본인), 보호자 |
+| EDU | EDU-002 | 관찰기록 | 특수교사의 일상 수업·행동·사회성 관찰 메모. IEP 목표 영역과 느슨하게(문자열 매칭) 연결 가능. | 특수교사 | – | 당사자(본인), 보호자 |
+| EDU | EDU-003 | 행동중재계획 (BIP) | 특수교사가 문제행동의 기능(FBA 4분류)을 분석해 선행사건 전략·대체행동·강화계획·위기대응절차를 수립하는 공식 문서. | 특수교사 | – | 당사자(본인), 보호자 |
+| EDU | EDU-005 | 개별화전환계획 (ITP) | 특수교사가 청소년 전환기(만 13~18세) 학생의 진로 흥미영역·현장실습 이력·성인기 인계메모를 관리하는 학교 단위 전환교육계획(2026-07-17 워크숍 채택). TRA-001(사회복지사, 성인기 로드맵)과 별개 레코드. | 특수교사 | – | 당사자(본인), 보호자 |
+| MED | MED-005 | 치료계획서 | 치료사가 진단·치료 유형·영역별(신체/언어/인지/사회성) 장단기 목표와 회기 빈도를 수립하는 공식 문서. | 치료사 | – | 당사자(본인), 보호자, 활동지원사, 사회복지사 |
+| MED | MED-006 | 회기 일지 | 치료계획서(MED-005)에 연결된 개별 회기의 진행 상황·영역별 점수·다음 회기 계획. | 치료사 | – | 당사자(본인), 보호자, 활동지원사, 사회복지사 |
+| MED | MED-007 | 평가보고서 | 초기/중간/최종(initial/interim/final) 평가 시점의 영역별 점수와 종합 소견·권고사항. 동일 치료계획서 기준 3열 비교 가능. | 치료사 | – | 당사자(본인), 보호자, 활동지원사, 사회복지사 |
+| WEL | WEL-004 | ISP (개별지원계획) | 사회복지사가 욕구·장벽 분석과 영역별 목표·연계 서비스·담당자·기한을 수립하는 공식 문서. | 사회복지사 | – | 당사자(본인), 보호자 |
+| WEL | WEL-005 | 서비스 이용계획 | 현재 이용 중인 서비스 목록(제공기관·빈도·기간·상태)·월 비용·재원(예: 발달재활서비스 바우처)·다음 재검토일 관리. | 사회복지사 | – | 당사자(본인), 보호자 |
+| WEL | WEL-006 | 사례회의록 | ISP 수립·재사정 시 다직종 사례회의의 논의 내용·결정사항을 기록(2026-07-17 워크숍 채택). 확인 절차 없이 저장, 당사자·보호자에게 일반 알림만 발송. | 사회복지사 | – | 당사자(본인), 보호자 |
+| TRA | TRA-001 | 전환계획 | 탐색→계획→훈련→취업/자립 4단계 로드맵, 진로목표·자립생활계획·훈련 이력·연계기관을 관리하는 공식 문서. IEP의 전환계획 서브섹션과는 별개 레코드. | 사회복지사 | 특수교사(청소년기+, TRA 권한 보유 시 조건부) | 당사자(본인), 보호자 |
+| LEG | LEG-001 | 후견감독보고서 | 성년후견인이 법원에 정기 제출하는 재산관리·신상보호 수행 현황을 사회복지사가 대신 기록하는 공식 문서. **성인기·노년기(만 19세+) 당사자에 한함.** | 사회복지사 | – | 당사자(본인), 보호자 |
+| LEG | LEG-002 | 권익옹호 상담기록 | 인권침해·차별·학대의심 등 권익옹호 상담 이력과 취한 조치·연계 기관. **성인기·노년기(만 19세+) 당사자에 한함.** | 사회복지사 | – | 당사자(본인), 보호자 |
+| 무관 | GEN-001 | 보호자 범용 기록 | 보호자가 도메인 제한 없이 자유 형식(제목+본문)으로 남기는 메모. 구조화 기록에 대한 보호자의 비파괴 편집(guardianNote)도 이 통로를 함께 쓴다. | 보호자 | – | 당사자(본인, 해당 시) |
+
+**보조작성자가 존재하는 유형은 2개뿐이다** — SELF-001(보호자 대리 작성, `author_id`는 항상 보호자로 pin)과 TRA-001(특수교사, 청소년기 이상이고 TRA 작성권한을 보유해야만 조건부 활성화). 나머지 14개 유형은 한 역할이 전담 작성한다.
+
+### 3-2-3. 기록유형별 서식 (전체 필드 스키마, 2026-07-18 추가)
+
+§3-2-2가 "무엇을 담는 기록인지" 한 줄 요약이라면, 아래는 16개 기록유형 각각의 **실제 `content` JSONB 필드 구조 전체**다. `packages/validation/src/records.ts` Zod 스키마를 그대로 표로 옮겼다 — 필드명·타입·필수 여부까지 코드와 1:1 일치하며, 임의로 키 이름을 바꾸면 안 된다(§4-2 `docs/05-erd.md`와 동일 원칙). "필수"는 Zod의 실제 검증 규칙(min(1) 등)을 반영한다.
+
+**SELF-001 자기표현** (DAI · camelCase 아님, snake_case 없음 — 단일 레벨)
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `mood` | `'good'\|'neutral'\|'sad'\|'angry'` | 필수 | 오늘 기분 |
+| `meal` | `'full'\|'partial'\|'none'` | 필수 | 식사 여부 |
+| `meal_photo_url` | string(url) | 선택 | 식사 사진 |
+| `activities` | `('exercise'\|'study'\|'craft'\|'social')[]` | 선택(기본 `[]`) | 오늘 한 활동(복수) |
+| `health` | `'good'\|'sick'\|'tired'` | 필수 | 몸 상태 |
+| `memo` | string(≤1000자) | 선택 | 자유 메모 |
+| `voice_url` | string(url) | 선택 | 음성 메모(녹음 UI 미구현, 스키마만 존재) |
+
+**DAI-002 활동지원 일지** (DAI · snake_case)
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `service_date` | string(YYYY-MM-DD) | 필수 | 서비스 일자 |
+| `start_time` / `end_time` | string(HH:MM) | 필수 | 시작/종료 시간(종료＞시작 검증) |
+| `scheduled_hours` | number(0~24) | 선택 | 계획(사전 일정) 시간 |
+| `activities[]` | `{category, minutes(0~1440)}` | 선택 | 활동 항목별 소요 시간 |
+| `health_status` | `'good'\|'sick'\|'tired'` | 필수 | 건강 상태 |
+| `meal_status` | `'full'\|'partial'\|'none'` | 필수 | 식사 상태 |
+| `incidents` | string(≤2000자) | 선택 | 특이사항 |
+| `handover_note` | string(≤2000자) | 선택 | 인수인계 메모 |
+| `reference_journal_id` | string(uuid) | 선택 | 이전 일지 참조 ID |
+| (`service_hours`) | number | 서버 계산 | 실적 시간 — start/end로 서버가 자동 산출, 입력값 아님 |
+
+**EDU-001 IEP (개별화교육계획)** (EDU · snake_case)
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `school` | string | 필수 | 학교명 |
+| `academic_year` | string | 필수 | 학년도 |
+| `meeting_date` | string(YYYY-MM-DD) | 필수 | IEP 회의 날짜 |
+| `participants` | string[] | 선택 | 회의 참석자 |
+| `current_levels` | `{korean,math,social,communication,self_care: string}` | 필수 | 5개 영역 현재 수준 |
+| `annual_goals[]` | `{area, goal, short_term_goals[], achievement_rate?, evaluation_note?}` | 필수(1개+) | 연간 목표. `achievement_rate`·`evaluation_note`는 T-14 인라인 점검에서 채움 |
+| ˪ `short_term_goals[]` | `{goal, period, evaluation}` | 선택 | 단기(분기) 목표 |
+| `support_services[]` | `{service, provider, frequency}` | 선택 | 지원 서비스 목록 |
+| `transition_plan` | `{goal, steps: string[]}` | 선택(청소년기+ 노출) | 전환계획 서브섹션 — EDU-005·TRA-001과는 별개 |
+
+**EDU-002 관찰기록** (EDU · camelCase)
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `observedAt` | string(ISO datetime) | 필수 | 관찰 일시 |
+| `situation` | string | 필수 | 관찰 상황 |
+| `tags` | string[] | 필수(1개+) | 행동/언어/사회성/학습 4카테고리×4개 태그 카탈로그에서 선택 |
+| `note` | string(≤3000자) | 필수 | 관찰 내용 |
+| `linkedGoalArea` | string | 선택 | 연결된 IEP 목표 영역 라벨(FK 아님, 문자열 매칭) |
+
+**EDU-003 행동중재계획(BIP)** (EDU · snake_case)
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `target_behavior` | string(≤2000자) | 필수 | 중재 대상 행동 |
+| `behavior_function` | `'attention'\|'escape'\|'sensory'\|'other'` | 필수 | 행동의 기능 |
+| `fba_basis` | `('observation'\|'guardian_interview'\|'teacher_interview'\|'checklist')[]` | 선택 | 기능평가 근거(복수선택, 2026-07-17 추가) |
+| `antecedent_strategies` | string(≤3000자) | 필수 | 선행사건 중재 전략 |
+| `replacement_behavior` | string(≤2000자) | 필수 | 대체행동 |
+| `reinforcement_plan` | string(≤3000자) | 필수 | 강화 계획 |
+| `crisis_procedure` | string(≤3000자) | 선택 | 위기상황 대응절차 |
+| `review_date` | string(YYYY-MM-DD) | 필수 | 재검토 예정일 |
+
+**EDU-005 개별화전환계획(ITP)** (EDU · snake_case, 2026-07-18 신규)
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `career_interest_areas` | string[] | 필수(1개+) | 진로 흥미영역 |
+| `work_experience_log[]` | `{activity, period:{start,end}, note?}` | 선택 | 현장실습·직업체험 이력 |
+| `next_step_note` | string(≤2000자) | 선택 | 성인기 인계 메모 — TRA-001 작성자(사회복지사) 참고 |
+| `next_review_date` | string(YYYY-MM-DD) | 필수 | 다음 검토일 |
+
+**MED-005 치료계획서** (MED · snake_case)
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `plan_period` | `{start,end: YYYY-MM-DD}` | 필수 | 치료 시작·종료일 |
+| `diagnosis` | string | 필수 | 진단명 |
+| `therapy_type` | `'physical'\|'occupational'\|'speech'\|'psychological'\|'other'` | 필수 | 치료 유형 |
+| `goals[]` | `{area:'physical'\|'language'\|'cognitive'\|'social', long_term, short_term, target_score?(0~100)}` | 필수(1개+) | 치료 목표(영역별) |
+| `session_frequency` | string | 필수 | 회기 빈도(예: "주 2회") |
+| `responsible_therapist` | string | 필수 | 담당 치료사 |
+| `precautions` | string(≤2000자) | 선택 | 주의사항 |
+
+**MED-006 회기 일지** (MED · snake_case)
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `session_date` | string(YYYY-MM-DD) | 필수 | 회기 일자 |
+| `therapy_plan_id` | string(uuid) | 필수 | 연결된 치료계획서 ID(자동 연결) |
+| `session_number` | number(≥1) | 필수 | 회기 차수 |
+| `planned_goals` | string[] | 선택 | 계획된 목표 |
+| `actual_progress` | string | 필수 | 실제 진행 내용 |
+| `domain_scores` | `{physical,language,cognitive,social: 0~100}` | 필수 | 영역별 달성도(고정 키 객체 — MED-007과 형태 다름) |
+| `observations` | string | 필수 | 관찰 내용 |
+| `next_session_plan` | string(≤2000자) | 선택 | 다음 회기 계획 |
+
+**MED-007 평가보고서** (MED · snake_case)
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `eval_type` | `'initial'\|'interim'\|'final'` | 필수 | 평가 시점 구분 |
+| `eval_date` | string(YYYY-MM-DD) | 필수 | 평가 일자 |
+| `therapy_plan_id` | string(uuid) | 필수 | 연결된 치료계획서 ID(자동 연결) |
+| `domain_scores[]` | `{domain:'physical'\|'language'\|'cognitive'\|'social', score:0~100}` | 필수(1개+) | 평가 영역별 점수(배열 — MED-006과 다른 형태, 재사용 금지) |
+| `summary` | string(≤3000자) | 필수 | 종합 평가 요약 |
+| `recommendations` | string(≤2000자) | 선택 | 권고사항 |
+
+**WEL-004 ISP (개별지원계획)** (WEL · snake_case)
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `service_period` | `{start,end: YYYY-MM-DD}` | 필수 | 지원 시작·종료일 |
+| `reassessment_date` | string(YYYY-MM-DD) | 필수 | 재사정 예정일(D-30 경고 배지 기준) |
+| `case_manager` | string | 필수 | 담당자 |
+| `assessment_tool` | string | 선택 | 사정 도구/근거 |
+| `needs[]` | `{area, needs, barriers}` | 선택 | 욕구사정 항목 |
+| `goals[]` | `{area, long_term, short_term, responsible, deadline, achievement_rate?(0~100)}` | 필수(1개+) | 목표. `achievement_rate`는 W-14 인라인 점검에서 채움 |
+| `services[]` | `{service, provider, frequency, start}` | 선택 | 연계 서비스 |
+
+**WEL-005 서비스 이용계획** (WEL · snake_case)
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `services[]` | `{service_name, provider, frequency, start_date, end_date?, status:'active'\|'paused'\|'ended'}` | 선택 | 이용 서비스 목록 |
+| `monthly_cost` | number | 선택 | 월 비용 |
+| `funding_source` | string | 선택 | 재원(예: 발달재활서비스 바우처) |
+| `case_manager` | string | 필수 | 담당자 |
+| `next_review_date` | string(YYYY-MM-DD) | 필수 | 다음 검토일 |
+
+**WEL-006 사례회의록** (WEL · camelCase, 2026-07-18 신규)
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `meetingDate` | string | 필수 | 회의 일시(record_date로도 사용) |
+| `participants` | string[] | 필수(1명+) | 참석자 |
+| `discussion` | string(≤3000자) | 필수 | 논의 내용 |
+| `decisions` | string(≤2000자) | 선택 | 결정사항 |
+
+**TRA-001 전환계획** (TRA · snake_case)
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `roadmap_stage` | `'exploration'\|'planning'\|'training'\|'employment'` | 필수 | 로드맵 4단계 |
+| `career_goal` | string | 필수 | 희망 진로 |
+| `independent_living_plan` | string(≤2000자) | 선택 | 자립생활계획 |
+| `training_records[]` | `{program, provider, period:{start,end}, status:'planned'\|'ongoing'\|'completed'}` | 선택 | 훈련 이력 |
+| `linked_agencies` | string[] | 선택 | 연계 기관 |
+| `case_manager` | string | 필수 | 담당자 |
+| `next_review_date` | string(YYYY-MM-DD) | 필수 | 다음 검토일 |
+
+**LEG-001 후견감독보고서** (LEG · snake_case, 성인기·노년기 전용)
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `report_kind` | `'initial'\|'periodic'` | 선택(기본 `periodic`) | 최초 재산목록보고 / 정기 후견사무보고 구분(2026-07-17 추가) |
+| `report_period` | `{start,end: YYYY-MM-DD}` | 필수 | 보고 대상 기간 |
+| `guardian_type` | `'adult'\|'limited'\|'specific'\|'voluntary'` | 필수 | 후견 유형(성년/한정/특정/임의) |
+| `guardian_name` | string | 필수 | 후견인 성명 |
+| `property_management_summary` | string(≤3000자) | 필수 | 재산관리 현황 요약 |
+| `personal_care_summary` | string(≤3000자) | 필수 | 신상보호 현황 요약 |
+| `incidents` | string(≤2000자) | 선택 | 특이사항 |
+| `next_report_due` | string(YYYY-MM-DD) | 필수 | 다음 보고 예정일 |
+
+**LEG-002 권익옹호 상담기록** (LEG · camelCase, 성인기·노년기 전용)
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `consultedAt` | string | 필수 | 상담 일시(record_date로도 사용) |
+| `issueType` | `'rights_violation'\|'discrimination'\|'abuse_suspected'\|'other'` | 필수 | 상담 유형 |
+| `content` | string(≤3000자) | 필수 | 상담 내용 |
+| `actionTaken` | string(≤2000자) | 선택 | 취한 조치 |
+| `referralAgency` | string | 선택 | 연계 기관 |
+
+> `issueType='abuse_suspected'` 확인 시 실제 신고 의무 워크플로우는 이 record_type 범위 밖(F-LEG-11로 별도 분리, 법률 자문 대기 — §3-2-2 참조).
+
+**GEN-001 보호자 범용 기록** (도메인 무관 · snake_case)
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `domain` | `'MED'\|'EDU'\|'WEL'\|'DAI'\|'TRA'\|'LEG'` | 필수 | 작성 시 보호자가 선택하는 도메인 |
+| `title` | string(≤200자) | 필수 | 제목 |
+| `body` | string(≤5000자) | 필수 | 내용 |
+
+> 구조화 기록 비파괴 편집 시 병합되는 별도 서브키(`content.guardianNote`, GEN-001 자체 스키마 아님): `{ title: string, body: string, editedAt: string }`.
+
+> **출처**: 위 서식 전부 `packages/validation/src/records.ts`의 Zod 스키마 원문과 1:1 대응(2026-07-18 기준). 코드가 변경되면 이 표도 함께 갱신해야 한다 — 신뢰 소스는 항상 `records.ts`.
 
 ### 3-3. 권한 관리 라이프사이클 — 부여·수정·회수·감사
 

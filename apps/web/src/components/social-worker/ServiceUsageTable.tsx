@@ -29,13 +29,25 @@ const STATUS_META: Record<
   ended: { label: "종료", className: "bg-muted text-muted-foreground" },
 };
 
-export function ServiceUsageTable({ rows }: { rows: ServiceUsageRow[] }) {
+export function ServiceUsageTable({
+  rows,
+  initialPersonId,
+}: {
+  rows: ServiceUsageRow[];
+  /** ISP 점검 화면(W-14)에서 특정 당사자로 진입했을 때 초기 필터(2026-07-17 추가). */
+  initialPersonId?: string;
+}) {
   const [filter, setFilter] = useState<StatusFilter>("all");
+  const [personFilter, setPersonFilter] = useState(initialPersonId ?? "");
+  const personName = personFilter
+    ? (rows.find((r) => r.personId === personFilter)?.personName ?? null)
+    : null;
 
-  const filtered = useMemo(
-    () => (filter === "all" ? rows : rows.filter((r) => r.status === filter)),
-    [rows, filter]
-  );
+  const filtered = useMemo(() => {
+    let list = filter === "all" ? rows : rows.filter((r) => r.status === filter);
+    if (personFilter) list = list.filter((r) => r.personId === personFilter);
+    return list;
+  }, [rows, filter, personFilter]);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -43,6 +55,19 @@ export function ServiceUsageTable({ rows }: { rows: ServiceUsageRow[] }) {
       <p className="mt-1 text-body text-muted-foreground">
         담당 당사자별 복지 서비스 이용 및 연계 상태
       </p>
+
+      {personFilter && (
+        <div className="mt-3 flex w-fit items-center gap-2 rounded-(--br-md) bg-domain-wel-bg px-3 py-2 text-body font-semibold text-domain-wel-text">
+          {personName ?? "당사자"}만 보는 중
+          <button
+            type="button"
+            onClick={() => setPersonFilter("")}
+            className="text-caption font-bold underline underline-offset-2"
+          >
+            전체 보기
+          </button>
+        </div>
+      )}
 
       <div className="mt-5 flex flex-wrap gap-2" role="group" aria-label="상태 필터">
         {FILTERS.map((f) => {

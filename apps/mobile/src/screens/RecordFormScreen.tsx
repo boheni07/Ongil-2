@@ -10,6 +10,7 @@ import {
   type RecordDetail,
 } from "../lib/records";
 import { DomainChip } from "../components/DomainChip";
+import { RecordContentView } from "../components/records/RecordContentView";
 import { ErrorBanner } from "../components/ui";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING, TOUCH_MIN } from "../theme/colors";
 import type { GuardianStackParamList } from "../navigation/types";
@@ -113,14 +114,15 @@ export function RecordFormScreen({ route, navigation }: Props) {
           <Text style={styles.blockLabel}>
             원본 기록 내용(읽기 전용 · {existing.authorName ?? "전문가"} 작성)
           </Text>
-          {Object.entries((existing.content as Record<string, unknown>) ?? {})
-            .filter(([k]) => k !== "guardianNote")
-            .map(([k, v]) => (
-              <View key={k} style={{ marginTop: SPACING.xs }}>
-                <Text style={styles.fieldKey}>{k}</Text>
-                <Text style={styles.blockBody}>{typeof v === "string" ? v : JSON.stringify(v)}</Text>
-              </View>
-            ))}
+          <View style={{ marginTop: SPACING.xs }}>
+            <RecordContentView
+              content={(() => {
+                const rest = { ...((existing.content as Record<string, unknown>) ?? {}) };
+                delete rest.guardianNote;
+                return rest;
+              })()}
+            />
+          </View>
         </View>
       )}
 
@@ -210,7 +212,6 @@ const styles = StyleSheet.create({
   block: { marginTop: SPACING.lg, padding: SPACING.md, borderRadius: RADIUS.md, borderWidth: 1, borderColor: NEUTRAL.border },
   blockLabel: { fontSize: FONT.label, fontWeight: "700", color: NEUTRAL.textMuted },
   blockBody: { marginTop: 4, fontSize: FONT.body, color: NEUTRAL.text },
-  fieldKey: { fontSize: FONT.caption, fontWeight: "700", color: NEUTRAL.textMuted },
   label: { fontSize: FONT.label, fontWeight: "700", color: NEUTRAL.text, marginBottom: SPACING.xs },
   domainGrid: { flexDirection: "row", flexWrap: "wrap", gap: SPACING.sm },
   domainOpt: {

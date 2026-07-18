@@ -90,6 +90,7 @@ export async function registerPerson(input: PersonRegisterInput): Promise<Regist
       disability_degree: disabilityDegree ?? null,
       emergency_info: emergencyInfo ?? null,
       avatar_url: avatarUrl ?? null,
+      updated_at: new Date().toISOString(),
     })
     .select("id")
     .single();

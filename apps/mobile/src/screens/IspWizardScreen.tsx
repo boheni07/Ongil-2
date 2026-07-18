@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ispSchema } from "@ongil/validation";
-import { createIsp, getSocialWorkerClients, type SocialWorkerClient } from "../lib/isp";
+import { createIsp, getSocialWorkerClients, isSelfConfirmingStage, type SocialWorkerClient } from "../lib/isp";
 import { useAsyncAction } from "../hooks/useAsyncAction";
 import { useWizardDraft } from "../hooks/useWizardDraft";
 import { CategoryChip } from "../components/IconSelector";
@@ -477,7 +477,7 @@ export function IspWizardScreen({ navigation, route }: Props) {
             <SumRow k="욕구 영역" v={needAreas.length ? `${needAreas.length}개` : "미선택"} />
             <SumRow k="목표" v={`${goals.filter((g) => g.area.trim() && g.longTerm.trim()).length}개`} />
             <SumRow k="서비스" v={`${services.filter((s) => s.service.trim()).length}개`} />
-            <SumRow k="확인 요청 대상" v={selectedClient?.lifeStage === "adult" ? "본인" : "보호자"} />
+            <SumRow k="확인 요청 대상" v={selectedClient && isSelfConfirmingStage(selectedClient.lifeStage) ? "본인" : "보호자"} />
           </View>
           <InfoBanner message="ISP는 공식 문서입니다. 제출 시 당사자·보호자 확인 절차가 시작됩니다." />
         </View>

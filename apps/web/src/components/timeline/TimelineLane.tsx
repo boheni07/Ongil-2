@@ -6,8 +6,8 @@ import { formatTimelineDate } from "@/components/timeline/format";
 /**
  * docs/03-uiux.md §6-2 `TimelineLane` — `repeat(6, 1fr)` CSS Grid, 도메인 병렬 레인(레인 뷰).
  * 등장하는 도메인만 컬럼으로 렌더한다(기존 EduTimeline.LaneView 로직 이관).
- * birthDate가 있으면 단계 전환 시점(만 14세·18세 생일)이 두 기록 사이에 놓일 때
- * 그 사이에 전환 구분선을 삽입한다(docs/02-ia.md §3-9).
+ * birthDate가 있으면 단계 전환 시점(만 6·13·19·65세 생일)이 두 기록 사이에 놓일 때
+ * 그 사이에 전환 구분선을 삽입한다(docs/02-ia.md §3-9, 생애주기 5단계).
  */
 const DOMAIN_ORDER: DomainKey[] = ["MED", "EDU", "WEL", "DAI", "TRA", "LEG"];
 
@@ -60,8 +60,10 @@ export function TimelineLane({
   // 전환 구분선은 두 기록 사이에 끼우므로 최신(큰 time)이 먼저 오도록 내림차순 정렬한다.
   const thresholds: Threshold[] = birthDate
     ? [
-        { time: birthdayTime(birthDate, 18), label: "성년기 진입" },
-        { time: birthdayTime(birthDate, 14), label: "청소년 전환기 진입" },
+        { time: birthdayTime(birthDate, 65), label: "노년기 진입" },
+        { time: birthdayTime(birthDate, 19), label: "성인기 진입" },
+        { time: birthdayTime(birthDate, 13), label: "청소년 전환기 진입" },
+        { time: birthdayTime(birthDate, 6), label: "아동기 진입" },
       ]
     : [];
 

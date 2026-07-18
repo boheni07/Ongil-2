@@ -15,7 +15,8 @@ export interface Person {
   id: string;
   userId: string;
   birthDate: string;
-  lifeStage: "child" | "youth_transition" | "adult";
+  /** 생애주기 5단계(2026-07-17 개정, docs/07-lifecycle-record-permission-proposal.md). */
+  lifeStage: "infant" | "child" | "youth_transition" | "adult" | "senior";
 }
 
 export interface Guardian {

@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { therapyPlanSchema, type TherapyArea } from "@ongil/validation";
-import { createTherapyPlan, getTherapistClients, type TherapistClient } from "../lib/therapy";
+import { createTherapyPlan, getTherapistClients, isSelfConfirmingStage, type TherapistClient } from "../lib/therapy";
 import { useAsyncAction } from "../hooks/useAsyncAction";
 import { useWizardDraft } from "../hooks/useWizardDraft";
 import { CategoryChip } from "../components/IconSelector";
@@ -382,7 +382,7 @@ export function TherapyPlanWizardScreen({ navigation, route }: Props) {
             <SumRow k="치료 기간" v={`${periodStart} ~ ${periodEnd}`} />
             <SumRow k="회기 빈도" v={sessionFrequency || "-"} />
             <SumRow k="치료 목표" v={`${filledGoals().length}개 영역`} />
-            <SumRow k="확인 요청 대상" v={selectedClient?.lifeStage === "adult" ? "본인" : "보호자"} />
+            <SumRow k="확인 요청 대상" v={selectedClient && isSelfConfirmingStage(selectedClient.lifeStage) ? "본인" : "보호자"} />
           </View>
           <InfoBanner message="치료계획서는 공식 문서입니다. 제출 시 당사자·보호자 확인 절차가 시작됩니다." />
         </View>

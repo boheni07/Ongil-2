@@ -7,7 +7,7 @@ import {
 } from "@ongil/validation";
 import { createClient } from "@/lib/supabase/server";
 import { logAccess } from "@/lib/access-log";
-import { computeLifeStage } from "@/lib/lifecycle";
+import { computeLifeStage, isPreTransitionStage } from "@/lib/lifecycle";
 import type { LifeStage } from "@/components/lifecycle/StageBadge";
 
 /**
@@ -20,7 +20,7 @@ import type { LifeStage } from "@/components/lifecycle/StageBadge";
  * (전환계획은 TRA 권한 보유자만 작성 — permission_preset ('social_worker','TRA','write',365)).
  * 접근 통제 자체는 전부 기존 RLS(§4-2)에 위임하며, 아래 목록 쿼리는 UX용 사전 필터다.
  *
- * 전환계획은 만 14세+(life_stage != 'child')에서만 작성한다 — 진입 가드를 프론트만이 아니라
+ * 전환계획은 만 13세+(영유아기·아동기가 아닐 때)에서만 작성한다 — 진입 가드를 프론트만이 아니라
  * createTransitionPlan에서도 birth_date로 재검증해 클라이언트 우회를 막는다.
  * requires_confirmation=true라 확인 주체 지정은 trg_assign_confirmer가 처리한다
  * (앱 코드는 confirmer_id/confirmed_at을 직접 다루지 않는다).
@@ -146,7 +146,7 @@ export async function getTransitionPlanClients(): Promise<TransitionClient[]> {
 
 /**
  * W-16 전환계획 작성 — records INSERT(domain='TRA', record_type='TRA-001').
- * 만 14세+ 진입 가드를 서버에서 재검증한다(life_stage(person.birth_date) === 'child'면 거부).
+ * 만 13세+ 진입 가드를 서버에서 재검증한다(life_stage가 영유아기·아동기면 거부).
  * 공식 문서라 requires_confirmation=true(§4-6) — 제출(is_draft=false) 시 trg_assign_confirmer가
  * 확인 주체를 자동 지정한다(앱 코드는 confirmer_id/confirmed_at을 다루지 않는다).
  */
@@ -165,7 +165,7 @@ export async function createTransitionPlan(
   } = await supabase.auth.getUser();
   if (!user) return { error: "로그인이 필요합니다." };
 
-  // 진입 가드 재검증 — 전환계획은 만 14세 미만(아동기)에게 작성할 수 없다.
+  // 진입 가드 재검증 — 전환계획은 만 13세 미만(영유아기·아동기)에게 작성할 수 없다.
   const { data: person, error: personErr } = await supabase
     .from("persons")
     .select("birth_date")
@@ -174,8 +174,8 @@ export async function createTransitionPlan(
   if (personErr || !person) {
     return { error: "당사자를 찾을 수 없거나 접근 권한이 없습니다." };
   }
-  if (computeLifeStage(person.birth_date as string) === "child") {
-    return { error: "전환계획은 만 14세 이상 당사자에게만 작성할 수 있습니다." };
+  if (isPreTransitionStage(computeLifeStage(person.birth_date as string))) {
+    return { error: "전환계획은 만 13세 이상 당사자에게만 작성할 수 있습니다." };
   }
 
   const { data: row, error: insErr } = await supabase

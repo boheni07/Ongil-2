@@ -5,13 +5,13 @@ import {
   type DomainKey,
 } from "@ongil/validation";
 import { supabase } from "./supabase";
-import { computeLifeStage, type LifeStage } from "./iep";
+import { computeLifeStage, isPreTransitionStage, type LifeStage } from "./iep";
 
 /**
  * W-16 전환계획(TRA-001) 사회복지사 데이터 접근(모바일).
  * 웹 Server Action(apps/web/src/app/(app)/records/transition/actions.ts)의 로직을
  * Supabase 직접 호출로 동일하게 재현한다. DB 계약(테이블·컬럼·record_type 값·
- * requires_confirmation 규칙·만 14세 진입 가드)은 웹과 1:1 대응하며 임의로 바꾸지 않는다.
+ * requires_confirmation 규칙·만 13세 진입 가드)은 웹과 1:1 대응하며 임의로 바꾸지 않는다.
  *
  * "담당 당사자"는 이 사회복지사가 TRA 도메인에 활성 write/edit 권한을 가진 persons로 좁힌다
  * (lib/isp.ts가 도메인 무관인 것과 달리 전환계획은 TRA 권한 보유자만 작성).
@@ -167,7 +167,7 @@ export async function getTransitionPlanClients(): Promise<TransitionClient[]> {
 
 /**
  * W-16 전환계획 작성 — records INSERT(domain='TRA', record_type='TRA-001').
- * 만 14세+ 진입 가드를 서버에서 재검증한다(life_stage(person.birth_date) === 'child'면 거부).
+ * 만 13세+ 진입 가드를 서버에서 재검증한다(life_stage가 영유아기·아동기면 거부).
  * 공식 문서라 requires_confirmation=true(§4-6) — 제출 시 trg_assign_confirmer가 확인 주체를
  * 자동 지정한다(앱 코드는 confirmer_id/confirmed_at을 다루지 않는다).
  */
@@ -185,7 +185,7 @@ export async function createTransitionPlan(
   } = await supabase.auth.getUser();
   if (!user) return { error: "로그인이 필요합니다." };
 
-  // 진입 가드 재검증 — 전환계획은 만 14세 미만(아동기)에게 작성할 수 없다.
+  // 진입 가드 재검증 — 전환계획은 만 13세 미만(영유아기·아동기)에게 작성할 수 없다.
   const { data: person, error: personErr } = await supabase
     .from("persons")
     .select("birth_date")
@@ -194,8 +194,8 @@ export async function createTransitionPlan(
   if (personErr || !person) {
     return { error: "당사자를 찾을 수 없거나 접근 권한이 없습니다." };
   }
-  if (computeLifeStage(person.birth_date as string) === "child") {
-    return { error: "전환계획은 만 14세 이상 당사자에게만 작성할 수 있습니다." };
+  if (isPreTransitionStage(computeLifeStage(person.birth_date as string))) {
+    return { error: "전환계획은 만 13세 이상 당사자에게만 작성할 수 있습니다." };
   }
 
   const { data: row, error: insErr } = await supabase

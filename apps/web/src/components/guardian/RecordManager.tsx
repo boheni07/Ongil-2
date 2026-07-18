@@ -11,6 +11,7 @@ import {
 import { DomainChip } from "@/components/timeline/DomainChip";
 import { ConfirmBadge } from "@/components/records/ConfirmBadge";
 import { ConfirmCTA } from "@/components/records/ConfirmCTA";
+import { RecordContentView } from "@/components/records/RecordContentView";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -86,12 +87,21 @@ export function RecordManager({
             기록을 직접 작성·수정할 수 있습니다.
           </p>
         </div>
-        <Button
-          render={<Link href={`/persons/${personId}/records/new`} />}
-          className="h-11 bg-accent-amber font-bold text-accent-stone hover:bg-[#f5bd5e]"
-        >
-          ＋ 새 기록 작성
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            render={<Link href={`/persons/${personId}/records/express`} />}
+            variant="outline"
+            className="h-11 font-semibold"
+          >
+            🙂 대신 자기표현 남기기
+          </Button>
+          <Button
+            render={<Link href={`/persons/${personId}/records/new`} />}
+            className="h-11 bg-accent-amber font-bold text-accent-stone hover:bg-[#f5bd5e]"
+          >
+            ＋ 새 기록 작성
+          </Button>
+        </div>
       </div>
 
       <div className="mt-6 grid min-w-0 gap-0 rounded-xl bg-white ring-1 ring-foreground/10 lg:grid-cols-[320px_1fr]">
@@ -217,23 +227,13 @@ function StructuredBody({
   content: unknown;
   guardianNote: { title: string; body: string; editedAt: string } | null;
 }) {
-  const entries = Object.entries((content as Record<string, unknown>) ?? {}).filter(
-    ([k]) => k !== "guardianNote"
-  );
+  const rest = { ...((content as Record<string, unknown>) ?? {}) };
+  delete rest.guardianNote;
   return (
     <div className="flex flex-col gap-3">
       <div className="rounded-(--br-md) border border-border p-4">
         <p className="mb-2 text-label font-semibold text-accent-stone">원본 기록 내용</p>
-        <dl className="flex flex-col gap-2">
-          {entries.map(([k, v]) => (
-            <div key={k}>
-              <dt className="text-caption font-semibold text-muted-foreground">{k}</dt>
-              <dd className="text-body text-foreground">
-                {typeof v === "string" ? v : JSON.stringify(v)}
-              </dd>
-            </div>
-          ))}
-        </dl>
+        <RecordContentView content={rest} />
       </div>
       {guardianNote && (
         <div className="rounded-(--br-md) bg-primary-50 p-4">

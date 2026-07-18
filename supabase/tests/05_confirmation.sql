@@ -62,8 +62,8 @@ SELECT is((SELECT confirmed_at FROM records WHERE id='a5000000-0000-0000-0000-00
 -- (author_id=auth.uid)에 걸려 UPDATE 대상 0행. 즉 트리거에 닿기도 전에 RLS 로 차단된다.
 -- → 성년 당사자의 공식기록 확인은 클라이언트 직접 UPDATE 불가, service_role/Edge 경로 필요.
 RESET ROLE; SELECT tests.login('a5000000-0000-0000-0000-000000000001');  -- PA
-SELECT is((WITH u AS (UPDATE records SET confirmed_at = now() WHERE id='a5000000-0000-0000-0000-0000000000f2' RETURNING 1)
-           SELECT count(*) FROM u),
+WITH u AS (UPDATE records SET confirmed_at = now() WHERE id='a5000000-0000-0000-0000-0000000000f2' RETURNING 1)
+SELECT is((SELECT count(*) FROM u),
           0::bigint,
           'FINDING: adult 본인은 전문가 작성 기록을 records_update RLS(author 한정)로 확인 불가(0행) — service_role 경로 필요');
 

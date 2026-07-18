@@ -39,9 +39,11 @@ type ViewMode = "stream" | "lane";
 
 const STAGE_FILTERS: { key: LifeStage | "ALL"; label: string }[] = [
   { key: "ALL", label: "전체" },
+  { key: "infant", label: "영유아기" },
   { key: "child", label: "아동기" },
   { key: "youth_transition", label: "청소년 전환기" },
-  { key: "adult", label: "성년기" },
+  { key: "adult", label: "성인기" },
+  { key: "senior", label: "노년기" },
 ];
 
 export function TimelineView({

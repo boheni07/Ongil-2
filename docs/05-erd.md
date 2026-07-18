@@ -188,7 +188,10 @@ CREATE TABLE users (
   full_name      text NOT NULL,
   avatar_url     text,
   fcm_token      text,
-  -- F-AUTH-02 소셜 OAuth (설계 2026-07-15, 마이그레이션은 후속 라운드)
+  -- 계정 비활성화(동의 전체철회 + 탈퇴) 시각. NULL이면 활성. 행 삭제 대신 이 값으로 표현한다.
+  -- 구현: 20260714020000_p2_privacy_settings. 본인만 UPDATE 가능(컬럼 레벨 GRANT, §2-1 하단 참조).
+  deactivated_at timestamptz,
+  -- F-AUTH-02 소셜 OAuth (설계 2026-07-15, 마이그레이션은 후속 라운드 — 아래 3개 컬럼은 아직 미구현)
   auth_provider  text NOT NULL DEFAULT 'email'
                  CHECK (auth_provider IN ('email','kakao','naver')),
   oauth_subject  text,           -- provider 고유 ID(kakao sub / naver id). email 가입은 NULL
@@ -231,7 +234,9 @@ CREATE TABLE persons (
 
 ### 2-2-1. 생애주기 단계 (life_stage) — 계산 값, 별도 저장 안 함
 
-생애주기 단계(아동기/청소년 전환기/성년기)는 `birth_date`로부터 매 조회 시 계산되는 **파생 값**이며, 별도 컬럼으로 저장하지 않는다. 단, 성년 전환(만 18세)은 동의 주체 이관이라는 상태 변화를 수반하므로 `is_adult`만 Flow-SYS-05(cron)로 영속화한다.
+> ⚠️ **정정 이력(2026-07-17, `20260717000000_p3_lifecycle_5stage` 마이그레이션)**: 생애주기를 기존 3단계(아동기/청소년 전환기/성년기)에서 실제 특수교육·장애복지 현장 구분에 맞춘 **5단계**로 확장했다. 성년 경계도 만 18세→**만 19세**로 상향(민법상 성년 기준 정합). 근거: `01-prd.md` §3-1, `07-lifecycle-record-permission-proposal.md`.
+
+생애주기 단계(영유아기/아동기/청소년 전환기/성인기/노년기)는 `birth_date`로부터 매 조회 시 계산되는 **파생 값**이며, 별도 컬럼으로 저장하지 않는다. 단, 성인기 전환(만 19세)은 동의 주체 이관이라는 상태 변화를 수반하므로 `is_adult`만 Flow-SYS-05(cron)로 영속화한다.
 
 ```sql
 CREATE OR REPLACE FUNCTION get_life_stage(p_birth_date date)
@@ -240,9 +245,11 @@ LANGUAGE sql
 STABLE
 AS $$
   SELECT CASE
-    WHEN date_part('year', age(p_birth_date)) >= 18 THEN 'adult'   -- 성년기
-    WHEN date_part('year', age(p_birth_date)) >= 14 THEN 'youth'   -- 청소년 전환기
-    ELSE 'child'                                                    -- 아동기
+    WHEN date_part('year', age(p_birth_date)) >= 65 THEN 'senior'  -- 노년기
+    WHEN date_part('year', age(p_birth_date)) >= 19 THEN 'adult'   -- 성인기 (기존 18→19)
+    WHEN date_part('year', age(p_birth_date)) >= 13 THEN 'youth'   -- 청소년 전환기
+    WHEN date_part('year', age(p_birth_date)) >= 6  THEN 'child'   -- 아동기 (기존 13이하→6~12)
+    ELSE 'infant'                                                    -- 영유아기 (신규)
   END;
 $$;
 
@@ -254,9 +261,13 @@ FROM persons p;
 
 | life_stage | 연령 기준 | 저장 여부 | 관련 상태 필드 |
 |---|---|---|---|
-| `child` (아동기) | 만 13세 이하 | 계산값 (뷰/함수) | — |
-| `youth` (청소년 전환기) | 만 14~17세 | 계산값 (뷰/함수) | IEP 전환계획 섹션 활성화 트리거 |
-| `adult` (성년기) | 만 18세 이상 | **`is_adult` 컬럼에 영속화** (Flow-SYS-05) | 동의 주체 보호자→본인 이관 |
+| `infant` (영유아기) | 만 0~5세 | 계산값 (뷰/함수) | — |
+| `child` (아동기) | 만 6~12세 | 계산값 (뷰/함수) | — |
+| `youth` (청소년 전환기) | 만 13~18세 | 계산값 (뷰/함수) | IEP 전환계획 섹션 활성화 트리거 |
+| `adult` (성인기) | 만 19~64세 | **`is_adult` 컬럼에 영속화** (Flow-SYS-05, 기존 18→19세로 상향) | 동의 주체 보호자→본인 이관 |
+| `senior` (노년기) | 만 65세 이상 | 계산값 (뷰/함수) — 동의 주체 변화 없음 | 노년기 진입 알림(`life_stage_senior`) |
+
+> 프론트엔드(`apps/web/src/lib/lifecycle.ts`, `apps/mobile/src/lib/iep.ts`)는 이 SQL 함수를 직접 호출하지 않고 동일 경계값의 TS 구현(`computeLifeStage`)을 별도로 유지한다 — 두 구현은 반드시 같은 경계값을 써야 하며, 헬퍼 `isSelfConfirmingStage`(adult/senior)·`isPreTransitionStage`(infant/child)로 "본인 확인주체 여부"·"전환계획 잠금 여부" 판정을 일원화했다.
 
 Prisma에서는 `life_stage`를 매핑하지 않고, 애플리케이션 레이어 또는 `$queryRaw`로 `get_life_stage()`를 호출하거나 위 뷰를 통해 조회한다(스키마 마이그레이션 불필요, 나이는 매일 바뀌므로 저장 컬럼화 시 배치 갱신이 필요해 계산값 방식이 더 단순함).
 
@@ -300,6 +311,10 @@ CREATE TABLE permission_logs (
   permission_id uuid REFERENCES permissions(id),
   action        text NOT NULL CHECK (action IN ('grant','revoke','update')),
   actor_id      uuid REFERENCES users(id),
+  -- 'user'(요청 컨텍스트, auth.uid() 존재) | 'system'(cron 배치, auth.uid() NULL).
+  -- 구현: 20260715020000_p3_permission_logs_actor_type. log_permission_change() 트리거가
+  -- 자동 판정 — 애플리케이션에서 직접 쓰지 않는다.
+  actor_type    text NOT NULL DEFAULT 'user',
   before_state  jsonb,
   after_state   jsonb,
   created_at    timestamptz DEFAULT now()
@@ -411,10 +426,22 @@ CREATE INDEX idx_handover_to_user ON handover_notes(to_user_id, acknowledged_at 
 ### 2-11. notifications (알림)
 
 ```sql
+-- type은 text+CHECK가 아니라 실제로는 Postgres ENUM 타입 NotificationType으로 구현되어 있다
+-- (notification_preferences.type과 공용). 최초 5개 값에서 시작해 이후 두 라운드에 걸쳐
+-- ALTER TYPE ... ADD VALUE로 4개가 추가되어 현재 9개 값이다:
+--   record_new, permission_grant, handover, reminder, record_confirm (init, 20260709035541)
+--   life_stage_youth, life_stage_adult (20260714000000_p2_life_stage_transitions)
+--   permission_expiry_warning, permission_audit_summary (20260715010000_p3_permission_expiry_batch)
+CREATE TYPE notification_type AS ENUM (
+  'record_new','permission_grant','handover','reminder','record_confirm',
+  'life_stage_youth','life_stage_adult',
+  'permission_expiry_warning','permission_audit_summary'
+);
+
 CREATE TABLE notifications (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   recipient_id uuid REFERENCES users(id) ON DELETE CASCADE,
-  type         text NOT NULL CHECK (type IN ('record_new','permission_grant','handover','reminder','record_confirm')),
+  type         notification_type NOT NULL,
   title        text NOT NULL,
   body         text,
   data         jsonb,
@@ -434,7 +461,7 @@ CREATE INDEX idx_notifications_recipient ON notifications(recipient_id, is_read,
 CREATE TABLE notification_preferences (
   id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id    uuid REFERENCES users(id) ON DELETE CASCADE,
-  type       text NOT NULL CHECK (type IN ('record_new','permission_grant','handover','reminder','record_confirm')),
+  type       notification_type NOT NULL,  -- §2-11의 9개 값 enum과 공용(별도 CHECK 없음)
   fcm_enabled   boolean DEFAULT true,
   email_enabled boolean DEFAULT true,
   updated_at timestamptz DEFAULT now(),
@@ -507,7 +534,8 @@ RLS 정책·GRANT의 신뢰 소스는 security-rls의 `20260710000000_p0_7_conse
   service_date: string,          // YYYY-MM-DD
   start_time: string,            // HH:MM
   end_time: string,              // HH:MM
-  service_hours: number,         // 자동 계산
+  scheduled_hours?: number,      // 계획(사전 일정) 시간 — 사전 일정이 없을 수도 있어 optional
+  service_hours: number,         // 실적 시간 — 서버가 start/end로 자동 재계산해 저장
   activities: { category: string, minutes: number }[],
   health_status: 'good' | 'sick' | 'tired',
   meal_status: 'full' | 'partial' | 'none',
@@ -516,6 +544,8 @@ RLS 정책·GRANT의 신뢰 소스는 security-rls의 `20260710000000_p0_7_conse
   reference_journal_id?: string, // 이전 일지 참조
 }
 ```
+
+- 활동지원 실무는 **"일정표(사전계획)"와 "제공기록지(사후실적)"**를 구분한다(docs/07 §5 갭④). `scheduled_hours`는 계획 시간(사전 일정이 없으면 생략), `service_hours`는 서버가 `start_time`/`end_time`으로 재계산하는 실제 제공(실적) 시간이다 — 두 값은 의미가 다르므로 혼용하지 않는다. `service_hours` 필드명은 이미 저장된 DAI-002 레코드(목업 포함)와의 하위호환을 위해 유지한다(개명 금지).
 
 ### EDU-001 — IEP (개별화교육계획)
 
@@ -555,6 +585,46 @@ RLS 정책·GRANT의 신뢰 소스는 security-rls의 `20260710000000_p0_7_conse
 
 - 특수교사가 작성하는 일상 관찰 기록(F-T-03). `domain='EDU'`, `requires_confirmation=false`(§4-6 일상 기록 — 확인 절차 없음).
 - EDU-001(snake_case)과 달리 **camelCase 키**를 쓴다 — `linkedGoalArea`는 T-14 "관찰기록 연결" 패널에서 IEP 목표(`annual_goals[].area` 또는 `"영역 · 목표"` 라벨)와 문자열로 느슨하게 매칭하는 키이며 FK가 아니다. 태그 카탈로그(4카테고리×4)는 `@ongil/validation`의 `OBSERVATION_TAG_CATALOG` 상수로 프론트·검증이 공유한다.
+
+### EDU-003 — 행동중재계획 BIP (특수교사, docs/07 §5 갭③)
+
+```typescript
+{
+  target_behavior: string,         // 중재 대상 행동 (1~2000자)
+  behavior_function:               // 행동의 기능(기능평가 FBA 4분류)
+    'attention' | 'escape' | 'sensory' | 'other',  // 관심획득/회피/감각추구/기타
+  fba_basis?: ('observation' | 'guardian_interview' | 'teacher_interview' | 'checklist')[],  // 기능평가 근거(복수선택, optional)
+  antecedent_strategies: string,   // 선행사건 중재 전략 (1~3000자)
+  replacement_behavior: string,    // 대체행동 (1~2000자)
+  reinforcement_plan: string,      // 강화 계획 (1~3000자)
+  crisis_procedure?: string,       // 위기상황 대응절차 (optional, ≤3000자)
+  review_date: string,             // 재검토 예정일 YYYY-MM-DD
+}
+```
+
+- 특수교사(`teacher`)가 작성하는 **행동중재계획(Behavior Intervention Plan)**. `domain='EDU'`, `requires_confirmation=true` — IEP·ISP·치료계획서와 동일한 **공식 지원계획 문서** 분류(§4-6①)라 제출 시 `trg_assign_confirmer`가 확인 주체(성년=본인, 미성년=주보호자)를 자동 지정한다.
+- 스키마 스타일은 동급 공식 문서 EDU-001(IEP)의 **snake_case**를 따른다(일상 관찰 기록 EDU-002의 camelCase와 구분). `crisis_procedure`만 optional — 위기대응 절차가 불필요한 경도 사례를 허용한다. `behavior_function`은 기능평가(FBA) 관행의 4대 분류다.
+- **`fba_basis`(2026-07-17 추가, `docs/08-record-taxonomy-workshop.md` 안건2-1):** 별도 FBA record_type(EDU-004 후보)을 신설하는 대신, `behavior_function` 판정의 근거 자료 유형(관찰기록/학부모면담/교사면담/체크리스트, 복수선택)을 BIP 자체에 선택 필드로 흡수했다. optional이라 마이그레이션 불필요, 기존 레코드도 하위호환.
+
+### EDU-005 — 개별화전환계획 ITP (특수교사, docs/08-record-taxonomy-workshop.md 안건2-2 신설)
+
+```typescript
+{
+  career_interest_areas: string[],   // 진로 흥미영역(자유 텍스트, 1개 이상)
+  work_experience_log: {
+    activity: string,                // 실습/체험 활동명
+    period: { start: string, end: string },
+    note?: string,                   // 비고 (선택, ≤1000자)
+  }[],
+  next_step_note?: string,           // 성인기 인계 메모 (선택, ≤2000자)
+  next_review_date: string,          // 다음 검토일 YYYY-MM-DD
+}
+```
+
+- 특수교사(`teacher`)가 작성하는 **학교 단위 개별화전환계획(Individual Transition Plan)**. `domain='EDU'`, `requires_confirmation=true` — IEP·BIP와 동급의 공식 지원계획 문서(§4-6①)라 제출 시 `trg_assign_confirmer`가 확인 주체(성년=본인, 미성년=주보호자)를 자동 지정한다.
+- **활성 단계는 청소년 전환기(만 13~18세)만** — `isItpActiveStage()` 헬퍼(앱 레이어, `apps/web/src/lib/lifecycle.ts`)로 서버·UI 양쪽에서 강제한다. TRA-001(사회복지사, 성인기까지 이어지는 "실행" 로드맵)과는 활성 구간이 다르고 별개 레코드다 — `person_id`로만 느슨하게 연결(FK 없음, TRA-001↔EDU-001.transition_plan과 동일 관행). TRA-001 작성 화면은 `getLatestItpSummary(personId)`로 이 당사자의 최근 ITP를 참고용 소프트 링크로 보여준다.
+- PM 합의(워크숍 안건2-2 "범위 최소화")에 따라 최소 스키마로 시작 — 진로 흥미영역·현장실습 이력·인계메모·다음 검토일 4필드.
+- RLS·`permission_presets` **변경 없음** — 특수교사는 이미 EDU domain edit 프리셋을 보유하며, `records_select/insert/update`(§4-2)는 `record_type`을 참조하지 않으므로 그대로 커버된다(라이브 DB 정책 SQL 직접 대조로 확인 완료).
 
 ### MED-005 — 치료계획서
 
@@ -656,6 +726,22 @@ RLS 정책·GRANT의 신뢰 소스는 security-rls의 `20260710000000_p0_7_conse
 
 - W-17 "서비스 이용 현황"(ST-07)은 `person_id` 기준 `WEL-005` 레코드의 `services[]`를 표 형태로 렌더링하고, `status`로 필터링한다.
 
+### WEL-006 — 사례회의록 (social_worker, docs/08-record-taxonomy-workshop.md 안건2-3 신설)
+
+```typescript
+{
+  meetingDate: string,       // ISO datetime — 회의 일시. record_date로도 사용
+  participants: string[],   // 참석자 목록(자유 텍스트, 쉼표 구분 입력)
+  discussion: string,       // 논의 내용 (1~3000자)
+  decisions?: string,       // 결정사항 (선택, ≤2000자)
+}
+```
+
+- 사회복지사가 작성하는 **사례회의록**(F-W 계열). ISP(WEL-004) 수립·재사정 시 다직종 사례회의의 논의 내용·결정사항을 남긴다 — ISP는 최종 결과만 담고 논의 과정 자체가 남지 않는다는 갭(온길 권한 매트릭스 Artifact §08)을 메운다.
+- `domain='WEL'`, `requires_confirmation=false`(§4-6 — 관찰기록·권익옹호 상담기록과 동급의 일상 기록). EDU-002·LEG-002와 마찬가지로 확인 절차가 없는 일상 기록이라 **camelCase 키**를 쓴다.
+- 위자드가 아니라 **단일 폼**으로 작성한다(워크숍 논의: "회의 중 빠르게 메모하듯 쓸 수 있어야 한다"). 저장 시 확인 절차 대신 당사자·보호자에게 **일반 알림(`record_new`)만** best-effort로 발송한다(`createCaseConferenceNote`).
+- RLS·`permission_presets` **변경 없음** — `records_select/insert/update`(§4-2)는 `domain`·`access_level`만 참조하고 `record_type`을 전혀 보지 않으므로, 사회복지사가 이미 보유한 WEL write/edit 권한이 WEL-006에도 그대로 적용된다(라이브 DB 정책 SQL 직접 대조로 확인 완료).
+
 ### TRA-001 — 전환계획
 
 ```typescript
@@ -688,7 +774,42 @@ RLS 정책·GRANT의 신뢰 소스는 security-rls의 `20260710000000_p0_7_conse
 ```
 
 - 보호자(`guardians`)가 도메인 제한 없이 직접 작성하는 자유 형식 기록(F-G-04). 전문가가 만드는 구조화 기록(EDU-001/WEL-004 등)과 달리 `content`가 `{title, body}`로 단순하다. `domain`은 6개 도메인 중 작성 시 선택하며, `requires_confirmation=false`(보호자 본인 작성분은 확인 절차 대상 아님, §4-6).
+
+### LEG-001 — 후견감독보고서 (social_worker, docs/07 §5 ① 갭 해소)
+
+```typescript
+{
+  report_kind: 'initial' | 'periodic',  // 보고 구분(2026-07-17 추가) — 기본값 periodic
+  report_period: { start: string, end: string },  // 보고 대상 기간 YYYY-MM-DD
+  guardian_type: 'adult' | 'limited' | 'specific' | 'voluntary',  // 성년/한정/특정/임의후견
+  guardian_name: string,               // 후견인 성명
+  property_management_summary: string, // 재산관리 현황 요약 (1~3000자)
+  personal_care_summary: string,       // 신상보호 현황 요약 (1~3000자)
+  incidents?: string,                  // 특이사항 (선택)
+  next_report_due: string,             // 다음 보고 예정일 YYYY-MM-DD
+}
+```
+
+- 성년후견인이 정기적으로 법원에 제출하는 **후견감독보고서**를 사회복지사가 플랫폼에 기록한다(F-W 계열). `domain='LEG'`, `requires_confirmation=true`(§4-6 — IEP/ISP/치료계획서/전환계획과 동급의 법정·공식 서류). 제출(`is_draft:true→false`) 시 `trg_assign_confirmer`가 확인 주체(성인기·노년기=본인, 그 외=주보호자)를 자동 지정한다.
+- 스키마 스타일은 동급 공식 문서인 WEL-004(ISP)·MED-005(치료계획서)의 **snake_case**를 따른다(`report_period` 객체 + `guardian_type` enum + 담당자 성명 + 서술 요약 2종 + optional 특이사항 + 다음 기한). `guardian_type` 4종은 민법상 후견 유형(성년/한정/특정/임의)이다.
+- **`report_kind`(2026-07-17 추가, `docs/08-record-taxonomy-workshop.md` 안건2-4):** 별도 record_type(LEG-003 재산목록보고서 후보)을 신설하는 대신, 후견개시 직후 최초 1회 제출하는 재산목록보고(`initial`)와 정기 후견사무보고(`periodic`)를 판별 필드로 구분한다. 기본값 `periodic`이라 기존 레코드도 하위호환. RLS·권한 프리셋 변경 없음(LEG 도메인 단위 정책이 그대로 커버).
+
+### LEG-002 — 권익옹호 상담기록 (social_worker, docs/07 §5 ① 갭 해소)
+
+```typescript
+{
+  consultedAt: string,        // ISO datetime (상담 일시). record_date로도 사용
+  issueType: 'rights_violation' | 'discrimination' | 'abuse_suspected' | 'other',  // 인권침해/차별/학대의심/기타
+  content: string,            // 상담 내용 (1~3000자)
+  actionTaken?: string,       // 취한 조치 (선택)
+  referralAgency?: string,    // 연계 기관 (선택, 예: 지역 장애인권익옹호기관)
+}
+```
+
+- 사회복지사가 작성하는 **권익옹호 상담 이력**(F-W 계열). `domain='LEG'`, `requires_confirmation=false`(§4-6 — 관찰기록·활동지원일지와 동급의 일상 기록, 확인 절차로 인한 알림 피로 방지).
+- EDU-002(관찰기록)와 달리 스키마 스타일은 **camelCase 키**를 쓴다 — 확인 절차가 없는 일상 관찰성 기록의 유일한 선례(EDU-002)와 일관되게 맞춘 결정이다. `issueType` 4종은 권익옹호 실무의 상담 분류이며, `abuse_suspected`(학대의심)는 별도 신고 의무 판단의 트리거가 될 수 있으나 그 워크플로우는 이번 범위 밖이다.
 - **구조화 기록의 보호자 편집(비파괴):** 보호자가 GEN-001이 아닌 구조화 기록을 G-21에서 "수정"할 때는 `content`를 `{title, body}`로 덮어쓰지 않는다. 원본 구조화 필드를 보존하기 위해 `content.guardianNote: { title, body, editedAt }` 서브키에 병합한다. 화면은 원본 구조화 내용을 보여주고 그 아래 "보호자 메모" 섹션만 편집 가능하게 노출한다. `content` 변경이므로 `requires_confirmation=true`였던 기록은 `trg_reset_confirmation_on_edit`(§4-6④)에 의해 재확인 대기로 되돌아간다.
+- **연령 가드(2026-07-17 보완):** `docs/07` §4-4/§4-5에 따라 LEG는 성인기·노년기(만 19세 이상)부터 활성화되는데, LEG-001/002 최초 구현 시 이 가드가 `records/leg/actions.ts`에 빠져 있어 영유아기 당사자에게도 두 유형 모두 작성이 가능했다(qa-verifier 갭 분석으로 발견). TRA-001(`records/transition/actions.ts`의 `isPreTransitionStage`)과 동형으로 `createGuardianshipReport`/`createAdvocacyConsultation` 양쪽에 `isSelfConfirmingStage` 서버 재검증을 추가하고, 위자드·폼에도 동일한 "성인기 이전 차단" 배너를 넣어 해소했다.
 
 ---
 
@@ -696,8 +817,10 @@ RLS 정책·GRANT의 신뢰 소스는 security-rls의 `20260710000000_p0_7_conse
 
 ### 4-1. persons 테이블
 
+> ⚠️ **정정 이력(2026-07-17, `p3_persons_select_permission_holders`):** 최초 정의(2026-07-09)는 주보호자·guardians 관계·당사자 본인 3분기만 있고 **permissions로 도메인 권한을 부여받은 전문가(교사/사회복지사/치료사/활동지원사) 분기가 없었다.** 그 결과 ① `getBipClients`/`getLegClients`/`getTransitionPlanClients`/`getIspClients`/`getItpClients` 등 "담당 당사자 목록" 조회가 `records_select`는 통과하지만 `persons_select`에서 막혀 **전문가에게 항상 빈 목록으로 보이는** 결함, ② `assign_record_confirmer()` 트리거(SECURITY INVOKER, §4-6)가 전문가 작성 기록 제출 시 내부 `persons` 조회를 못 해 **`confirmer_id`가 계속 NULL로 남아 확인요청 알림이 발송되지 않는** 결함이 있었다. 두 갭 모두 BIP·IEP·ISP·LEG·TRA·WEL-006 전부에 이미 존재하던 선재 아키텍처 갭으로, EDU-005(ITP) 신규 구현의 qa-verifier 검증 중 실제 `authenticated` 세션 시뮬레이션(라이브 로컬 Supabase, teacher1 계정)으로 처음 재현·발견됐다 — 이전 라운드들은 superuser/service-role 경로로만 확인해 이 갭을 놓쳤다. 아래는 수정 반영된 최종본이다.
+
 ```sql
--- 당사자 본인 또는 보호자만 SELECT
+-- 당사자 본인·보호자·활성 permissions 보유 전문가(도메인 무관, read 이상)만 SELECT
 CREATE POLICY persons_select ON persons FOR SELECT
   USING (
     auth.uid() = primary_guardian_id
@@ -709,6 +832,13 @@ CREATE POLICY persons_select ON persons FOR SELECT
       SELECT role FROM users WHERE id = auth.uid()
     ) = 'person'
     AND auth.uid()::text = id::text  -- 당사자는 자신의 레코드만
+    OR EXISTS (
+      SELECT 1 FROM permissions
+      WHERE permissions.person_id = persons.id
+        AND permissions.grantee_id = auth.uid()
+        AND permissions.is_active = true
+        AND (permissions.valid_until IS NULL OR permissions.valid_until >= CURRENT_DATE)
+    )
   );
 
 -- 보호자(대리 등록) 또는 person 역할 셀프 가입(자기 자신)만 INSERT
@@ -756,21 +886,27 @@ CREATE POLICY records_select ON records FOR SELECT
   );
 
 -- 도메인 write/edit 권한 보유자, 보호자, 또는 당사자 본인(자기 기록) INSERT
+-- (권한자·보호자 대리 작성이라도 author_id = auth.uid() 강제 → 당사자 명의 위조 차단, 마이그레이션 p3_records_author_id_antiforge)
 CREATE POLICY records_insert ON records FOR INSERT
   WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM permissions
-      WHERE person_id = records.person_id
-        AND grantee_id = auth.uid()
-        AND domain = records.domain
-        AND access_level IN ('write','edit')
-        AND is_active = true
-        AND (valid_until IS NULL OR valid_until >= CURRENT_DATE)
+    (
+      EXISTS (
+        SELECT 1 FROM permissions
+        WHERE person_id = records.person_id
+          AND grantee_id = auth.uid()
+          AND domain = records.domain
+          AND access_level IN ('write','edit')
+          AND is_active = true
+          AND (valid_until IS NULL OR valid_until >= CURRENT_DATE)
+      )
+      OR EXISTS (
+        SELECT 1 FROM guardians
+        WHERE person_id = records.person_id AND user_id = auth.uid()
+      )
     )
-    OR EXISTS (
-      SELECT 1 FROM guardians
-      WHERE person_id = records.person_id AND user_id = auth.uid()
-    )
+    -- 위조 방지: 대리 작성(SELF-* 포함)이라도 author_id 는 실제 작성자(자기 자신)여야 한다.
+    --   author_id 를 당사자 id 로 위조해 "당사자 본인 작성분"으로 둔갑시키는 것을 DB 레벨에서 차단.
+    AND author_id = auth.uid()
     -- 당사자 본인: 자기 person(=auth.uid())에 대한, 자기가 작성자인 기록만 (자기표현 SELF-*)
     OR (
       (SELECT role FROM users WHERE id = auth.uid()) = 'person'
@@ -972,6 +1108,8 @@ WHERE is_active = true AND valid_until = CURRENT_DATE + INTERVAL '7 days';
 > - Next.js **서버 env**(유틸리티용): `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
 >
 > **수동 운영 절차(이 세션에서 실행 불가):** ① Upstash 콘솔에서 Redis 인스턴스 생성 → REST URL·토큰 확보. ② 마이그레이션 적용 후 `select vault.create_secret('https://<DB>.upstash.io','redis_rest_url'); select vault.create_secret('<TOKEN>','redis_rest_token');` 수동 실행(교체 시 `vault.update_secret`). ③ `.env.local`에 `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` 등록. 세 값이 모두 갖춰지기 전까지 트리거·유틸리티는 조용히 no-op이며 TTL/RLS가 정확성을 보장한다.
+>
+> **security-rls 재검토(2026-07-17) — 결함 없음:** `apps/web/src`를 전수 grep한 결과 `getCachedPermission`/`setCachedPermission`/`invalidatePermissionCache`는 `permission-cache.ts` 정의부만 있고 어떤 서버 액션도 아직 호출하지 않아, 위 "채택은 향후 라운드" 서술이 사실과 일치함을 재확인했다. 무효화 트리거의 WHEN절(6개 컬럼)·키 구성(OLD/NEW 양쪽 DEL)·Vault 미설정 시 no-op 가드·`EXCEPTION WHEN OTHERS` 전체 흡수도 모두 SQL 원문과 일치. **향후 이 캐시를 read-path에 채택할 때 지킬 원칙**: ① 캐시 hit는 "부가 최적화"로만 쓰고 RLS(라이브 `permissions` 조회)가 항상 최종 게이트여야 한다 — 캐시된 값만으로 쓰기 경로를 허용 금지, ② 캐시 read 실패/미스는 무조건 DB 직접 조회로 폴백(현재 `getCachedPermission`의 null 반환 구조가 이미 이 원칙에 부합), ③ 채택 전 Vault 시크릿을 운영 환경에 등록하고 무효화 트리거가 실제 발동하는지 스테이징에서 검증.
 
 **⑤ 감사 조회 (분기별 정기 알림, F-G-10)**
 
@@ -994,8 +1132,8 @@ WHERE p.is_active = true
 
 | 구분 | requires_confirmation 기본값 | 이유 |
 |---|---|---|
-| IEP(`EDU-*` 공식), ISP(`WEL-*` 공식), 치료계획서(`MED-005`), 전환계획(`TRA-001`) | `true` | 법정·공식 서류, 보호자/당사자가 내용을 인지해야 함 |
-| 관찰기록, 활동지원 일지, 회기일지, 자기표현(`SELF-*`) | `false` | 일상 기록, 확인 절차로 인한 알림 피로 방지 |
+| IEP(`EDU-001`), BIP(`EDU-003`), ITP(`EDU-005`), ISP(`WEL-004`), 치료계획서(`MED-005`), 전환계획(`TRA-001`), 후견감독보고서(`LEG-001`) | `true` | 법정·공식 서류, 보호자/당사자가 내용을 인지해야 함 |
+| 관찰기록(`EDU-002`), 활동지원 일지(`DAI-002`), 회기일지(`MED-006`), 평가보고서(`MED-007`), 자기표현(`SELF-001`), 서비스이용계획(`WEL-005`), 사례회의록(`WEL-006`), 권익옹호상담(`LEG-002`), 보호자기록(`GEN-001`) | `false` | 일상 기록, 확인 절차로 인한 알림 피로 방지 |
 
 **② 확인 주체 자동 지정 — 트리거**
 
@@ -1007,7 +1145,7 @@ BEGIN
   IF NEW.requires_confirmation = true AND NEW.is_draft = false
      AND (OLD IS NULL OR OLD.is_draft = true) THEN
     SELECT get_life_stage(birth_date) INTO v_stage FROM persons WHERE id = NEW.person_id;
-    IF v_stage = 'adult' THEN
+    IF v_stage IN ('adult', 'senior') THEN
       NEW.confirmer_id := NEW.person_id;   -- 본인 확인 (persons.id = 당사자 auth.uid())
     ELSE
       SELECT primary_guardian_id INTO v_guardian FROM persons WHERE id = NEW.person_id;
@@ -1025,6 +1163,8 @@ CREATE TRIGGER trg_assign_confirmer
 BEFORE INSERT OR UPDATE ON records
 FOR EACH ROW EXECUTE FUNCTION assign_record_confirmer();
 ```
+
+> **2026-07-17 정정**: `v_stage = 'adult'` 단일 비교였던 조건을 5단계 개정에 맞춰 `v_stage IN ('adult', 'senior')`로 확장했다(`20260717000000_p3_lifecycle_5stage` 마이그레이션). 앱 레이어의 동일 판정은 `isSelfConfirmingStage()` 헬퍼(§2-2-1)로 일원화되어 있다.
 
 **③ 확인 처리 — confirmer 본인만 `confirmed_at` 설정 가능**
 
@@ -1433,99 +1573,10 @@ CREATE INDEX idx_notifications_unread ON notifications(recipient_id, is_read)
 
 ## 7. Prisma 스키마 참조
 
-```prisma
-// supabase/prisma/schema.prisma (핵심 모델)
-
-model User {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email     String   @unique
-  role      UserRole
-  fullName  String   @map("full_name")
-  avatarUrl String?  @map("avatar_url")
-  fcmToken  String?  @map("fcm_token")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
-
-  guardianOf   Guardian[]    @relation("UserGuardian")
-  permissions  Permission[]  @relation("Grantee")
-  records      Record[]      @relation("Author")
-  confirmedRecords Record[]  @relation("Confirmer")
-  accessLogs   AccessLog[]   @relation("Actor")
-  consents     Consent[]
-  notifications Notification[]
-
-  @@map("users")
-}
-
-enum UserRole {
-  person
-  guardian
-  supporter
-  teacher
-  social_worker
-  therapist
-}
-
-model Person {
-  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  primaryGuardianId String    @map("primary_guardian_id") @db.Uuid
-  fullName          String    @map("full_name")
-  birthDate         DateTime  @map("birth_date") @db.Date
-  gender            String?
-  disabilityTypes   String[]  @map("disability_types")
-  disabilityDegree  String?   @map("disability_degree")
-  emergencyInfo     Json?     @map("emergency_info")
-  avatarUrl         String?   @map("avatar_url")
-  isAdult           Boolean   @default(false) @map("is_adult")
-  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz
-
-  primaryGuardian User         @relation("PrimaryGuardian", fields: [primaryGuardianId], references: [id])
-  guardians       Guardian[]
-  permissions     Permission[]
-  records         Record[]
-  accessLogs      AccessLog[]
-  consents        Consent[]
-  handoverNotes   HandoverNote[]
-
-  @@map("persons")
-}
-
-model Record {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  personId   String   @map("person_id") @db.Uuid
-  authorId   String   @map("author_id") @db.Uuid
-  domain     Domain
-  recordType String   @map("record_type")
-  content    Json
-  isDraft    Boolean  @default(false) @map("is_draft")
-  isMilestone Boolean @default(false) @map("is_milestone")
-  isPinned   Boolean  @default(false) @map("is_pinned")
-  tags       String[]
-  recordDate DateTime @default(now()) @map("record_date") @db.Timestamptz
-  requiresConfirmation Boolean   @default(false) @map("requires_confirmation")
-  confirmerId          String?   @map("confirmer_id") @db.Uuid
-  confirmedAt          DateTime? @map("confirmed_at") @db.Timestamptz
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
-
-  person      Person             @relation(fields: [personId], references: [id])
-  author      User               @relation("Author", fields: [authorId], references: [id])
-  confirmer   User?              @relation("Confirmer", fields: [confirmerId], references: [id])
-  attachments RecordAttachment[]
-  accessLogs  AccessLog[]
-
-  @@index([personId, recordDate(sort: Desc)])
-  @@index([personId, domain, recordDate(sort: Desc)])
-  @@map("records")
-}
-
-enum Domain {
-  MED
-  EDU
-  WEL
-  DAI
-  TRA
-  LEG
-}
-```
+> **신뢰 소스는 `supabase/prisma/schema.prisma` 원본이다.** 이 문서에 모델을 발췌·복사해두지 않는다 —
+> 과거 이 섹션에 있던 부분 발췌본(User/Person/Record 3개 모델만, 초기 설계 시점 스냅샷)이 이후
+> 여러 라운드의 스키마 변경(Guardian·Permission·PermissionLog·RecordAttachment·Consent·
+> HandoverNote·Notification·NotificationPreference·Invitation·PermissionPreset 모델 추가,
+> `records.author_id` nullable화 등)을 반영하지 못한 채 방치되어 §2의 최신 SQL 정의 및 실제
+> `schema.prisma`와 상충하는 상태(2026-07-17 갭 분석에서 발견)였다. 컬럼 단위 정의는 §2를,
+> Prisma 매핑(관계·enum·`@map`)은 `schema.prisma`를 직접 참조할 것.

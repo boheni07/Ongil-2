@@ -26,7 +26,7 @@ export default async function VerifyPage({
 
   return (
     <AuthCard>
-      <StepBar current={4} />
+      <StepBar current={2} />
       <div
         aria-hidden="true"
         className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary-100 text-2xl"

@@ -9,6 +9,7 @@ import {
   type RecordDetail,
 } from "@/app/(app)/persons/[id]/records/actions";
 import { DomainChip } from "@/components/timeline/DomainChip";
+import { RecordContentView } from "@/components/records/RecordContentView";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -98,18 +99,13 @@ export function RecordForm({
           <p className="mb-2 text-label font-semibold text-accent-stone">
             원본 기록 내용(읽기 전용 · {existing.authorName ?? "전문가"} 작성)
           </p>
-          <dl className="flex flex-col gap-2">
-            {Object.entries((existing.content as Record<string, unknown>) ?? {})
-              .filter(([k]) => k !== "guardianNote")
-              .map(([k, v]) => (
-                <div key={k}>
-                  <dt className="text-caption font-semibold text-muted-foreground">{k}</dt>
-                  <dd className="text-body text-foreground">
-                    {typeof v === "string" ? v : JSON.stringify(v)}
-                  </dd>
-                </div>
-              ))}
-          </dl>
+          <RecordContentView
+            content={(() => {
+              const rest = { ...((existing.content as Record<string, unknown>) ?? {}) };
+              delete rest.guardianNote;
+              return rest;
+            })()}
+          />
         </div>
       )}
 

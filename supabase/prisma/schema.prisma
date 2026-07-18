@@ -101,6 +101,7 @@ enum NotificationType {
   record_confirm
   life_stage_youth
   life_stage_adult
+  life_stage_senior
   permission_expiry_warning
   permission_audit_summary
 }

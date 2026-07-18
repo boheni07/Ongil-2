@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { iepSchema } from "@ongil/validation";
-import { createIep, getTeacherStudents, type LifeStage, type TeacherStudent } from "../lib/iep";
+import { createIep, getTeacherStudents, isPreTransitionStage, isSelfConfirmingStage, type LifeStage, type TeacherStudent } from "../lib/iep";
 import { useAsyncAction } from "../hooks/useAsyncAction";
 import { useWizardDraft } from "../hooks/useWizardDraft";
 import { CategoryChip } from "../components/IconSelector";
@@ -78,7 +78,7 @@ function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-/** T-13 IEP 작성 6단계 위저드. 5단계(전환계획)는 학생이 만 14세+(lifeStage != 'child')일 때만 노출. */
+/** T-13 IEP 작성 6단계 위저드. 5단계(전환계획)는 학생이 만 13세+(영유아기·아동기가 아닐 때)만 노출. */
 export function IepWizardScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const paramPersonId = route.params.personId;
@@ -108,9 +108,9 @@ export function IepWizardScreen({ navigation, route }: Props) {
 
   const selectedStudent = students.find((s) => s.personId === personId) ?? null;
   const lifeStage: LifeStage = selectedStudent?.lifeStage ?? "child";
-  const showTransition = lifeStage !== "child";
+  const showTransition = !isPreTransitionStage(lifeStage);
 
-  // 노출되는 단계 순서(전환계획은 만 14세+에서만).
+  // 노출되는 단계 순서(전환계획은 만 13세+에서만).
   const visibleSteps = useMemo(
     () => (showTransition ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 6]),
     [showTransition]
@@ -486,7 +486,7 @@ export function IepWizardScreen({ navigation, route }: Props) {
 
       {step === 5 && (
         <View>
-          <InfoBanner message="전환계획은 만 14세 이상 학생에게만 표시됩니다." />
+          <InfoBanner message="전환계획은 만 13세 이상 학생에게만 표시됩니다." />
           <Text style={styles.label}>전환 목표</Text>
           <TextInput
             accessibilityLabel="전환 목표"
@@ -529,7 +529,7 @@ export function IepWizardScreen({ navigation, route }: Props) {
               k="전환 계획"
               v={showTransition ? (transitionGoal.trim() ? "포함" : "미입력") : "해당 없음"}
             />
-            <SumRow k="확인 요청 대상" v={lifeStage === "adult" ? "본인" : "보호자"} />
+            <SumRow k="확인 요청 대상" v={isSelfConfirmingStage(lifeStage) ? "본인" : "보호자"} />
           </View>
           <InfoBanner message="IEP는 공식 문서입니다. 저장(제출) 시 보호자·당사자 확인 절차가 시작됩니다." />
         </View>

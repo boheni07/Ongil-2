@@ -38,10 +38,24 @@ export async function SocialWorkerHome({ userName }: { userName: string | null }
         <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
+            render={<Link href="/records/leg" />}
+            className="h-11 px-5 font-bold"
+          >
+            ⚖️ 법률·권리 기록
+          </Button>
+          <Button
+            variant="outline"
             render={<Link href="/records/transition/new" />}
             className="h-11 px-5 font-bold"
           >
             🧭 전환계획 작성
+          </Button>
+          <Button
+            variant="outline"
+            render={<Link href="/records/case-notes" />}
+            className="h-11 px-5 font-bold"
+          >
+            📝 사례회의록
           </Button>
           <Button
             render={<Link href="/records/isp/new" />}

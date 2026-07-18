@@ -52,7 +52,10 @@ export async function SupporterHome({ userName }: { userName: string | null }) {
                   </p>
                   <p className="text-caption text-muted-foreground">
                     {j.serviceDate ?? j.recordDate.slice(0, 10)}
-                    {j.serviceHours != null ? ` · ${j.serviceHours}시간` : ""}
+                    {j.scheduledHours != null ? ` · 계획 ${j.scheduledHours}시간` : ""}
+                    {j.serviceHours != null
+                      ? ` · ${j.scheduledHours != null ? "실적 " : ""}${j.serviceHours}시간`
+                      : ""}
                   </p>
                 </div>
                 {j.isDraft ? (

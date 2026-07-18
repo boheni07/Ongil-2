@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { IspGoalPatch } from "@ongil/validation";
 import { updateIspGoal, type IspDetail } from "@/app/(app)/records/isp/actions";
 import { DomainChip } from "@/components/timeline/DomainChip";
@@ -51,6 +52,22 @@ export function IspReviewPane({ detail }: { detail: IspDetail }) {
         {detail.content.service_period?.end} · 재사정 예정 {detail.content.reassessment_date} · 영역별
         목표 진행 상황을 점검하고 인라인 편집합니다.
       </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button
+          variant="outline"
+          render={<Link href={`/records/service-status?personId=${detail.personId}`} />}
+          className="h-10 w-fit px-4 font-semibold"
+        >
+          📋 이 당사자의 서비스 이용 현황(WEL-005) 보기
+        </Button>
+        <Button
+          variant="outline"
+          render={<Link href={`/records/case-notes?personId=${detail.personId}`} />}
+          className="h-10 w-fit px-4 font-semibold"
+        >
+          📝 이 당사자의 사례회의록(WEL-006) 보기
+        </Button>
+      </div>
 
       <div className="mt-6 grid gap-0 overflow-hidden rounded-xl ring-1 ring-foreground/10 lg:grid-cols-[300px_1fr]">
         {/* 좌: 목표 영역 리스트 */}

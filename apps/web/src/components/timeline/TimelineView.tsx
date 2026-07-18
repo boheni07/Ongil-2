@@ -30,9 +30,11 @@ type StageFilter = LifeStage | "ALL";
 
 const STAGE_FILTER_OPTIONS: { value: StageFilter; label: string }[] = [
   { value: "ALL", label: "전체 단계" },
+  { value: "infant", label: "영유아기" },
   { value: "child", label: "아동기" },
   { value: "youth_transition", label: "청소년 전환기" },
-  { value: "adult", label: "성년기" },
+  { value: "adult", label: "성인기" },
+  { value: "senior", label: "노년기" },
 ];
 
 export function TimelineView({

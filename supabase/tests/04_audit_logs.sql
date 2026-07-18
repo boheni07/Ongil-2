@@ -29,8 +29,17 @@ SELECT tests.login('a4000000-0000-0000-0000-00000000000a');  -- GP 가 권한 �
 INSERT INTO permissions(person_id,grantee_id,domain,access_level,updated_at)
   VALUES ('a4000000-0000-0000-0000-00000000000c','a4000000-0000-0000-0000-000000000001','MED','read',now());
 RESET ROLE;
-SELECT is((SELECT count(*) FROM permission_logs WHERE action='grant'),
-          1::bigint, 'permissions INSERT 시 trg_permission_audit 가 grant 로그를 자동 기록');
+-- seed.sql(로컬 개발 목업)이 이미 다른 permission_logs 'grant' 행을 여럿 남기므로 전체 카운트가
+-- 아니라 이 테스트가 만든 permission 행에만 범위를 좁혀 확인한다(2026-07-18 CTO팀 갭분석 발견 —
+-- 이전에는 이 지점까지 실행이 도달한 적이 없어 놓쳤던 시드 데이터 오염 문제).
+SELECT is(
+  (SELECT count(*) FROM permission_logs pl
+     JOIN permissions p ON p.id = pl.permission_id
+     WHERE pl.action='grant'
+       AND p.person_id='a4000000-0000-0000-0000-00000000000c'
+       AND p.grantee_id='a4000000-0000-0000-0000-000000000001'
+       AND p.domain='MED'),
+  1::bigint, 'permissions INSERT 시 trg_permission_audit 가 grant 로그를 자동 기록');
 
 -- 핫픽스 검증 #1: 관련 없는 authenticated(주보호자 아님)는 permission_logs를 볼 수 없음
 SELECT tests.login('a4000000-0000-0000-0000-000000000001');  -- grantee(무관 사용자 취급)
@@ -39,7 +48,8 @@ SELECT is((SELECT count(*) FROM permission_logs),
 
 -- 핫픽스 검증 #2: 주보호자조차 permission_logs를 DELETE할 수 없음(불변 감사 원칙, GRANT 회수)
 RESET ROLE; SELECT tests.login('a4000000-0000-0000-0000-00000000000a');  -- GP primary(관련 주보호자)
-SELECT is((WITH d AS (DELETE FROM permission_logs RETURNING 1) SELECT count(*) FROM d),
+WITH d AS (DELETE FROM permission_logs RETURNING 1)
+SELECT is((SELECT count(*) FROM d),
           0::bigint, 'permission_logs는 주보호자도 DELETE 불가(UPDATE/DELETE GRANT 회수, 핫픽스 후)');
 
 -- ── access_logs: INSERT-only 불변 + 주보호자 SELECT ─────────────────────────
@@ -63,10 +73,10 @@ SELECT is((SELECT count(*) FROM access_logs WHERE person_id='a4000000-0000-0000-
 
 -- 불변성: DELETE/UPDATE 정책 부재 → 0행 (RLS on, 정책 없음)
 RESET ROLE; SELECT tests.login('a4000000-0000-0000-0000-00000000000a');  -- 주보호자조차
-SELECT is((WITH d AS (DELETE FROM access_logs WHERE person_id='a4000000-0000-0000-0000-00000000000c' RETURNING 1)
-           SELECT count(*) FROM d), 0::bigint, 'access_logs 는 DELETE 정책 부재 → 삭제 불가(불변)');
-SELECT is((WITH u AS (UPDATE access_logs SET action='delete' WHERE person_id='a4000000-0000-0000-0000-00000000000c' RETURNING 1)
-           SELECT count(*) FROM u), 0::bigint, 'access_logs 는 UPDATE 정책 부재 → 수정 불가(불변)');
+WITH d AS (DELETE FROM access_logs WHERE person_id='a4000000-0000-0000-0000-00000000000c' RETURNING 1)
+SELECT is((SELECT count(*) FROM d), 0::bigint, 'access_logs 는 DELETE 정책 부재 → 삭제 불가(불변)');
+WITH u AS (UPDATE access_logs SET action='delete' WHERE person_id='a4000000-0000-0000-0000-00000000000c' RETURNING 1)
+SELECT is((SELECT count(*) FROM u), 0::bigint, 'access_logs 는 UPDATE 정책 부재 → 수정 불가(불변)');
 
 SELECT * FROM finish();
 ROLLBACK;

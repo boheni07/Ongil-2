@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getTeacherStudents } from "@/app/(app)/records/iep/actions";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
+import { isItpActiveStage, isPreTransitionStage } from "@/lib/lifecycle";
 
 /**
  * T-01 특수교사 홈 — 담당 학생 카드 목록(프로토타입 web-teacher.html 245~285줄).
@@ -14,7 +15,8 @@ export async function TeacherHome({ userName }: { userName: string | null }) {
 
   const total = students.length;
   const iepMissing = students.filter((s) => !s.latestIepRecordId).length;
-  const transitionTargets = students.filter((s) => s.lifeStage !== "child").length;
+  const transitionTargets = students.filter((s) => !isPreTransitionStage(s.lifeStage)).length;
+  const itpTargets = students.filter((s) => isItpActiveStage(s.lifeStage)).length;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -31,6 +33,41 @@ export async function TeacherHome({ userName }: { userName: string | null }) {
         >
           ＋ 새 IEP 작성
         </Button>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button
+          render={<Link href="/records/bip" />}
+          variant="outline"
+          className="h-10 font-semibold"
+        >
+          🧩 행동중재계획(BIP)
+        </Button>
+        <Button
+          render={<Link href="/records/observation/new" />}
+          variant="outline"
+          className="h-10 font-semibold"
+        >
+          📝 관찰기록 작성
+        </Button>
+        {transitionTargets > 0 && (
+          <Button
+            render={<Link href="/records/transition/new" />}
+            variant="outline"
+            className="h-10 font-semibold"
+          >
+            🔀 전환계획 작성 (만 13세+)
+          </Button>
+        )}
+        {itpTargets > 0 && (
+          <Button
+            render={<Link href="/records/itp" />}
+            variant="outline"
+            className="h-10 font-semibold"
+          >
+            🎓 개별화전환계획(ITP)
+          </Button>
+        )}
       </div>
 
       <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -85,9 +122,9 @@ export async function TeacherHome({ userName }: { userName: string | null }) {
                   />
                 </div>
 
-                {s.lifeStage !== "child" && (
+                {!isPreTransitionStage(s.lifeStage) && (
                   <p className="rounded-(--br-sm) bg-domain-tra-bg px-2.5 py-1.5 text-caption font-semibold text-domain-tra-text">
-                    ⚠ 전환계획 수립 대상 (만 14세+)
+                    ⚠ 전환계획 수립 대상 (만 13세+)
                   </p>
                 )}
                 {!s.latestIepRecordId && (

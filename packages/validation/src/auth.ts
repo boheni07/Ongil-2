@@ -9,22 +9,6 @@ export const loginSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 
-/**
- * @deprecated 단일 스텝 회원가입 스키마. Flow-0는 A-03→A-04→A-08→A-05 4단계로 분리되어
- * roleSelectSchema / profileSchema / consentSchema / otpVerifySchema를 각각 사용한다.
- * 아직 (auth)/signup/page.tsx(구 단일 폼)가 참조 중이라 유지한다. 해당 화면이 위저드로
- * 재작성되어 사용처가 사라지면 이 스키마와 signup() 액션을 함께 제거할 것.
- */
-export const signupSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-  role: roleSchema,
-  requiredConsent: z.literal(true),
-  marketingConsent: z.boolean().default(false),
-});
-
-export type SignupInput = z.infer<typeof signupSchema>;
-
 // ─────────────────────────────────────────────────────────
 // Flow-0 신규 회원가입 (A-03 → A-04 → A-08 → A-05) 단계별 스키마
 // ─────────────────────────────────────────────────────────
@@ -78,6 +62,34 @@ export const otpVerifySchema = z.object({
 });
 
 export type OtpVerifyInput = z.infer<typeof otpVerifySchema>;
+
+/**
+ * 웹 전용 — 위 4단계(A-03/A-04/A-08)를 한 화면으로 합친 통합 회원가입 폼(2026-07-18,
+ * 사용자 피드백: "회원가입도 단계별 진행이 아니라 한 화면에서 처리되면 좋겠다").
+ * A-05(이메일 OTP 인증)만은 Supabase의 이메일 확인 자체가 비동기 왕복(메일 확인 후 코드 입력)이라
+ * 한 화면에 합칠 수 없어 별도 단계로 남는다. 모바일은 여전히 기존 4단계 위저드
+ * (roleSelectSchema/profileSchema/consentSchema)를 그대로 쓴다 — 이번 변경은 웹 전용이다.
+ */
+export const signupFormSchema = z
+  .object({
+    role: roleSchema,
+    fullName: z.string().min(1, "이름을 입력해주세요."),
+    email: z.string().email("올바른 이메일을 입력해주세요."),
+    password: z.string().min(8, "비밀번호는 8자 이상이어야 합니다."),
+    passwordConfirm: z.string().min(8),
+    phone: z.string().regex(phoneRegex, "휴대폰 번호는 010-0000-0000 형식이어야 합니다."),
+    ageOver14: z.literal(true),
+    termsAgreed: z.literal(true),
+    privacyAgreed: z.literal(true),
+    sensitiveAgreed: z.literal(true),
+    marketingAgreed: z.boolean().default(false),
+  })
+  .refine((d) => d.password === d.passwordConfirm, {
+    message: "비밀번호가 일치하지 않습니다.",
+    path: ["passwordConfirm"],
+  });
+
+export type SignupFormInput = z.infer<typeof signupFormSchema>;
 
 // ─────────────────────────────────────────────────────────
 // A-07 비밀번호 재설정

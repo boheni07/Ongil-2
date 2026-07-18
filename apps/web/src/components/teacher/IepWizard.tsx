@@ -7,11 +7,12 @@ import { createIep, type TeacherStudent } from "@/app/(app)/records/iep/actions"
 import { WizardProgress } from "@/components/form/WizardProgress";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
+import { isPreTransitionStage, isSelfConfirmingStage } from "@/lib/lifecycle";
 
 /**
  * T-13 IEP 작성 6단계 위저드(프로토타입 web-teacher.html 288~396줄).
- * 학생선택(1단계 내부) → 기본정보 → 현재수준 → 목표·평가 → 지원서비스 → 전환계획(만14세+) → 확인.
- * 전환계획 단계는 선택 학생의 lifeStage가 'child'가 아닐 때만 입력을 활성화한다.
+ * 학생선택(1단계 내부) → 기본정보 → 현재수준 → 목표·평가 → 지원서비스 → 전환계획(만13세+) → 확인.
+ * 전환계획 단계는 선택 학생의 lifeStage가 영유아기·아동기(만12세 이하)가 아닐 때만 입력을 활성화한다.
  * 중간 단계는 클라이언트 상태만 유지하고 마지막 확인에서 createIep(snake_case content)를 호출한다.
  */
 
@@ -95,7 +96,7 @@ export function IepWizard({
     () => students.find((s) => s.personId === personId) ?? null,
     [students, personId]
   );
-  const showTransition = student ? student.lifeStage !== "child" : false;
+  const showTransition = student ? !isPreTransitionStage(student.lifeStage) : false;
 
   function updateGoal(i: number, patch: Partial<AnnualGoalDraft>) {
     setAnnualGoals((prev) => prev.map((g, idx) => (idx === i ? { ...g, ...patch } : g)));
@@ -494,7 +495,7 @@ export function IepWizard({
           {showTransition ? (
             <>
               <div className="rounded-(--br-md) bg-domain-tra-bg p-3 text-caption font-semibold text-domain-tra-text">
-                🔀 전환계획은 만 14세 이상 학생에게 표시됩니다.
+                🔀 전환계획은 만 13세 이상 학생에게 표시됩니다.
               </div>
               <Field label="전환 목표">
                 <input
@@ -515,7 +516,7 @@ export function IepWizard({
             </>
           ) : (
             <div className="rounded-xl bg-white p-8 text-center text-body text-muted-foreground ring-1 ring-foreground/10">
-              만 14세 미만 학생은 전환계획 단계를 건너뜁니다.
+              만 13세 미만 학생은 전환계획 단계를 건너뜁니다.
             </div>
           )}
         </div>
@@ -537,7 +538,7 @@ export function IepWizard({
             />
             <SummaryRow
               k="전환 계획"
-              v={showTransition ? (transitionGoal.trim() ? "포함 (만 14세+)" : "미입력") : "해당 없음"}
+              v={showTransition ? (transitionGoal.trim() ? "포함 (만 13세+)" : "미입력") : "해당 없음"}
               last
             />
           </div>
@@ -545,7 +546,7 @@ export function IepWizard({
             ✅ IEP는 공식 문서로 저장 시 확인(Confirmation) 절차가 시작됩니다. 저장 후 학생 타임라인과
             IEP 점검 화면에 기록됩니다.
             <span className="mt-2 block font-bold">
-              📋 확인 요청 대상: {student?.lifeStage === "adult" ? "본인" : "보호자"}
+              📋 확인 요청 대상: {student && isSelfConfirmingStage(student.lifeStage) ? "본인" : "보호자"}
             </span>
           </div>
         </div>

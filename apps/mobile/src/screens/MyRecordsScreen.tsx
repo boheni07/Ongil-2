@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
 import { getMyPersonProfile } from "../lib/person";
 import { confirmRecord, getPersonRecords, type RecordListItem } from "../lib/records";
-import { computeLifeStage } from "../lib/iep";
+import { computeLifeStage, isSelfConfirmingStage } from "../lib/iep";
 import { DomainChip } from "../components/DomainChip";
 import { ConfirmBadge } from "../components/records/ConfirmBadge";
 import { ConfirmCTA } from "../components/records/ConfirmCTA";
@@ -18,7 +18,7 @@ type Props = NativeStackScreenProps<PersonStackParamList, "MyRecords">;
 
 /**
  * P-10 내 기록 보기 — 당사자 본인의 records를 나열(RLS가 본인 것만 반환).
- * "이 기록을 봤어요" 확인 CTA는 §3-10에 따라 성년기(lifeStage='adult')이고,
+ * "이 기록을 봤어요" 확인 CTA는 §3-10에 따라 성인기·노년기(만 19세 이상)이고,
  * 해당 기록의 확인 주체가 본인이며 아직 미확인일 때만 노출한다. 미성년이면 배지만 표시.
  */
 export function MyRecordsScreen(_props: Props) {
@@ -40,7 +40,7 @@ export function MyRecordsScreen(_props: Props) {
     }
     setUserId(user.id);
     const profile = await getMyPersonProfile();
-    setIsAdult(profile ? computeLifeStage(profile.birthDate) === "adult" : false);
+    setIsAdult(profile ? isSelfConfirmingStage(computeLifeStage(profile.birthDate)) : false);
     setItems(await getPersonRecords(user.id));
     setLoading(false);
   }, []);

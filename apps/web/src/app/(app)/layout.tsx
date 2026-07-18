@@ -2,27 +2,28 @@ import { Home, FileText, Settings, LayoutDashboard, PencilLine, ArrowLeftRight }
 import { createClient } from "@/lib/supabase/server";
 import { GlobalHeader } from "@/components/layout/GlobalHeader";
 import { Sidebar, type SidebarItem } from "@/components/layout/Sidebar";
+import { getUnreadNotificationCount } from "@/app/(app)/notifications/actions";
 
 function sidebarItems(role: string | null): SidebarItem[] {
   if (role === "guardian") {
     return [
-      { label: "대시보드", href: "/dashboard", icon: LayoutDashboard },
-      { label: "기록", href: "/records", icon: FileText },
-      { label: "설정", href: "/settings", icon: Settings },
+      { label: "대시보드", href: "/dashboard", icon: <LayoutDashboard /> },
+      { label: "기록", href: "/records", icon: <FileText /> },
+      { label: "설정", href: "/settings", icon: <Settings /> },
     ];
   }
   if (role === "supporter") {
     return [
-      { label: "홈", href: "/home", icon: Home },
-      { label: "일지 작성", href: "/journals/new", icon: PencilLine },
-      { label: "인수인계", href: "/handovers", icon: ArrowLeftRight },
-      { label: "설정", href: "/settings", icon: Settings },
+      { label: "홈", href: "/home", icon: <Home /> },
+      { label: "일지 작성", href: "/journals/new", icon: <PencilLine /> },
+      { label: "인수인계", href: "/handovers", icon: <ArrowLeftRight /> },
+      { label: "설정", href: "/settings", icon: <Settings /> },
     ];
   }
   return [
-    { label: "홈", href: "/home", icon: Home },
-    { label: "기록", href: "/records", icon: FileText },
-    { label: "설정", href: "/settings", icon: Settings },
+    { label: "홈", href: "/home", icon: <Home /> },
+    { label: "기록", href: "/records", icon: <FileText /> },
+    { label: "설정", href: "/settings", icon: <Settings /> },
   ];
 }
 
@@ -49,11 +50,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     }
   }
 
+  const unreadCount = user ? await getUnreadNotificationCount() : 0;
+
   // 당사자 모드(§7-1): 사이드바 없이 중앙 정렬 단일 컬럼 폰 셸, 넉넉한 여백.
   if (role === "person") {
     return (
       <div className="flex flex-1 flex-col bg-primary-50/20">
-        <GlobalHeader userName={fullName ?? user?.email ?? null} />
+        <GlobalHeader userName={fullName ?? user?.email ?? null} notificationCount={unreadCount} />
         <main className="mx-auto flex w-full max-w-lg flex-1 flex-col px-5 py-8">{children}</main>
       </div>
     );
@@ -61,7 +64,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex flex-1 flex-col bg-white">
-      <GlobalHeader userName={fullName ?? user?.email ?? null} />
+      <GlobalHeader userName={fullName ?? user?.email ?? null} notificationCount={unreadCount} />
       <div className="flex flex-1">
         <Sidebar items={sidebarItems(role)} />
         <main className="flex flex-1 flex-col bg-[#fafaf9] px-6 py-8">{children}</main>

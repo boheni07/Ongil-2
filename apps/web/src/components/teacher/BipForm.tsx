@@ -1,0 +1,289 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import type { BehaviorFunction, BipInput, FbaBasis } from "@ongil/validation";
+import { createBip, type BipClient } from "@/app/(app)/records/bip/actions";
+import { StageBadge } from "@/components/lifecycle/StageBadge";
+import { Button } from "@/components/ui/button";
+import { isSelfConfirmingStage } from "@/lib/lifecycle";
+
+/**
+ * T-17 행동중재계획(BIP, EDU-003) 작성 — 단일 폼(ObservationForm 스타일).
+ * 학생 선택 → 중재 대상 행동·행동 기능 → 선행사건 전략·대체행동·강화 계획 → 위기대응(선택)·재검토일.
+ * BIP는 IEP·ISP·치료계획서와 동급 공식 지원계획 문서라 requires_confirmation=true(§4-6①) —
+ * 저장 시 trg_assign_confirmer가 확인 주체(성년=본인, 미성년=주보호자)를 자동 지정한다.
+ * 확인 요청 대상은 isSelfConfirmingStage로 안내한다(LEG-001 GuardianshipReportWizard와 동일 패턴).
+ * confirmer_id/confirmed_at은 서버 트리거 소관이라 폼에서 다루지 않는다.
+ */
+
+const BEHAVIOR_FUNCTIONS: { value: BehaviorFunction; label: string; hint: string }[] = [
+  { value: "attention", label: "관심획득", hint: "타인의 관심·반응을 얻기 위한 행동" },
+  { value: "escape", label: "회피", hint: "과제·상황을 피하거나 벗어나기 위한 행동" },
+  { value: "sensory", label: "감각추구", hint: "감각 자극 자체를 얻기 위한 행동" },
+  { value: "other", label: "기타", hint: "위 분류에 속하지 않는 경우" },
+];
+
+/** 기능평가 근거(FbaBasis) 선택지 — 2026-07-17 워크숍 안건2-1, EDU-003에 병합. */
+const FBA_BASIS_OPTIONS: { value: FbaBasis; label: string }[] = [
+  { value: "observation", label: "직접 관찰기록" },
+  { value: "guardian_interview", label: "학부모 면담" },
+  { value: "teacher_interview", label: "교사 면담" },
+  { value: "checklist", label: "체크리스트" },
+];
+
+const fieldClass =
+  "min-h-11 w-full rounded-(--br-md) border border-border bg-white px-3.5 py-2 text-body text-foreground outline-none focus-visible:border-primary-600";
+
+export function BipForm({
+  students,
+  initialPersonId,
+}: {
+  students: BipClient[];
+  initialPersonId?: string;
+}) {
+  const router = useRouter();
+  const [personId, setPersonId] = useState(
+    initialPersonId && students.some((s) => s.personId === initialPersonId)
+      ? initialPersonId
+      : students[0]?.personId ?? ""
+  );
+
+  const [targetBehavior, setTargetBehavior] = useState("");
+  const [behaviorFunction, setBehaviorFunction] = useState<BehaviorFunction>("attention");
+  const [fbaBasis, setFbaBasis] = useState<FbaBasis[]>([]);
+  const [antecedentStrategies, setAntecedentStrategies] = useState("");
+  const [replacementBehavior, setReplacementBehavior] = useState("");
+  const [reinforcementPlan, setReinforcementPlan] = useState("");
+  const [crisisProcedure, setCrisisProcedure] = useState("");
+  const [reviewDate, setReviewDate] = useState("");
+
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const student = useMemo(
+    () => students.find((s) => s.personId === personId) ?? null,
+    [students, personId]
+  );
+
+  const valid =
+    Boolean(personId) &&
+    targetBehavior.trim().length > 0 &&
+    antecedentStrategies.trim().length > 0 &&
+    replacementBehavior.trim().length > 0 &&
+    reinforcementPlan.trim().length > 0 &&
+    reviewDate.length > 0;
+
+  async function save() {
+    if (!valid) {
+      setError("필수 항목을 모두 입력해주세요.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const input: BipInput = {
+      target_behavior: targetBehavior.trim(),
+      behavior_function: behaviorFunction,
+      ...(fbaBasis.length > 0 ? { fba_basis: fbaBasis } : {}),
+      antecedent_strategies: antecedentStrategies.trim(),
+      replacement_behavior: replacementBehavior.trim(),
+      reinforcement_plan: reinforcementPlan.trim(),
+      ...(crisisProcedure.trim() ? { crisis_procedure: crisisProcedure.trim() } : {}),
+      review_date: reviewDate,
+    };
+    const res = await createBip(personId, input);
+    if (res.error) {
+      setBusy(false);
+      setError(res.error);
+      return;
+    }
+    router.push("/records/bip");
+    router.refresh();
+  }
+
+  if (students.length === 0) {
+    return (
+      <div className="rounded-xl bg-white p-6 ring-1 ring-foreground/10">
+        <h1 className="text-headline-2 font-bold text-foreground">행동중재계획(BIP) 작성</h1>
+        <p className="mt-3 text-body text-muted-foreground">
+          담당 학생이 없어 행동중재계획을 작성할 수 없습니다. 보호자가 교육(EDU) 도메인 작성 권한을
+          부여하면 해당 학생의 BIP를 작성할 수 있습니다.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-1 flex-col">
+      <h1 className="text-headline-2 font-extrabold text-foreground">
+        행동중재계획(BIP) 작성{" "}
+        <span className="text-body font-medium text-muted-foreground">EDU-003</span>
+      </h1>
+      <p className="mt-1 flex flex-wrap items-center gap-2 text-body text-muted-foreground">
+        기능평가(FBA)에 기반해 대상 행동·대체행동·강화 계획을 기록하는 공식 지원계획 문서입니다.
+        {student && <StageBadge lifeStage={student.lifeStage} className="min-h-6 pr-2 text-[11px]" />}
+      </p>
+
+      <div className="mt-6 flex flex-col gap-4 rounded-xl bg-white p-5 ring-1 ring-foreground/10">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="대상 학생" required>
+            <select
+              className={fieldClass}
+              value={personId}
+              onChange={(e) => setPersonId(e.target.value)}
+            >
+              {students.map((s) => (
+                <option key={s.personId} value={s.personId}>
+                  {s.fullName}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="행동 기능 (FBA)" required>
+            <select
+              className={fieldClass}
+              value={behaviorFunction}
+              onChange={(e) => setBehaviorFunction(e.target.value as BehaviorFunction)}
+            >
+              {BEHAVIOR_FUNCTIONS.map((f) => (
+                <option key={f.value} value={f.value}>
+                  {f.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+        <p className="-mt-1 text-caption text-muted-foreground">
+          {BEHAVIOR_FUNCTIONS.find((f) => f.value === behaviorFunction)?.hint}
+        </p>
+
+        <Field label="기능평가 근거 (선택, 복수선택 가능)">
+          <div className="flex flex-wrap gap-3">
+            {FBA_BASIS_OPTIONS.map((opt) => (
+              <label key={opt.value} className="flex items-center gap-1.5 text-body text-foreground">
+                <input
+                  type="checkbox"
+                  checked={fbaBasis.includes(opt.value)}
+                  onChange={(e) =>
+                    setFbaBasis((prev) =>
+                      e.target.checked
+                        ? [...prev, opt.value]
+                        : prev.filter((v) => v !== opt.value)
+                    )
+                  }
+                />
+                {opt.label}
+              </label>
+            ))}
+          </div>
+        </Field>
+
+        <Field label="중재 대상 행동" required>
+          <textarea
+            className={`${fieldClass} min-h-20`}
+            value={targetBehavior}
+            onChange={(e) => setTargetBehavior(e.target.value)}
+            maxLength={2000}
+            placeholder="중재가 필요한 문제 행동을 관찰 가능한 용어로 구체적으로 기술하세요."
+          />
+        </Field>
+
+        <Field label="선행사건 중재 전략" required>
+          <textarea
+            className={`${fieldClass} min-h-24`}
+            value={antecedentStrategies}
+            onChange={(e) => setAntecedentStrategies(e.target.value)}
+            maxLength={3000}
+            placeholder="문제 행동을 유발하는 선행사건을 조정·예방하기 위한 전략을 기록하세요."
+          />
+        </Field>
+
+        <Field label="대체행동" required>
+          <textarea
+            className={`${fieldClass} min-h-20`}
+            value={replacementBehavior}
+            onChange={(e) => setReplacementBehavior(e.target.value)}
+            maxLength={2000}
+            placeholder="같은 기능을 수행하되 사회적으로 수용 가능한 대체행동을 기록하세요."
+          />
+        </Field>
+
+        <Field label="강화 계획" required>
+          <textarea
+            className={`${fieldClass} min-h-24`}
+            value={reinforcementPlan}
+            onChange={(e) => setReinforcementPlan(e.target.value)}
+            maxLength={3000}
+            placeholder="대체행동을 촉진할 강화물·강화 일정·소거 절차 등을 기록하세요."
+          />
+        </Field>
+
+        <Field label="위기대응 절차 (선택)">
+          <textarea
+            className={`${fieldClass} min-h-20`}
+            value={crisisProcedure}
+            onChange={(e) => setCrisisProcedure(e.target.value)}
+            maxLength={3000}
+            placeholder="심각한 위기 행동 발생 시 안전 확보 절차를 기록하세요. (경도 사례는 비워둘 수 있습니다)"
+          />
+        </Field>
+
+        <Field label="재검토 예정일" required>
+          <input
+            type="date"
+            className={fieldClass}
+            value={reviewDate}
+            onChange={(e) => setReviewDate(e.target.value)}
+          />
+        </Field>
+
+        <div className="rounded-(--br-md) bg-primary-50 p-4 text-body text-primary-700">
+          ✅ 행동중재계획은 공식 지원계획 문서로 저장 시 확인(Confirmation) 절차가 시작됩니다.
+          <span className="mt-2 block font-bold">
+            📋 확인 요청 대상:{" "}
+            {student && isSelfConfirmingStage(student.lifeStage) ? "본인" : "보호자"}
+          </span>
+        </div>
+
+        {error && (
+          <p role="alert" className="text-body font-semibold text-red-600">
+            {error}
+          </p>
+        )}
+
+        <div className="flex justify-end gap-2 pt-2">
+          <Button type="button" variant="outline" className="h-11" onClick={() => router.push("/records/bip")}>
+            취소
+          </Button>
+          <Button
+            type="button"
+            className="h-11 bg-domain-edu-accent font-bold text-domain-edu-text"
+            disabled={busy}
+            onClick={save}
+          >
+            {busy ? "저장 중..." : "행동중재계획 저장"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  required,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="text-label font-semibold text-accent-stone">
+        {label} {required && <span className="text-domain-med-text">*</span>}
+      </span>
+      {children}
+    </label>
+  );
+}

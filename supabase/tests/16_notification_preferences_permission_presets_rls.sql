@@ -58,9 +58,10 @@ SELECT throws_ok(
 
 -- NP7. U2 는 U1 의 설정을 변조 불가(USING user_id 불일치 → 0행)
 RESET ROLE; SELECT tests.login('b6000000-0000-0000-0000-000000000002');
+WITH u AS (UPDATE notification_preferences SET fcm_enabled=false
+              WHERE id='b6000000-0000-0000-0000-0000000000a1' RETURNING 1)
 SELECT is(
-  (WITH u AS (UPDATE notification_preferences SET fcm_enabled=false
-              WHERE id='b6000000-0000-0000-0000-0000000000a1' RETURNING 1) SELECT count(*) FROM u),
+  (SELECT count(*) FROM u),
   0::bigint, '타인 알림 설정은 변조 불가');
 
 -- NP8. 알림 설정은 DELETE 불가(REVOKE, 42501) — 본인조차(행 삭제 대신 채널 false 로)

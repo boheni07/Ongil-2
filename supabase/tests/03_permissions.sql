@@ -61,28 +61,32 @@ SELECT is((SELECT count(*) FROM permissions
 
 -- ── UPDATE(회수: is_active=false) ───────────────────────────────────────────
 RESET ROLE; SELECT tests.login('a3000000-0000-0000-0000-00000000000b');  -- G2 non-primary
-SELECT is((WITH u AS (UPDATE permissions SET is_active=false, updated_at=now()
+WITH u AS (UPDATE permissions SET is_active=false, updated_at=now()
                       WHERE person_id='a3000000-0000-0000-0000-00000000000c' AND grantee_id='a3000000-0000-0000-0000-000000000001' AND domain='MED'
-                      RETURNING 1) SELECT count(*) FROM u),
+                      RETURNING 1)
+SELECT is((SELECT count(*) FROM u),
           0::bigint, '공동보호자는 permissions UPDATE 불가(0행)');
 
 RESET ROLE; SELECT tests.login('a3000000-0000-0000-0000-00000000000a');  -- GP primary
-SELECT is((WITH u AS (UPDATE permissions SET is_active=false, updated_at=now()
+WITH u AS (UPDATE permissions SET is_active=false, updated_at=now()
                       WHERE person_id='a3000000-0000-0000-0000-00000000000c' AND grantee_id='a3000000-0000-0000-0000-000000000001' AND domain='MED'
-                      RETURNING 1) SELECT count(*) FROM u),
+                      RETURNING 1)
+SELECT is((SELECT count(*) FROM u),
           1::bigint, '주보호자는 permissions UPDATE(회수) 가능(1행)');
 
 -- ── DELETE ──────────────────────────────────────────────────────────────────
 RESET ROLE; SELECT tests.login('a3000000-0000-0000-0000-00000000000b');  -- G2 non-primary
-SELECT is((WITH d AS (DELETE FROM permissions
+WITH d AS (DELETE FROM permissions
                       WHERE person_id='a3000000-0000-0000-0000-00000000000c' AND grantee_id='a3000000-0000-0000-0000-000000000001' AND domain='MED'
-                      RETURNING 1) SELECT count(*) FROM d),
+                      RETURNING 1)
+SELECT is((SELECT count(*) FROM d),
           0::bigint, '공동보호자는 permissions DELETE 불가(0행)');
 
 RESET ROLE; SELECT tests.login('a3000000-0000-0000-0000-00000000000a');  -- GP primary
-SELECT is((WITH d AS (DELETE FROM permissions
+WITH d AS (DELETE FROM permissions
                       WHERE person_id='a3000000-0000-0000-0000-00000000000c' AND grantee_id='a3000000-0000-0000-0000-000000000001' AND domain='MED'
-                      RETURNING 1) SELECT count(*) FROM d),
+                      RETURNING 1)
+SELECT is((SELECT count(*) FROM d),
           1::bigint, '주보호자는 permissions DELETE 가능(1행)');
 
 SELECT * FROM finish();

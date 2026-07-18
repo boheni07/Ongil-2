@@ -2,6 +2,7 @@
 
 import { handoverNoteSchema, type HandoverNoteInput } from "@ongil/validation";
 import { createClient } from "@/lib/supabase/server";
+import { notifyRecipients } from "@/lib/notify";
 
 /**
  * S-20(인수인계 목록)/S-21(인수인계 작성) Server Action 모음.
@@ -208,23 +209,18 @@ export async function createHandover(
   const handoverId = row.id as string;
 
   // 다음 지원사에게 인계 알림 — best-effort. 실패해도 인계 저장은 유지한다.
-  try {
-    const { data: me } = await supabase
-      .from("users")
-      .select("full_name")
-      .eq("id", user.id)
-      .maybeSingle();
-    const fromName = (me?.full_name as string | undefined) ?? "담당자";
-    await supabase.from("notifications").insert({
-      recipient_id: parsed.data.toUserId,
-      type: "handover",
-      title: "새 인수인계",
-      body: `${fromName}님이 인수인계를 남겼습니다.`,
-      data: { handover_id: handoverId, person_id: personId },
-    });
-  } catch {
-    // 알림 실패는 무시(부가 기능).
-  }
+  const { data: me } = await supabase
+    .from("users")
+    .select("full_name")
+    .eq("id", user.id)
+    .maybeSingle();
+  const fromName = (me?.full_name as string | undefined) ?? "담당자";
+  await notifyRecipients([parsed.data.toUserId], {
+    type: "handover",
+    title: "새 인수인계",
+    body: `${fromName}님이 인수인계를 남겼습니다.`,
+    data: { handover_id: handoverId, person_id: personId },
+  });
 
   return { ok: true, handoverId };
 }

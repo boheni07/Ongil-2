@@ -14,7 +14,7 @@
 --   ▶ access_level 의미: read=SELECT만 / write=SELECT+INSERT(신규) / edit=SELECT+INSERT+UPDATE(기존수정)
 -- =============================================================================
 BEGIN;
-SELECT plan(21);
+SELECT plan(22);
 
 -- ── 식별자 ────────────────────────────────────────────────────────────────
 -- PS 성년 셀프 당사자 / GP 주보호자 / PG 그가 등록한 당사자
@@ -53,8 +53,8 @@ SELECT throws_ok(
   $$ INSERT INTO records(person_id,domain,record_type,content,updated_at)
      VALUES ('a2000000-0000-0000-0000-00000000000b','MED','x','{}',now()) $$,
   '42501', NULL, 'read 권한자는 INSERT 불가(RLS)');
-SELECT is((WITH u AS (UPDATE records SET content='{"h":1}' WHERE id='a2000000-0000-0000-0000-0000000000f1' RETURNING 1)
-           SELECT count(*) FROM u), 0::bigint, 'read 권한자는 UPDATE 불가(0행)');
+WITH u AS (UPDATE records SET content='{"h":1}' WHERE id='a2000000-0000-0000-0000-0000000000f1' RETURNING 1)
+SELECT is((SELECT count(*) FROM u), 0::bigint, 'read 권한자는 UPDATE 불가(0행)');
 
 -- ── write 권한(teacher) ─────────────────────────────────────────────────────
 RESET ROLE; SELECT tests.login('a2000000-0000-0000-0000-000000000003');
@@ -62,15 +62,15 @@ SELECT lives_ok(
   $$ INSERT INTO records(person_id,domain,record_type,content,author_id,updated_at)
      VALUES ('a2000000-0000-0000-0000-00000000000b','MED','lesson','{}','a2000000-0000-0000-0000-000000000003',now()) $$,
   'write 권한자(teacher)는 신규 기록 INSERT 가능');
-SELECT is((WITH u AS (UPDATE records SET content='{"h":1}' WHERE id='a2000000-0000-0000-0000-0000000000f1' RETURNING 1)
-           SELECT count(*) FROM u), 0::bigint, 'write 권한자는 기존 기록 UPDATE 불가(edit 부터 가능)');
+WITH u AS (UPDATE records SET content='{"h":1}' WHERE id='a2000000-0000-0000-0000-0000000000f1' RETURNING 1)
+SELECT is((SELECT count(*) FROM u), 0::bigint, 'write 권한자는 기존 기록 UPDATE 불가(edit 부터 가능)');
 
 -- ── edit 권한(therapist) ────────────────────────────────────────────────────
 RESET ROLE; SELECT tests.login('a2000000-0000-0000-0000-000000000004');
 SELECT is((SELECT count(*) FROM records WHERE id='a2000000-0000-0000-0000-0000000000f1'),
           1::bigint, 'edit 권한자(therapist)는 SELECT 가능');
-SELECT is((WITH u AS (UPDATE records SET content='{"h":1}' WHERE id='a2000000-0000-0000-0000-0000000000f1' RETURNING 1)
-           SELECT count(*) FROM u), 1::bigint, 'edit 권한자는 기존 기록 UPDATE 가능(1행)');
+WITH u AS (UPDATE records SET content='{"h":1}' WHERE id='a2000000-0000-0000-0000-0000000000f1' RETURNING 1)
+SELECT is((SELECT count(*) FROM u), 1::bigint, 'edit 권한자는 기존 기록 UPDATE 가능(1행)');
 
 -- ── 역할 무관성(social_worker, read) ────────────────────────────────────────
 RESET ROLE; SELECT tests.login('a2000000-0000-0000-0000-000000000005');
@@ -110,8 +110,14 @@ SELECT lives_ok(
   $$ INSERT INTO records(person_id,domain,record_type,content,author_id,updated_at)
      VALUES ('a2000000-0000-0000-0000-00000000000b','WEL','note','{}','a2000000-0000-0000-0000-00000000000a',now()) $$,
   '보호자는 임의 도메인(WEL) 기록 INSERT 가능(구조적 전체접근)');
-SELECT is((WITH u AS (UPDATE records SET content='{"g":1}' WHERE id='a2000000-0000-0000-0000-0000000000f1' RETURNING 1)
-           SELECT count(*) FROM u), 1::bigint, '보호자는 임의 기록 UPDATE 가능');
+WITH u AS (UPDATE records SET content='{"g":1}' WHERE id='a2000000-0000-0000-0000-0000000000f1' RETURNING 1)
+SELECT is((SELECT count(*) FROM u), 1::bigint, '보호자는 임의 기록 UPDATE 가능');
+-- 위조 방지(p3_records_author_id_antiforge): 보호자가 author_id 를 당사자 id 로 위조해
+-- "당사자 본인 작성분(SELF-*)"으로 둔갑시키는 INSERT 는 차단된다.
+SELECT throws_ok(
+  $$ INSERT INTO records(person_id,domain,record_type,content,author_id,updated_at)
+     VALUES ('a2000000-0000-0000-0000-00000000000b','DAI','SELF-001','{}','a2000000-0000-0000-0000-00000000000b',now()) $$,
+  '42501', NULL, '보호자는 author_id 를 당사자로 위조한 SELF-* INSERT 불가');
 
 -- ── 당사자 자기표현(person 분기) ────────────────────────────────────────────
 RESET ROLE; SELECT tests.login('a2000000-0000-0000-0000-000000000001');  -- PS
@@ -125,8 +131,8 @@ SELECT throws_ok(
   $$ INSERT INTO records(person_id,domain,record_type,content,author_id,updated_at)
      VALUES ('a2000000-0000-0000-0000-000000000001','DAI','self','{}','a2000000-0000-0000-0000-00000000000a',now()) $$,
   '42501', NULL, '당사자는 author_id 를 타인으로 한 기록은 INSERT 불가');
-SELECT is((WITH u AS (UPDATE records SET content='{"s":1}' WHERE id='a2000000-0000-0000-0000-0000000000f3' RETURNING 1)
-           SELECT count(*) FROM u), 1::bigint, '당사자는 자기가 작성한 기록 UPDATE 가능');
+WITH u AS (UPDATE records SET content='{"s":1}' WHERE id='a2000000-0000-0000-0000-0000000000f3' RETURNING 1)
+SELECT is((SELECT count(*) FROM u), 1::bigint, '당사자는 자기가 작성한 기록 UPDATE 가능');
 
 SELECT * FROM finish();
 ROLLBACK;

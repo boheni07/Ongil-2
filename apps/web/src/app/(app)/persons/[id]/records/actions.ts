@@ -2,9 +2,11 @@
 
 import {
   guardianRecordSchema,
+  selfExpressionSchema,
   recordDisplayTitle,
   GUARDIAN_RECORD_TYPE,
   type GuardianRecordInput,
+  type SelfExpressionInput,
   type GuardianNote,
   type DomainKey,
 } from "@ongil/validation";
@@ -209,6 +211,56 @@ export async function createGuardianRecord(
     recordId: row.id as string,
     domain: parsed.data.domain,
   });
+  return { ok: true, recordId: row.id as string };
+}
+
+/**
+ * SELF-001 보호자 대리 작성 — docs/07 §5 갭⑥.
+ * 당사자가 스스로 기록하기 어려운 경우(중증·저연령 등) 보호자가 당사자를 대신해 자기표현
+ * 기록을 남긴다. 당사자 셀프 작성(home/actions.ts submitSelfExpression)과 저장 형태가 다르다:
+ *  - 셀프:   author_id = person_id = 당사자(auth.uid())
+ *  - 대리:   author_id = 보호자(auth.uid()), person_id = 당사자   ← 이 함수
+ * "누가 기록했는가"(author_id)가 보호자로 정확히 남아 대리 작성임을 감사에서 구분할 수 있다.
+ *
+ * 백엔드 측 접근 통제는 기존 RLS로 이미 충족된다 — records_insert(§4-2) guardians 분기는
+ * 도메인·record_type을 구분하지 않으므로 보호자는 담당 당사자의 SELF-001을 INSERT할 수 있다.
+ * (home/actions.ts의 submitSelfExpression은 requirePersonUser로 person 역할만 허용하고
+ *  person_id=자기로 강제해 보호자를 막고 있었을 뿐, RLS/스키마 제약은 아니었다.)
+ * 자기표현은 일상 기록이라 requires_confirmation=false(§4-6) — 확인 절차 없음.
+ */
+export async function createSelfExpressionForPerson(
+  personId: string,
+  input: SelfExpressionInput
+): Promise<ActionResult & { recordId?: string }> {
+  if (!UUID_RE.test(personId)) {
+    return { error: "당사자 정보가 올바르지 않습니다." };
+  }
+  const parsed = selfExpressionSchema.safeParse(input);
+  if (!parsed.success) return { error: firstIssue(parsed.error) };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "로그인이 필요합니다." };
+
+  const { data: row, error: insErr } = await supabase
+    .from("records")
+    .insert({
+      person_id: personId,
+      author_id: user.id, // 보호자 본인 — 대리 작성 주체를 감사에 남긴다.
+      domain: "DAI",
+      record_type: "SELF-001",
+      content: parsed.data,
+      is_draft: false,
+      requires_confirmation: false,
+      record_date: new Date().toISOString(),
+    })
+    .select("id")
+    .single();
+
+  if (insErr) return { error: `기록 저장에 실패했습니다: ${insErr.message}` };
+  await logAccess(personId, "create", { recordId: row.id as string, domain: "DAI" });
   return { ok: true, recordId: row.id as string };
 }
 

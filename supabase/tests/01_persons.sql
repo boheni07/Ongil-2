@@ -4,7 +4,7 @@
 -- 검증 정책: persons_select / persons_insert (최종본: 20260710010000_p1_person_self_and_guardians_rls)
 -- =============================================================================
 BEGIN;
-SELECT plan(9);
+SELECT plan(10);
 
 -- 식별자(전부 유효 hex): G1 주보호자 / G2 무관보호자 / T 권한없는전문가 / P1 미성년당사자 / SP 성년셀프당사자
 -- G1 = 11.. G2 = 22.. T = 33.. P1 = aaaa..a1 SP = bbbb..b1 S2 = bbbb..b2
@@ -34,6 +34,18 @@ SELECT is((SELECT count(*) FROM persons WHERE id = 'aaaaaaaa-0000-0000-0000-0000
 RESET ROLE; SELECT tests.login('33333333-3333-3333-3333-333333333333');   -- 권한 없는 전문가 T
 SELECT is((SELECT count(*) FROM persons WHERE id = 'aaaaaaaa-0000-0000-0000-0000000000a1'),
           0::bigint, '권한 없는 전문가는 타인 당사자를 볼 수 없음');
+
+-- 회귀 방지(2026-07-17, p3_persons_select_permission_holders): permissions 로 도메인 권한을
+-- 부여받은 전문가는 persons SELECT 가 가능해야 한다. 최초 구현(2026-07-09)은 이 분기가 없어
+-- getBipClients/getLegClients 류의 "담당 당사자 목록" 조회가 전문가에게 항상 빈 목록으로
+-- 보이고, assign_record_confirmer 트리거(SECURITY INVOKER)도 persons 를 못 읽어
+-- confirmer_id 가 NULL로 남는 결함이 있었다(EDU-005 검증 중 라이브 세션 재현으로 발견).
+RESET ROLE; SELECT tests.login('11111111-1111-1111-1111-111111111111');   -- G1 이 T 에게 권한 부여
+INSERT INTO permissions(person_id,grantee_id,domain,access_level,updated_at)
+  VALUES ('aaaaaaaa-0000-0000-0000-0000000000a1','33333333-3333-3333-3333-333333333333','MED','read',now());
+RESET ROLE; SELECT tests.login('33333333-3333-3333-3333-333333333333');   -- 이제 권한 있는 전문가 T
+SELECT is((SELECT count(*) FROM persons WHERE id = 'aaaaaaaa-0000-0000-0000-0000000000a1'),
+          1::bigint, '활성 permissions 를 보유한 전문가는 persons_select 의 permissions 분기로 SELECT 가능');
 
 -- ── INSERT ──────────────────────────────────────────────────────────────────
 RESET ROLE; SELECT tests.login('11111111-1111-1111-1111-111111111111');   -- guardian

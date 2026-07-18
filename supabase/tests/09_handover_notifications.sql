@@ -85,16 +85,18 @@ SELECT lives_ok(
   '수신자는 미확인 인수인계를 확인 처리 가능');
 
 -- H10. 이미 확인된 건은 재수정 불가(USING acknowledged_at IS NULL → 0행)
+WITH u AS (UPDATE handover_notes SET acknowledged_at = now()
+              WHERE id='a9000000-0000-0000-0000-0000000000f1' RETURNING 1)
 SELECT is(
-  (WITH u AS (UPDATE handover_notes SET acknowledged_at = now()
-              WHERE id='a9000000-0000-0000-0000-0000000000f1' RETURNING 1) SELECT count(*) FROM u),
+  (SELECT count(*) FROM u),
   0::bigint, '이미 확인된 인수인계는 재확인(재수정) 불가');
 
 -- H11. 타인 수신 건은 확인 불가(USING to_user_id 불일치 → 0행) — OUT 이 GP발 미확인 건 ack 시도
 RESET ROLE; SELECT tests.login('a9000000-0000-0000-0000-000000000003');
+WITH u AS (UPDATE handover_notes SET acknowledged_at = now()
+              WHERE id='a9000000-0000-0000-0000-0000000000f4' RETURNING 1)
 SELECT is(
-  (WITH u AS (UPDATE handover_notes SET acknowledged_at = now()
-              WHERE id='a9000000-0000-0000-0000-0000000000f4' RETURNING 1) SELECT count(*) FROM u),
+  (SELECT count(*) FROM u),
   0::bigint, '타인 수신 인수인계는 확인 처리 불가');
 
 -- H12. 인수인계는 DELETE 불가(REVOKE, 42501) — 발신자조차
@@ -147,9 +149,10 @@ SELECT throws_ok(
 
 -- N7. 타인 알림은 읽음 처리 불가(USING recipient_id 불일치 → 0행)
 RESET ROLE; SELECT tests.login('a9000000-0000-0000-0000-000000000003');
+WITH u AS (UPDATE notifications SET is_read=true
+              WHERE id='a9000000-0000-0000-0000-0000000000e1' RETURNING 1)
 SELECT is(
-  (WITH u AS (UPDATE notifications SET is_read=true
-              WHERE id='a9000000-0000-0000-0000-0000000000e1' RETURNING 1) SELECT count(*) FROM u),
+  (SELECT count(*) FROM u),
   0::bigint, '타인 알림은 읽음 처리 불가');
 
 -- N8. 알림은 DELETE 불가(REVOKE, 42501) — 수신자 본인조차

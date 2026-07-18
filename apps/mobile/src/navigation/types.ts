@@ -54,6 +54,8 @@ export type TeacherStackParamList = {
   IepWizard: { personId: string; personName: string };
   IepReview: { recordId: string };
   ObservationForm: { personId: string; personName: string };
+  BipForm: { personId?: string; personName?: string } | undefined;
+  ItpWizard: { personId?: string; personName?: string } | undefined;
   EduTimeline: { personId: string; personName: string };
 };
 
@@ -64,6 +66,10 @@ export type SocialWorkerStackParamList = {
   TransitionPlanWizard: { personId: string; personName: string };
   ServiceUsage: undefined;
   WelTimeline: { personId: string; personName: string };
+  CaseConferenceForm: { personId?: string; personName?: string } | undefined;
+  LegBoard: undefined;
+  GuardianshipReportWizard: { personId?: string; personName?: string } | undefined;
+  AdvocacyConsultationForm: { personId?: string; personName?: string } | undefined;
 };
 
 export type TherapistStackParamList = {
