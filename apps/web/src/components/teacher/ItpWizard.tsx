@@ -119,7 +119,7 @@ export function ItpWizard({
   }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-2xl flex-1 flex-col">
+    <div className="mx-auto flex min-h-full max-w-6xl flex-1 flex-col">
       <h1 className="text-headline-2 font-extrabold text-foreground">
         개별화전환계획(ITP) 작성{" "}
         <span className="text-body font-medium text-muted-foreground">EDU-005</span>
@@ -129,24 +129,9 @@ export function ItpWizard({
         {client && <StageBadge lifeStage={client.lifeStage} className="min-h-6 pr-2 text-[11px]" />}
       </p>
 
-      {/* 재작성 케이스 — 기존 ITP 요약 */}
-      {client?.latestItp && (
-        <div className="mt-6 flex flex-col gap-2 rounded-xl border border-domain-edu-accent/40 bg-domain-edu-bg/50 p-4">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-label font-bold text-domain-edu-text">기존 ITP</span>
-            {client.latestItp.requiresConfirmation && (
-              <ConfirmBadge confirmedAt={client.latestItp.confirmedAt} />
-            )}
-          </div>
-          <p className="text-caption text-muted-foreground">
-            다음 검토일 {client.latestItp.nextReviewDate ?? "-"} · 아래에서 새 ITP를 작성하면
-            별도 기록으로 저장됩니다(기존 계획은 유지).
-          </p>
-        </div>
-      )}
-
-      <div className="mt-6 flex flex-col gap-8">
-        <fieldset className="flex flex-col gap-4">
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
+      <div className="flex flex-col gap-6">
+        <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
           <legend className="text-sm font-bold text-foreground">대상·흥미영역</legend>
           <Field label="대상 학생" required>
             <select
@@ -181,7 +166,7 @@ export function ItpWizard({
 
         {!blocked && (
           <>
-            <fieldset className="flex flex-col gap-4">
+            <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
               <legend className="text-sm font-bold text-foreground">현장실습 이력 (선택)</legend>
               {experiences.map((e, i) => (
                 <div key={i} className="flex flex-col gap-3 rounded-xl border border-border bg-white p-4">
@@ -234,7 +219,7 @@ export function ItpWizard({
               </Button>
             </fieldset>
 
-            <fieldset className="flex flex-col gap-4">
+            <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
               <legend className="text-sm font-bold text-foreground">인계메모·검토일</legend>
               <Field label="성인기 인계 메모 (선택)">
                 <textarea
@@ -250,35 +235,57 @@ export function ItpWizard({
               </Field>
             </fieldset>
 
-            <div className="rounded-(--br-md) bg-primary-50 p-4 text-body text-primary-700">
-              ✅ 개별화전환계획은 공식 지원계획 문서로 저장 시 확인(Confirmation) 절차가 시작됩니다.
-              <span className="mt-2 block font-bold">
-                📋 확인 요청 대상: {client && isSelfConfirmingStage(client.lifeStage) ? "본인" : "보호자"}
-              </span>
-            </div>
           </>
         )}
       </div>
 
-      {error && (
-        <p role="alert" className="mt-6 text-body font-semibold text-red-600">
-          {error}
-        </p>
-      )}
+      {/* 오른쪽 사이드바(lg:sticky) — 기존 ITP 요약·확인 요청 대상 안내·액션 버튼을 스크롤
+          중에도 계속 접근 가능하게 둔다(2026-07-20, JournalWizard와 동일한 원칙). */}
+      <div className="flex flex-col gap-4 lg:sticky lg:top-6">
+        {client?.latestItp && (
+          <div className="flex flex-col gap-2 rounded-xl border border-domain-edu-accent/40 bg-domain-edu-bg/50 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-label font-bold text-domain-edu-text">기존 ITP</span>
+              {client.latestItp.requiresConfirmation && (
+                <ConfirmBadge confirmedAt={client.latestItp.confirmedAt} />
+              )}
+            </div>
+            <p className="text-caption text-muted-foreground">
+              다음 검토일 {client.latestItp.nextReviewDate ?? "-"} · 새 ITP를 작성하면 별도
+              기록으로 저장됩니다(기존 계획은 유지).
+            </p>
+          </div>
+        )}
 
-      <div className="mt-8 flex items-center gap-2 border-t border-border pt-6">
-        <Button type="button" variant="outline" className="h-11" onClick={() => router.push("/records/itp")}>
-          취소
-        </Button>
-        <div className="flex-1" />
-        <Button
-          type="button"
-          className="h-11 bg-domain-edu-accent font-bold text-white"
-          disabled={busy || blocked || !canSubmit}
-          onClick={submit}
-        >
-          {busy ? "저장 중..." : "개별화전환계획 저장"}
-        </Button>
+        {!blocked && (
+          <div className="rounded-xl bg-domain-edu-bg p-4 text-body text-domain-edu-text ring-1 ring-domain-edu-accent/30">
+            ✅ 개별화전환계획은 공식 지원계획 문서로 저장 시 확인(Confirmation) 절차가 시작됩니다.
+            <span className="mt-2 block font-bold">
+              📋 확인 요청 대상: {client && isSelfConfirmingStage(client.lifeStage) ? "본인" : "보호자"}
+            </span>
+          </div>
+        )}
+
+        {error && (
+          <p role="alert" className="text-body font-semibold text-red-600">
+            {error}
+          </p>
+        )}
+
+        <div className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm ring-1 ring-foreground/10">
+          <Button
+            type="button"
+            className="h-11 bg-domain-edu-accent font-bold text-white"
+            disabled={busy || blocked || !canSubmit}
+            onClick={submit}
+          >
+            {busy ? "저장 중..." : "개별화전환계획 저장"}
+          </Button>
+          <Button type="button" variant="outline" className="h-11" onClick={() => router.push("/records/itp")}>
+            취소
+          </Button>
+        </div>
+      </div>
       </div>
     </div>
   );

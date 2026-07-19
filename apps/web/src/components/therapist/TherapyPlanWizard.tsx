@@ -158,7 +158,7 @@ export function TherapyPlanWizard({
   }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-2xl flex-1 flex-col">
+    <div className="mx-auto flex min-h-full max-w-6xl flex-1 flex-col">
       <h1 className="text-headline-2 font-extrabold text-foreground">치료계획서 작성</h1>
       <p className="mt-1 flex flex-wrap items-center gap-2 text-body text-muted-foreground">
         {client
@@ -171,8 +171,9 @@ export function TherapyPlanWizard({
         )}
       </p>
 
-      <div className="mt-6 flex flex-col gap-8">
-        <fieldset className="flex flex-col gap-4">
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
+      <div className="flex flex-col gap-6">
+        <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
           <legend className="text-sm font-bold text-foreground">대상·기본정보</legend>
           <Field label="대상 아동" required>
             <select
@@ -220,7 +221,7 @@ export function TherapyPlanWizard({
           </Field>
         </fieldset>
 
-        <fieldset className="flex flex-col gap-4">
+        <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
           <legend className="text-sm font-bold text-foreground">초기 평가 (선택)</legend>
           <Field label="초기 평가 소견·주의사항">
             <textarea
@@ -233,7 +234,7 @@ export function TherapyPlanWizard({
           </Field>
         </fieldset>
 
-        <fieldset className="flex flex-col gap-4">
+        <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
           <legend className="text-sm font-bold text-foreground">치료 목표</legend>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="치료 시작일" required>
@@ -288,7 +289,7 @@ export function TherapyPlanWizard({
           ))}
         </fieldset>
 
-        <fieldset className="flex flex-col gap-4">
+        <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
           <legend className="text-sm font-bold text-foreground">회기 계획</legend>
           <Field label="회기 빈도" required>
             <input
@@ -300,34 +301,39 @@ export function TherapyPlanWizard({
           </Field>
         </fieldset>
 
-        <div className="rounded-(--br-md) bg-primary-50 p-4 text-body text-primary-700">
+      </div>
+
+      {/* 오른쪽 사이드바(lg:sticky) — 확인 요청 대상 안내·액션 버튼을 스크롤 중에도 계속
+          접근 가능하게 둔다(2026-07-20, JournalWizard와 동일한 원칙). */}
+      <div className="flex flex-col gap-4 lg:sticky lg:top-6">
+        <div className="rounded-xl bg-domain-med-bg p-4 text-body text-domain-med-text ring-1 ring-domain-med-accent/30">
           ✅ 치료계획서는 공식 문서로 저장 시 확인(Confirmation) 절차가 시작됩니다. 저장 후 아동
           타임라인과 계획서 상세에 기록됩니다.
           <span className="mt-2 block font-bold">
             📋 확인 요청 대상: {client && isSelfConfirmingStage(client.lifeStage) ? "본인" : "보호자"}
           </span>
         </div>
+
+        {error && (
+          <p role="alert" className="text-body font-semibold text-red-600">
+            {error}
+          </p>
+        )}
+
+        <div className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm ring-1 ring-foreground/10">
+          <Button
+            type="button"
+            className="h-11 bg-primary-600 font-bold"
+            disabled={busy || !canSubmit}
+            onClick={submit}
+          >
+            {busy ? "저장 중..." : "치료계획서 저장"}
+          </Button>
+          <Button type="button" variant="outline" className="h-11" onClick={() => router.push("/home")}>
+            취소
+          </Button>
+        </div>
       </div>
-
-      {error && (
-        <p role="alert" className="mt-6 text-body font-semibold text-red-600">
-          {error}
-        </p>
-      )}
-
-      <div className="mt-8 flex items-center gap-2 border-t border-border pt-6">
-        <Button type="button" variant="outline" className="h-11" onClick={() => router.push("/home")}>
-          취소
-        </Button>
-        <div className="flex-1" />
-        <Button
-          type="button"
-          className="h-11 bg-primary-600 font-bold"
-          disabled={busy || !canSubmit}
-          onClick={submit}
-        >
-          {busy ? "저장 중..." : "치료계획서 저장"}
-        </Button>
       </div>
     </div>
   );
