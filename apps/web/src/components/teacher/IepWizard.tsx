@@ -4,27 +4,16 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { IepInput } from "@ongil/validation";
 import { createIep, type TeacherStudent } from "@/app/(app)/records/iep/actions";
-import { WizardProgress } from "@/components/form/WizardProgress";
 import { DateField } from "@/components/form/DateField";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
 import { isPreTransitionStage, isSelfConfirmingStage } from "@/lib/lifecycle";
 
 /**
- * T-13 IEP 작성 6단계 위저드(프로토타입 web-teacher.html 288~396줄).
- * 학생선택(1단계 내부) → 기본정보 → 현재수준 → 목표·평가 → 지원서비스 → 전환계획(만13세+) → 확인.
- * 전환계획 단계는 선택 학생의 lifeStage가 영유아기·아동기(만12세 이하)가 아닐 때만 입력을 활성화한다.
- * 중간 단계는 클라이언트 상태만 유지하고 마지막 확인에서 createIep(snake_case content)를 호출한다.
+ * T-13 IEP 작성 — 기본정보·현재수준·목표평가·지원서비스·전환계획을 한 화면에서 입력한다
+ * (2026-07-19, 기존 6단계 위저드를 병합해 대체). 전환계획 섹션은 선택 학생의 lifeStage가
+ * 영유아기·아동기(만12세 이하)가 아닐 때만 활성화된다.
  */
-
-const STEP_LABELS = [
-  "기본 정보",
-  "현재 수준",
-  "목표·평가",
-  "지원 서비스",
-  "전환 계획",
-  "확인·저장",
-];
 
 const fieldClass =
   "min-h-11 w-full rounded-(--br-md) border border-border bg-white px-3.5 py-2 text-body text-foreground outline-none focus-visible:border-primary-600";
@@ -65,7 +54,6 @@ export function IepWizard({
   initialPersonId?: string;
 }) {
   const router = useRouter();
-  const [step, setStep] = useState(1);
   const [personId, setPersonId] = useState(
     initialPersonId && students.some((s) => s.personId === initialPersonId)
       ? initialPersonId
@@ -167,9 +155,17 @@ export function IepWizard({
     return base;
   }
 
+  const canSubmit = Boolean(
+    personId &&
+      school.trim() &&
+      academicYear.trim() &&
+      meetingDate &&
+      annualGoals.some((g) => g.area.trim() || g.goal.trim())
+  );
+
   async function submit() {
-    if (!personId) {
-      setError("학생을 선택해주세요.");
+    if (!canSubmit) {
+      setError("학생·학교명·학년도·IEP 회의 날짜와 연간 목표를 하나 이상 입력해주세요.");
       return;
     }
     setBusy(true);
@@ -184,35 +180,6 @@ export function IepWizard({
     router.refresh();
   }
 
-  // 전환계획 단계는 아동기 학생에서 건너뛴다.
-  function nextStep() {
-    setError(null);
-    if (step === 4 && !showTransition) {
-      setStep(6);
-      return;
-    }
-    setStep((s) => Math.min(6, s + 1));
-  }
-  function prevStep() {
-    setError(null);
-    if (step === 6 && !showTransition) {
-      setStep(4);
-      return;
-    }
-    if (step === 1) {
-      router.push("/home");
-      return;
-    }
-    setStep((s) => Math.max(1, s - 1));
-  }
-
-  const canNext =
-    (step === 1 && personId && school.trim() && academicYear.trim() && meetingDate) ||
-    step === 2 ||
-    (step === 3 && annualGoals.some((g) => g.area.trim() || g.goal.trim())) ||
-    step === 4 ||
-    step === 5;
-
   if (students.length === 0) {
     return (
       <div className="rounded-xl bg-white p-6 ring-1 ring-foreground/10">
@@ -226,22 +193,16 @@ export function IepWizard({
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="mx-auto flex min-h-full max-w-2xl flex-1 flex-col">
       <h1 className="text-headline-2 font-extrabold text-foreground">개별화교육계획 작성</h1>
       <p className="mt-1 flex flex-wrap items-center gap-2 text-body text-muted-foreground">
         {student ? `${student.fullName} 학생 · ${academicYear}학년도` : "학생을 선택하세요"}
         {student && <StageBadge lifeStage={student.lifeStage} className="min-h-6 pr-2 text-[11px]" />}
       </p>
 
-      <WizardProgress
-        current={step}
-        total={6}
-        label={STEP_LABELS[step - 1]}
-        className="mt-5 mb-6"
-      />
-
-      {step === 1 && (
-        <div className="flex flex-col gap-4">
+      <div className="mt-6 flex flex-col gap-8">
+        <fieldset className="flex flex-col gap-4">
+          <legend className="text-sm font-bold text-foreground">기본 정보</legend>
           <Field label="대상 학생" required>
             <select
               className={fieldClass}
@@ -284,11 +245,10 @@ export function IepWizard({
               placeholder="특수교사, 학부모, 통합학급 담임, 치료지원 담당"
             />
           </Field>
-        </div>
-      )}
+        </fieldset>
 
-      {step === 2 && (
-        <div className="flex flex-col gap-4">
+        <fieldset className="flex flex-col gap-4">
+          <legend className="text-sm font-bold text-foreground">현재 수준</legend>
           <p className="text-body text-muted-foreground">5개 영역의 현재 수행 수준을 기술합니다.</p>
           {LEVEL_FIELDS.map((f) => (
             <Field key={f.key} label={f.label}>
@@ -300,11 +260,10 @@ export function IepWizard({
               />
             </Field>
           ))}
-        </div>
-      )}
+        </fieldset>
 
-      {step === 3 && (
-        <div className="flex flex-col gap-4">
+        <fieldset className="flex flex-col gap-4">
+          <legend className="text-sm font-bold text-foreground">목표·평가</legend>
           <p className="text-body text-muted-foreground">
             연간 목표별로 영역·목표와 단기 목표(기간·평가 방법)를 설정합니다.
           </p>
@@ -416,13 +375,12 @@ export function IepWizard({
           >
             ＋ 연간 목표 추가
           </Button>
-        </div>
-      )}
+        </fieldset>
 
-      {step === 4 && (
-        <div className="flex flex-col gap-4">
+        <fieldset className="flex flex-col gap-4">
+          <legend className="text-sm font-bold text-foreground">지원 서비스 (선택)</legend>
           <p className="text-body text-muted-foreground">
-            필요한 관련 서비스와 지원 인력·빈도를 입력합니다. (선택)
+            필요한 관련 서비스와 지원 인력·빈도를 입력합니다.
           </p>
           {services.map((s, i) => (
             <div key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_120px_auto]">
@@ -483,96 +441,61 @@ export function IepWizard({
           >
             ＋ 지원 서비스 추가
           </Button>
-        </div>
-      )}
+        </fieldset>
 
-      {step === 5 && (
-        <div className="flex flex-col gap-4">
-          {showTransition ? (
-            <>
-              <div className="rounded-(--br-md) bg-domain-tra-bg p-3 text-caption font-semibold text-domain-tra-text">
-                🔀 전환계획은 만 13세 이상 학생에게 표시됩니다.
-              </div>
-              <Field label="전환 목표">
-                <input
-                  className={fieldClass}
-                  value={transitionGoal}
-                  onChange={(e) => setTransitionGoal(e.target.value)}
-                  placeholder="바리스타 직업훈련 희망 (학생·보호자 면담 기반)"
-                />
-              </Field>
-              <Field label="전환 활동 계획 (줄바꿈으로 단계 구분)">
-                <textarea
-                  className={`${fieldClass} min-h-28`}
-                  value={transitionSteps}
-                  onChange={(e) => setTransitionSteps(e.target.value)}
-                  placeholder={"직업체험(카페 실습)\n자립생활 훈련(대중교통 이용)\n연계 기관 상담"}
-                />
-              </Field>
-            </>
-          ) : (
-            <div className="rounded-xl bg-white p-8 text-center text-body text-muted-foreground ring-1 ring-foreground/10">
-              만 13세 미만 학생은 전환계획 단계를 건너뜁니다.
+        {showTransition && (
+          <fieldset className="flex flex-col gap-4">
+            <legend className="text-sm font-bold text-foreground">전환 계획 (선택)</legend>
+            <div className="rounded-(--br-md) bg-domain-tra-bg p-3 text-caption font-semibold text-domain-tra-text">
+              🔀 전환계획은 만 13세 이상 학생에게 표시됩니다.
             </div>
-          )}
-        </div>
-      )}
+            <Field label="전환 목표">
+              <input
+                className={fieldClass}
+                value={transitionGoal}
+                onChange={(e) => setTransitionGoal(e.target.value)}
+                placeholder="바리스타 직업훈련 희망 (학생·보호자 면담 기반)"
+              />
+            </Field>
+            <Field label="전환 활동 계획 (줄바꿈으로 단계 구분)">
+              <textarea
+                className={`${fieldClass} min-h-28`}
+                value={transitionSteps}
+                onChange={(e) => setTransitionSteps(e.target.value)}
+                placeholder={"직업체험(카페 실습)\n자립생활 훈련(대중교통 이용)\n연계 기관 상담"}
+              />
+            </Field>
+          </fieldset>
+        )}
 
-      {step === 6 && (
-        <div className="flex flex-col gap-4">
-          <div className="rounded-xl bg-domain-edu-bg p-4 ring-1 ring-domain-edu-accent/40">
-            <SummaryRow k="학생 / 학년도" v={`${student?.fullName ?? "-"} / ${academicYear}`} />
-            <SummaryRow k="학교" v={school || "-"} />
-            <SummaryRow k="IEP 회의 날짜" v={meetingDate || "-"} />
-            <SummaryRow
-              k="연간 목표"
-              v={`${annualGoals.filter((g) => g.area.trim() || g.goal.trim()).length}개`}
-            />
-            <SummaryRow
-              k="지원 서비스"
-              v={`${services.filter((s) => s.service.trim()).length}개`}
-            />
-            <SummaryRow
-              k="전환 계획"
-              v={showTransition ? (transitionGoal.trim() ? "포함 (만 13세+)" : "미입력") : "해당 없음"}
-              last
-            />
-          </div>
-          <div className="rounded-(--br-md) bg-primary-50 p-4 text-body text-primary-700">
-            ✅ IEP는 공식 문서로 저장 시 확인(Confirmation) 절차가 시작됩니다. 저장 후 학생 타임라인과
-            IEP 점검 화면에 기록됩니다.
-            <span className="mt-2 block font-bold">
-              📋 확인 요청 대상: {student && isSelfConfirmingStage(student.lifeStage) ? "본인" : "보호자"}
-            </span>
-          </div>
+        <div className="rounded-(--br-md) bg-primary-50 p-4 text-body text-primary-700">
+          ✅ IEP는 공식 문서로 저장 시 확인(Confirmation) 절차가 시작됩니다. 저장 후 학생 타임라인과
+          IEP 점검 화면에 기록됩니다.
+          <span className="mt-2 block font-bold">
+            📋 확인 요청 대상: {student && isSelfConfirmingStage(student.lifeStage) ? "본인" : "보호자"}
+          </span>
         </div>
-      )}
+      </div>
 
       {error && (
-        <p role="alert" className="mt-4 text-body font-semibold text-red-600">
+        <p role="alert" className="mt-6 text-body font-semibold text-red-600">
           {error}
         </p>
       )}
 
-      <div className="mt-auto flex flex-wrap items-center gap-2 pt-8">
-        <Button type="button" variant="outline" className="h-11" onClick={prevStep}>
-          ← {step === 1 ? "취소" : "이전"}
+      <div className="mt-8 flex items-center gap-2 border-t border-border pt-6">
+        <Button type="button" variant="outline" className="h-11" onClick={() => router.push("/home")}>
+          취소
         </Button>
         <div className="flex-1" />
-        {step < 6 ? (
-          <Button type="button" className="h-11" disabled={!canNext} onClick={nextStep}>
-            다음 →
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            className="h-11 bg-primary-600 font-bold"
-            disabled={busy}
-            onClick={submit}
-          >
-            {busy ? "저장 중..." : "IEP 저장"}
-          </Button>
-        )}
+        <Button
+          type="button"
+          className="h-11 bg-primary-600 font-bold"
+          disabled={busy || !canSubmit}
+          onClick={submit}
+        >
+          {busy ? "저장 중..." : "IEP 저장"}
+        </Button>
       </div>
     </div>
   );
@@ -594,18 +517,5 @@ function Field({
       </span>
       {children}
     </label>
-  );
-}
-
-function SummaryRow({ k, v, last }: { k: string; v: string; last?: boolean }) {
-  return (
-    <div
-      className={`flex justify-between gap-4 py-2 text-body ${
-        last ? "" : "border-b border-domain-edu-accent/25"
-      }`}
-    >
-      <span className="shrink-0 font-semibold text-domain-edu-text">{k}</span>
-      <span className="text-right text-foreground">{v}</span>
-    </div>
   );
 }
