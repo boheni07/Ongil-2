@@ -2,6 +2,7 @@ import { Home, FileText, Settings, LayoutDashboard, PencilLine, ArrowLeftRight }
 import { createClient } from "@/lib/supabase/server";
 import { GlobalHeader } from "@/components/layout/GlobalHeader";
 import { Sidebar, type SidebarItem } from "@/components/layout/Sidebar";
+import { AccountSwitcher } from "@/components/layout/AccountSwitcher";
 import { getUnreadNotificationCount } from "@/app/(app)/notifications/actions";
 
 function sidebarItems(role: string | null): SidebarItem[] {
@@ -53,11 +54,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const unreadCount = user ? await getUnreadNotificationCount() : 0;
 
   // 당사자 모드(§7-1): 사이드바 없이 중앙 정렬 단일 컬럼 폰 셸, 넉넉한 여백.
+  // 사이드바가 없어 아래 Sidebar.footer 방식을 그대로 못 쓴다 — 폰 셸 하단에 동일한 계정
+  // 전환 콤보박스를 직접 배치해, 당사자 계정으로 전환한 뒤에도 다른 계정으로 돌아올 길을 남긴다.
   if (role === "person") {
     return (
       <div className="flex flex-1 flex-col bg-primary-50/20">
         <GlobalHeader userName={fullName ?? user?.email ?? null} notificationCount={unreadCount} />
         <main className="mx-auto flex w-full max-w-lg flex-1 flex-col px-5 py-8">{children}</main>
+        {process.env.NODE_ENV !== "production" && (
+          <div className="mx-auto w-full max-w-lg rounded-t-(--br-lg) bg-primary-800">
+            <AccountSwitcher currentEmail={user?.email ?? null} />
+          </div>
+        )}
       </div>
     );
   }
@@ -66,7 +74,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex flex-1 flex-col bg-white">
       <GlobalHeader userName={fullName ?? user?.email ?? null} notificationCount={unreadCount} />
       <div className="flex flex-1">
-        <Sidebar items={sidebarItems(role)} />
+        <Sidebar
+          items={sidebarItems(role)}
+          footer={
+            process.env.NODE_ENV !== "production" ? (
+              <AccountSwitcher currentEmail={user?.email ?? null} />
+            ) : undefined
+          }
+        />
         <main className="flex flex-1 flex-col bg-[#fafaf9] px-6 py-8">{children}</main>
       </div>
     </div>

@@ -467,3 +467,46 @@ async function fetchRole(
   const { data } = await supabase.from("users").select("role").eq("id", userId).maybeSingle();
   return (data?.role as Role | undefined) ?? null;
 }
+
+// ─────────────────────────────────────────────────────────
+// 개발용 계정 전환 (Sidebar `AccountSwitcher`) — 역할별 화면 스팟체크 편의
+// ─────────────────────────────────────────────────────────
+
+/**
+ * supabase/seed.sql이 만드는 7개 로컬 목업 계정만 화이트리스트로 허용한다 — 임의 이메일로
+ * 로그인 시도를 만들 수 있는 통로가 되지 않도록, 요청 값이 이 집합에 없으면 아무 것도 하지 않는다.
+ * 비밀번호는 seed.sql 주석(9번째 줄)에 명시된 로컬 전용 고정값(Ongil1234!)과 동일하다.
+ */
+const DEV_TEST_ACCOUNT_EMAILS = new Set([
+  "guardian1@ongil.test",
+  "guardian2@ongil.test",
+  "person1@ongil.test",
+  "supporter1@ongil.test",
+  "teacher1@ongil.test",
+  "social1@ongil.test",
+  "therapist1@ongil.test",
+]);
+
+const DEV_TEST_ACCOUNT_PASSWORD = "Ongil1234!";
+
+export async function devSwitchAccount(formData: FormData): Promise<void> {
+  const email = formData.get("email");
+  if (
+    process.env.NODE_ENV === "production" ||
+    typeof email !== "string" ||
+    !DEV_TEST_ACCOUNT_EMAILS.has(email)
+  ) {
+    return;
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password: DEV_TEST_ACCOUNT_PASSWORD,
+  });
+  if (error || !data.user) return;
+
+  const role =
+    (data.user.user_metadata?.role as Role | undefined) ?? (await fetchRole(supabase, data.user.id));
+  redirect(role ? ROLE_HOME[role] : "/home");
+}

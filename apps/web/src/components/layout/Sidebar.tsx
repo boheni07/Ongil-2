@@ -29,9 +29,11 @@ export interface SidebarProps {
   collapsed?: boolean;
   onToggleCollapsed?: () => void;
   className?: string;
+  /** 최하단 보조 영역(예: 개발용 계정 전환 콤보박스) — 접힘 상태에선 폭이 부족해 숨긴다. */
+  footer?: ReactNode;
 }
 
-export function Sidebar({ items, collapsed = false, onToggleCollapsed, className }: SidebarProps) {
+export function Sidebar({ items, collapsed = false, onToggleCollapsed, className, footer }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -69,6 +71,8 @@ export function Sidebar({ items, collapsed = false, onToggleCollapsed, className
           );
         })}
       </ul>
+
+      {!collapsed && footer}
 
       {onToggleCollapsed ? (
         <button
