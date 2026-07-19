@@ -31,8 +31,13 @@ import { StepBar } from "../components/StepBar";
 import { WizardFooter } from "../components/WizardStep";
 import { ErrorBanner, InfoBanner } from "../components/ui";
 import { DateField } from "../components/DateField";
-import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
+import { DOMAIN_COLORS, FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { SupporterStackParamList } from "../navigation/types";
+
+/** 활동일지는 일상(DAI) 도메인 기록이라, 이 화면 로컬 요소는 웹 JournalWizard.tsx와 동일하게
+ * DAI 톤으로 강조한다(2026-07-20). CategoryChip 등 여러 화면이 공유하는 컴포넌트의 내부 색은
+ * 건드리지 않는다 — IEP 전환목표 칩 등 무관한 화면까지 영향을 주지 않기 위해서다. */
+const DAI = DOMAIN_COLORS.DAI;
 
 type Props = NativeStackScreenProps<SupporterStackParamList, "JournalCompose">;
 
@@ -234,7 +239,7 @@ export function JournalComposeScreen({ navigation, route }: Props) {
       {syncNotice ? <InfoBanner message={syncNotice} /> : null}
 
       {step === 1 && (
-        <View>
+        <View style={styles.card}>
           <Text style={styles.label}>서비스 날짜</Text>
           <DateField
             accessibilityLabel="서비스 날짜"
@@ -271,7 +276,7 @@ export function JournalComposeScreen({ navigation, route }: Props) {
       )}
 
       {step === 2 && (
-        <View>
+        <View style={styles.card}>
           <Text style={styles.label}>활동 카테고리 (복수 선택)</Text>
           <View style={styles.pickWrap}>
             {JOURNAL_CATEGORIES.map((c) => (
@@ -322,7 +327,7 @@ export function JournalComposeScreen({ navigation, route }: Props) {
       )}
 
       {step === 3 && (
-        <View>
+        <View style={styles.card}>
           <Text style={styles.label}>🍚 식사 상태</Text>
           <View style={styles.pickWrap}>
             {JOURNAL_MEAL_CHOICES.map((c) => (
@@ -351,7 +356,7 @@ export function JournalComposeScreen({ navigation, route }: Props) {
       )}
 
       {step === 4 && (
-        <View>
+        <View style={styles.card}>
           <InfoBanner message="이 단계는 선택입니다. 인계할 내용이 없다면 건너뛰기를 누르세요." />
           <Text style={styles.label}>특이사항 / 행동 관찰</Text>
           <TextInput
@@ -377,7 +382,7 @@ export function JournalComposeScreen({ navigation, route }: Props) {
       )}
 
       {step === 5 && (
-        <View>
+        <View style={styles.card}>
           <Text style={styles.label}>종료 시간</Text>
           <TextInput
             accessibilityLabel="종료 시간. 예시 16:00"
@@ -446,7 +451,17 @@ function SumRow({ k, v }: { k: string; v: string }) {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: NEUTRAL.bg },
   content: { padding: SPACING.xl },
-  stepCap: { fontSize: FONT.h3, fontWeight: "700", color: PRIMARY[700], marginBottom: SPACING.md },
+  stepCap: { fontSize: FONT.h3, fontWeight: "700", color: DAI.text, marginBottom: SPACING.md },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: RADIUS.lg,
+    padding: SPACING.lg,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 1,
+  },
   label: { fontSize: 15, fontWeight: "600", color: NEUTRAL.text, marginBottom: SPACING.sm, marginTop: SPACING.sm },
   muted: { fontSize: FONT.body, color: NEUTRAL.textMuted },
   input: {
@@ -487,11 +502,11 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xl,
     padding: SPACING.md,
     borderRadius: RADIUS.md,
-    backgroundColor: NEUTRAL.surface,
+    backgroundColor: DAI.bg,
     borderWidth: 1,
-    borderColor: NEUTRAL.border,
+    borderColor: `${DAI.accent}66`,
   },
-  refTitle: { fontSize: 15, fontWeight: "700", color: NEUTRAL.text },
+  refTitle: { fontSize: 15, fontWeight: "700", color: DAI.text },
   refDesc: { fontSize: 13, color: NEUTRAL.textMuted, marginTop: 4 },
   refBtn: {
     marginTop: SPACING.md,
@@ -499,29 +514,32 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: RADIUS.md,
-    backgroundColor: PRIMARY[50],
+    backgroundColor: "#fff",
     borderWidth: 1,
-    borderColor: PRIMARY[400],
+    borderColor: DAI.accent,
   },
-  refBtnText: { fontSize: 14, fontWeight: "700", color: PRIMARY[700] },
-  refInfo: { fontSize: 13, color: PRIMARY[700], marginTop: SPACING.sm },
+  refBtnText: { fontSize: 14, fontWeight: "700", color: DAI.text },
+  refInfo: { fontSize: 13, color: DAI.text, marginTop: SPACING.sm },
   hoursBox: {
     marginTop: SPACING.md,
     padding: SPACING.md,
     borderRadius: RADIUS.md,
-    backgroundColor: NEUTRAL.surface,
+    backgroundColor: DAI.bg,
+    borderWidth: 1,
+    borderColor: `${DAI.accent}66`,
   },
   hoursLabel: { fontSize: 13, color: NEUTRAL.textMuted },
-  hoursValue: { fontSize: 20, fontWeight: "800", color: PRIMARY[700], marginTop: 4 },
+  hoursValue: { fontSize: 20, fontWeight: "800", color: DAI.text, marginTop: 4 },
   summary: {
     marginTop: SPACING.lg,
     borderRadius: RADIUS.md,
     borderWidth: 1,
-    borderColor: NEUTRAL.border,
+    borderColor: `${DAI.accent}4d`,
+    backgroundColor: DAI.bg,
     padding: SPACING.md,
   },
   sumRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 6, gap: SPACING.md },
-  sumK: { fontSize: 14, color: NEUTRAL.textMuted },
+  sumK: { fontSize: 14, color: DAI.text, opacity: 0.75 },
   sumV: { fontSize: 14, fontWeight: "600", color: NEUTRAL.text, flex: 1, textAlign: "right" },
   draftBtn: {
     marginTop: SPACING.lg,
