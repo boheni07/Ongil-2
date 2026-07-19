@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Bell, LogOut, Settings } from "lucide-react";
+import { Bell, LogOut, Settings, UserRoundPen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -88,6 +88,10 @@ export function GlobalHeader({
             {userName ? <span className="text-sm font-medium text-accent-stone">{userName}</span> : null}
           </DropdownMenuTrigger>
           <DropdownMenuContent>
+            <DropdownMenuLinkItem render={<Link href="/settings/profile" />}>
+              <UserRoundPen className="mr-2 size-4" aria-hidden="true" />
+              프로필 수정
+            </DropdownMenuLinkItem>
             <DropdownMenuLinkItem render={<Link href="/settings" />}>
               <Settings className="mr-2 size-4" aria-hidden="true" />
               설정
