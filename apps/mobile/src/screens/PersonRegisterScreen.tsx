@@ -20,6 +20,7 @@ import { WizardFooter } from "../components/WizardStep";
 import { ErrorBanner, InfoBanner } from "../components/ui";
 import { DateField } from "../components/DateField";
 import { formatPhoneNumber } from "../lib/format";
+import { Card } from "../components/Card";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { GuardianStackParamList } from "../navigation/types";
 
@@ -182,7 +183,7 @@ export function PersonRegisterScreen({ navigation }: Props) {
       {error ? <ErrorBanner message={error} /> : null}
 
       {step === 1 && (
-        <View>
+        <Card>
           <Text style={styles.label}>이름 *</Text>
           <TextInput
             accessibilityLabel="이름"
@@ -211,11 +212,11 @@ export function PersonRegisterScreen({ navigation }: Props) {
               />
             ))}
           </View>
-        </View>
+        </Card>
       )}
 
       {step === 2 && (
-        <View>
+        <Card>
           <InfoBanner message="장애·건강정보는 민감정보입니다(PIPA §23). 보호자가 대리 동의합니다." />
           <Text style={styles.consentBody}>
             온길은 당사자의 장애정보, 건강정보, 응급정보 등 민감정보를 기록·이용합니다. 보호자로서
@@ -233,11 +234,11 @@ export function PersonRegisterScreen({ navigation }: Props) {
             </View>
             <Text style={styles.consentLabel}>민감정보 수집·이용에 동의합니다.</Text>
           </Pressable>
-        </View>
+        </Card>
       )}
 
       {step === 3 && (
-        <View>
+        <Card>
           <Text style={styles.label}>장애 유형 (복수 선택)</Text>
           <View style={styles.pickWrap}>
             {DISABILITY_TYPES.map((t) => (
@@ -255,11 +256,11 @@ export function PersonRegisterScreen({ navigation }: Props) {
             <CategoryChip emoji="•" label="심한 장애" selected={disabilityDegree === "severe"} onPress={() => setDisabilityDegree(disabilityDegree === "severe" ? null : "severe")} />
             <CategoryChip emoji="•" label="심하지 않은 장애" selected={disabilityDegree === "mild"} onPress={() => setDisabilityDegree(disabilityDegree === "mild" ? null : "mild")} />
           </View>
-        </View>
+        </Card>
       )}
 
       {step === 4 && (
-        <View>
+        <Card>
           <Text style={styles.label}>알레르기 (쉼표로 구분)</Text>
           <TextInput
             accessibilityLabel="알레르기"
@@ -305,20 +306,20 @@ export function PersonRegisterScreen({ navigation }: Props) {
             maxLength={13}
             style={[styles.input, { marginTop: SPACING.sm }]}
           />
-        </View>
+        </Card>
       )}
 
       {step === 5 && (
-        <View>
+        <Card>
           <InfoBanner message="프로필 사진은 선택입니다. 사진 업로드는 준비 중이며, 건너뛰고 등록할 수 있습니다." />
           <View style={styles.avatarPlaceholder}>
             <Text style={styles.avatarEmoji}>🧑</Text>
           </View>
-        </View>
+        </Card>
       )}
 
       {step === 6 && (
-        <View>
+        <Card>
           <Text style={styles.summaryTitle}>입력 내용을 확인하세요</Text>
           <SumRow k="이름" v={fullName.trim() || "-"} />
           <SumRow k="생년월일" v={birthDate.trim() || "-"} />
@@ -335,7 +336,7 @@ export function PersonRegisterScreen({ navigation }: Props) {
             k="비상연락"
             v={contactName.trim() && contactPhone.trim() ? `${contactName.trim()} ${contactPhone.trim()}` : "미입력"}
           />
-        </View>
+        </Card>
       )}
 
       <WizardFooter

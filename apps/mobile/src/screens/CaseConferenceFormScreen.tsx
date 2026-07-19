@@ -14,8 +14,11 @@ import { CategoryChip } from "../components/IconSelector";
 import { StageBadge } from "../components/lifecycle/StageBadge";
 import { ErrorBanner, InfoBanner, PrimaryButton } from "../components/ui";
 import { formatDateTimeInput } from "../lib/format";
-import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
+import { Card } from "../components/Card";
+import { DOMAIN_COLORS, FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { SocialWorkerStackParamList } from "../navigation/types";
+
+const WEL = DOMAIN_COLORS.WEL;
 
 type Props = NativeStackScreenProps<SocialWorkerStackParamList, "CaseConferenceForm">;
 
@@ -144,6 +147,7 @@ export function CaseConferenceFormScreen({ navigation, route }: Props) {
       </Text>
       {error ? <ErrorBanner message={error} /> : null}
 
+      <Card>
       {!paramPersonId ? (
         <>
           <Text style={styles.label}>대상 당사자</Text>
@@ -215,6 +219,8 @@ export function CaseConferenceFormScreen({ navigation, route }: Props) {
         style={styles.textarea}
       />
 
+      </Card>
+
       <InfoBanner message="사례회의록은 확인 절차 없이 저장되며, 당사자·보호자에게 등록 알림이 발송됩니다." />
 
       <View style={{ marginTop: SPACING.md }}>
@@ -245,8 +251,8 @@ const styles = StyleSheet.create({
   clientBanner: {
     fontSize: 15,
     fontWeight: "700",
-    color: PRIMARY[700],
-    backgroundColor: PRIMARY[50],
+    color: WEL.text,
+    backgroundColor: WEL.bg,
     borderRadius: RADIUS.md,
     padding: SPACING.md,
     marginTop: SPACING.sm,

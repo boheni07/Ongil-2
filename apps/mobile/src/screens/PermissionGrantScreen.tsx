@@ -22,6 +22,7 @@ import { StepBar } from "../components/StepBar";
 import { WizardFooter } from "../components/WizardStep";
 import { ErrorBanner, InfoBanner } from "../components/ui";
 import { DateField } from "../components/DateField";
+import { Card } from "../components/Card";
 import { DOMAIN_COLORS, FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { GuardianStackParamList } from "../navigation/types";
 
@@ -261,7 +262,7 @@ export function PermissionGrantScreen({ route, navigation }: Props) {
       {error ? <ErrorBanner message={error} /> : null}
 
       {step === 1 && (
-        <View>
+        <Card>
           <Text style={styles.q}>누구에게 권한을 부여하나요?</Text>
           <Text style={styles.label}>이메일로 대상자 찾기</Text>
           <View style={styles.emailRow}>
@@ -330,11 +331,11 @@ export function PermissionGrantScreen({ route, navigation }: Props) {
               </View>
             </View>
           ) : null}
-        </View>
+        </Card>
       )}
 
       {step === 2 && (
-        <View>
+        <Card>
           <Text style={styles.q}>어떤 도메인에 접근하나요?</Text>
           <Text style={styles.subtle}>
             {effectiveRole ? `${ROLE_LABEL[effectiveRole]} 프리셋을 자동 선택했습니다. ` : ""}
@@ -364,11 +365,11 @@ export function PermissionGrantScreen({ route, navigation }: Props) {
               );
             })}
           </View>
-        </View>
+        </Card>
       )}
 
       {step === 3 && (
-        <View>
+        <Card>
           <Text style={styles.q}>권한 수준과 유효 기간</Text>
           <Text style={styles.subtle}>도메인마다 접근 수준을 정할 수 있습니다.</Text>
 
@@ -434,11 +435,11 @@ export function PermissionGrantScreen({ route, navigation }: Props) {
               편집(edit) 권한이 포함되어 있어 종료일이 반드시 필요합니다.
             </Text>
           ) : null}
-        </View>
+        </Card>
       )}
 
       {step === 4 && (
-        <View>
+        <Card>
           <Text style={styles.q}>부여 내용 확인</Text>
           <SumRow k="당사자" v={personName} />
           <SumRow
@@ -467,7 +468,7 @@ export function PermissionGrantScreen({ route, navigation }: Props) {
           <Text style={styles.finalNote}>
             부여 시 대상자에게 알림이 전송되며, 모든 접근은 접근 로그(G-40)에 기록됩니다.
           </Text>
-        </View>
+        </Card>
       )}
 
       <WizardFooter

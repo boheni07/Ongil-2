@@ -18,8 +18,11 @@ import { StageBadge } from "../components/lifecycle/StageBadge";
 import { WizardFooter } from "../components/WizardStep";
 import { ErrorBanner, InfoBanner } from "../components/ui";
 import { DateField } from "../components/DateField";
-import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
+import { Card } from "../components/Card";
+import { DOMAIN_COLORS, FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { SocialWorkerStackParamList } from "../navigation/types";
+
+const TRA = DOMAIN_COLORS.TRA;
 
 type Props = NativeStackScreenProps<SocialWorkerStackParamList, "TransitionPlanWizard">;
 
@@ -222,7 +225,7 @@ export function TransitionPlanWizardScreen({ navigation, route }: Props) {
       ) : null}
 
       {step === 1 && (
-        <View>
+        <Card>
           {!paramPersonId ? (
             <>
               <Text style={styles.label}>대상 당사자</Text>
@@ -291,11 +294,11 @@ export function TransitionPlanWizardScreen({ navigation, route }: Props) {
               />
             </>
           )}
-        </View>
+        </Card>
       )}
 
       {step === 2 && (
-        <View>
+        <Card>
           <Text style={styles.label}>현재 전환 로드맵 단계</Text>
           <Text style={styles.helpText}>당사자의 현재 위치를 선택하세요. 이후 진행에 따라 갱신합니다.</Text>
           <RoadmapProgress stage={roadmapStage} onChange={setRoadmapStage} />
@@ -309,11 +312,11 @@ export function TransitionPlanWizardScreen({ navigation, route }: Props) {
             multiline
             style={styles.textarea}
           />
-        </View>
+        </Card>
       )}
 
       {step === 3 && (
-        <View>
+        <Card>
           <InfoBanner message="훈련 이력은 선택입니다. 없으면 비워두고 넘어가세요." />
           {trainings.map((t, i) => (
             <View key={i} style={styles.card}>
@@ -393,11 +396,11 @@ export function TransitionPlanWizardScreen({ navigation, route }: Props) {
           >
             <Text style={styles.addBtnText}>＋ 훈련 이력 추가</Text>
           </Pressable>
-        </View>
+        </Card>
       )}
 
       {step === 4 && (
-        <View>
+        <Card>
           <InfoBanner message="연계 기관은 선택입니다. 협력·의뢰 기관을 등록하세요." />
           {linkedAgencies.map((a, i) => (
             <View key={i} style={styles.agencyRow}>
@@ -428,11 +431,11 @@ export function TransitionPlanWizardScreen({ navigation, route }: Props) {
           >
             <Text style={styles.addBtnText}>＋ 연계 기관 추가</Text>
           </Pressable>
-        </View>
+        </Card>
       )}
 
       {step === 5 && (
-        <View>
+        <Card>
           <Text style={styles.helpText}>입력 내용을 확인하고 제출하세요.</Text>
           <RoadmapProgress stage={roadmapStage} />
           <View style={styles.summary}>
@@ -451,7 +454,7 @@ export function TransitionPlanWizardScreen({ navigation, route }: Props) {
             <SumRow k="확인 요청 대상" v={isAdult ? "본인" : "보호자"} />
           </View>
           <InfoBanner message="전환계획은 공식 문서입니다. 제출 시 당사자·보호자 확인 절차가 시작됩니다." />
-        </View>
+        </Card>
       )}
 
       <WizardFooter
@@ -482,8 +485,8 @@ const styles = StyleSheet.create({
   clientBanner: {
     fontSize: 15,
     fontWeight: "700",
-    color: PRIMARY[700],
-    backgroundColor: PRIMARY[50],
+    color: TRA.text,
+    backgroundColor: TRA.bg,
     borderRadius: RADIUS.md,
     padding: SPACING.md,
     marginBottom: SPACING.sm,
@@ -552,25 +555,25 @@ const styles = StyleSheet.create({
     padding: SPACING.xl,
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    borderColor: NEUTRAL.border,
-    backgroundColor: NEUTRAL.surface,
+    borderColor: TRA.accent,
+    backgroundColor: TRA.bg,
     alignItems: "center",
     gap: SPACING.sm,
   },
   guardIcon: { fontSize: 40 },
-  guardTitle: { fontSize: 17, fontWeight: "800", color: NEUTRAL.text, textAlign: "center" },
+  guardTitle: { fontSize: 17, fontWeight: "800", color: TRA.text, textAlign: "center" },
   guardText: { fontSize: 14, color: NEUTRAL.textMuted, textAlign: "center", lineHeight: 20 },
   latestCard: {
     padding: SPACING.md,
     borderRadius: RADIUS.md,
     borderWidth: 1,
-    borderColor: PRIMARY[400],
-    backgroundColor: PRIMARY[50],
+    borderColor: TRA.accent,
+    backgroundColor: TRA.bg,
     marginBottom: SPACING.lg,
     gap: SPACING.xs,
   },
-  latestTitle: { fontSize: 13, fontWeight: "800", color: PRIMARY[700] },
-  latestMeta: { fontSize: 12, color: PRIMARY[700] },
+  latestTitle: { fontSize: 13, fontWeight: "800", color: TRA.text },
+  latestMeta: { fontSize: 12, color: TRA.text },
   summary: {
     borderRadius: RADIUS.md,
     borderWidth: 1,

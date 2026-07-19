@@ -11,8 +11,11 @@ import { StepBar } from "../components/StepBar";
 import { WizardFooter } from "../components/WizardStep";
 import { ErrorBanner, InfoBanner } from "../components/ui";
 import { DateField } from "../components/DateField";
-import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
+import { Card } from "../components/Card";
+import { DOMAIN_COLORS, FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { TeacherStackParamList } from "../navigation/types";
+
+const EDU = DOMAIN_COLORS.EDU;
 
 type Props = NativeStackScreenProps<TeacherStackParamList, "IepWizard">;
 
@@ -309,7 +312,7 @@ export function IepWizardScreen({ navigation, route }: Props) {
       {error ? <ErrorBanner message={error} /> : null}
 
       {step === 1 && (
-        <View>
+        <Card>
           {!paramPersonId ? (
             <>
               <Text style={styles.label}>대상 학생</Text>
@@ -367,11 +370,11 @@ export function IepWizardScreen({ navigation, route }: Props) {
             placeholderTextColor={NEUTRAL.textMuted}
             style={styles.input}
           />
-        </View>
+        </Card>
       )}
 
       {step === 2 && (
-        <View>
+        <Card>
           <Text style={styles.helpText}>5개 영역의 현재 수행 수준을 기술하세요.</Text>
           {LEVEL_FIELDS.map((f) => (
             <View key={f.key}>
@@ -387,11 +390,11 @@ export function IepWizardScreen({ navigation, route }: Props) {
               />
             </View>
           ))}
-        </View>
+        </Card>
       )}
 
       {step === 3 && (
-        <View>
+        <Card>
           <Text style={styles.helpText}>연간 목표별로 단기 목표와 평가 방법을 설정하세요.</Text>
           {annualGoals.map((g, gi) => (
             <View key={gi} style={styles.goalCard}>
@@ -464,11 +467,11 @@ export function IepWizardScreen({ navigation, route }: Props) {
           >
             <Text style={styles.addBtnText}>＋ 연간 목표 추가</Text>
           </Pressable>
-        </View>
+        </Card>
       )}
 
       {step === 4 && (
-        <View>
+        <Card>
           <InfoBanner message="지원 서비스는 선택입니다. 없으면 비워두고 넘어가세요." />
           {supportServices.map((s, i) => (
             <View key={i} style={styles.goalCard}>
@@ -510,11 +513,11 @@ export function IepWizardScreen({ navigation, route }: Props) {
           >
             <Text style={styles.addBtnText}>＋ 지원 서비스 추가</Text>
           </Pressable>
-        </View>
+        </Card>
       )}
 
       {step === 5 && (
-        <View>
+        <Card>
           <InfoBanner message="전환계획은 만 13세 이상 학생에게만 표시됩니다." />
           <Text style={styles.label}>전환 목표 영역</Text>
           <View style={styles.pickWrap}>
@@ -557,11 +560,11 @@ export function IepWizardScreen({ navigation, route }: Props) {
             placeholderTextColor={NEUTRAL.textMuted}
             style={styles.input}
           />
-        </View>
+        </Card>
       )}
 
       {step === 6 && (
-        <View>
+        <Card>
           <Text style={styles.helpText}>입력 내용을 확인하고 저장하세요.</Text>
           <View style={styles.summary}>
             <SumRow k="학생" v={selectedStudent?.fullName ?? route.params.personName} />
@@ -582,7 +585,7 @@ export function IepWizardScreen({ navigation, route }: Props) {
             <SumRow k="확인 요청 대상" v={isSelfConfirmingStage(lifeStage) ? "본인" : "보호자"} />
           </View>
           <InfoBanner message="IEP는 공식 문서입니다. 저장(제출) 시 보호자·당사자 확인 절차가 시작됩니다." />
-        </View>
+        </Card>
       )}
 
       <WizardFooter
@@ -613,8 +616,8 @@ const styles = StyleSheet.create({
   studentBanner: {
     fontSize: 15,
     fontWeight: "700",
-    color: PRIMARY[700],
-    backgroundColor: PRIMARY[50],
+    color: EDU.text,
+    backgroundColor: EDU.bg,
     borderRadius: RADIUS.md,
     padding: SPACING.md,
     marginBottom: SPACING.sm,

@@ -13,8 +13,11 @@ import { StageBadge } from "../components/lifecycle/StageBadge";
 import { WizardFooter } from "../components/WizardStep";
 import { ErrorBanner, InfoBanner } from "../components/ui";
 import { DateField } from "../components/DateField";
-import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
+import { Card } from "../components/Card";
+import { DOMAIN_COLORS, FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { TeacherStackParamList } from "../navigation/types";
+
+const EDU = DOMAIN_COLORS.EDU;
 
 type Props = NativeStackScreenProps<TeacherStackParamList, "ItpWizard">;
 
@@ -185,7 +188,7 @@ export function ItpWizardScreen({ navigation, route }: Props) {
       ) : null}
 
       {step === 1 && (
-        <View>
+        <Card>
           {!paramPersonId ? (
             <>
               <Text style={styles.label}>대상 학생</Text>
@@ -241,11 +244,11 @@ export function ItpWizardScreen({ navigation, route }: Props) {
               />
             </>
           )}
-        </View>
+        </Card>
       )}
 
       {step === 2 && (
-        <View>
+        <Card>
           <InfoBanner message="현장실습·직업체험 이력은 선택입니다. 없으면 비워두고 넘어가세요." />
           {experiences.map((e, i) => (
             <View key={i} style={styles.card}>
@@ -315,11 +318,11 @@ export function ItpWizardScreen({ navigation, route }: Props) {
           >
             <Text style={styles.addBtnText}>＋ 실습 이력 추가</Text>
           </Pressable>
-        </View>
+        </Card>
       )}
 
       {step === 3 && (
-        <View>
+        <Card>
           <Text style={styles.label}>성인기 인계 메모 (선택)</Text>
           <TextInput
             accessibilityLabel="성인기 인계 메모"
@@ -338,11 +341,11 @@ export function ItpWizardScreen({ navigation, route }: Props) {
             onChange={setNextReviewDate}
             style={styles.input}
           />
-        </View>
+        </Card>
       )}
 
       {step === 4 && (
-        <View>
+        <Card>
           <Text style={styles.helpText}>입력 내용을 확인하고 저장하세요.</Text>
           <View style={styles.summary}>
             <SumRow k="학생" v={client?.fullName || route.params?.personName || "-"} />
@@ -358,7 +361,7 @@ export function ItpWizardScreen({ navigation, route }: Props) {
             />
           </View>
           <InfoBanner message="개별화전환계획은 공식 문서입니다. 저장(제출) 시 당사자·보호자 확인 절차가 시작됩니다." />
-        </View>
+        </Card>
       )}
 
       <WizardFooter
@@ -389,8 +392,8 @@ const styles = StyleSheet.create({
   clientBanner: {
     fontSize: 15,
     fontWeight: "700",
-    color: PRIMARY[700],
-    backgroundColor: PRIMARY[50],
+    color: EDU.text,
+    backgroundColor: EDU.bg,
     borderRadius: RADIUS.md,
     padding: SPACING.md,
     marginBottom: SPACING.sm,
@@ -457,25 +460,25 @@ const styles = StyleSheet.create({
     padding: SPACING.xl,
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    borderColor: NEUTRAL.border,
-    backgroundColor: NEUTRAL.surface,
+    borderColor: EDU.accent,
+    backgroundColor: EDU.bg,
     alignItems: "center",
     gap: SPACING.sm,
   },
   guardIcon: { fontSize: 40 },
-  guardTitle: { fontSize: 17, fontWeight: "800", color: NEUTRAL.text, textAlign: "center" },
+  guardTitle: { fontSize: 17, fontWeight: "800", color: EDU.text, textAlign: "center" },
   guardText: { fontSize: 14, color: NEUTRAL.textMuted, textAlign: "center", lineHeight: 20 },
   latestCard: {
     padding: SPACING.md,
     borderRadius: RADIUS.md,
     borderWidth: 1,
-    borderColor: PRIMARY[400],
-    backgroundColor: PRIMARY[50],
+    borderColor: EDU.accent,
+    backgroundColor: EDU.bg,
     marginBottom: SPACING.lg,
     gap: SPACING.xs,
   },
-  latestTitle: { fontSize: 13, fontWeight: "800", color: PRIMARY[700] },
-  latestMeta: { fontSize: 12, color: PRIMARY[700] },
+  latestTitle: { fontSize: 13, fontWeight: "800", color: EDU.text },
+  latestMeta: { fontSize: 12, color: EDU.text },
   summary: {
     borderRadius: RADIUS.md,
     borderWidth: 1,

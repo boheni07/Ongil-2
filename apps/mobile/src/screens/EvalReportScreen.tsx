@@ -25,8 +25,11 @@ import { CategoryChip } from "../components/IconSelector";
 import { EvalComparisonTable } from "../components/EvalComparisonTable";
 import { ErrorBanner, InfoBanner } from "../components/ui";
 import { DateField } from "../components/DateField";
-import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
+import { Card } from "../components/Card";
+import { DOMAIN_COLORS, FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { TherapistStackParamList } from "../navigation/types";
+
+const MED = DOMAIN_COLORS.MED;
 
 type Props = NativeStackScreenProps<TherapistStackParamList, "EvalReport">;
 
@@ -228,6 +231,7 @@ export function EvalReportScreen({ navigation, route }: Props) {
 
       {error ? <ErrorBanner message={error} /> : null}
 
+      <Card>
       <Text style={styles.sectionTitle}>평가 단계</Text>
       <Text style={styles.helpText}>이미 제출된 단계는 선택할 수 없습니다(단계당 1건).</Text>
       <View style={styles.pickWrap}>
@@ -275,6 +279,9 @@ export function EvalReportScreen({ navigation, route }: Props) {
         style={styles.input}
       />
 
+      </Card>
+
+      <Card>
       <Text style={styles.sectionTitle}>영역별 점수 (0~100)</Text>
       <Text style={styles.helpText}>평가한 영역만 입력하세요(최소 1개).</Text>
       {AREA_META.map((a) => (
@@ -294,6 +301,9 @@ export function EvalReportScreen({ navigation, route }: Props) {
         </View>
       ))}
 
+      </Card>
+
+      <Card>
       <Text style={styles.sectionTitle}>종합 평가 요약</Text>
       <TextInput
         accessibilityLabel="종합 평가 요약"
@@ -316,6 +326,8 @@ export function EvalReportScreen({ navigation, route }: Props) {
         style={styles.textarea}
       />
 
+      </Card>
+
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="평가보고서 저장"
@@ -331,12 +343,14 @@ export function EvalReportScreen({ navigation, route }: Props) {
         <Text style={styles.saveBtnText}>{loading ? "저장 중…" : "평가보고서 저장"}</Text>
       </Pressable>
 
+      <Card>
       <Text style={styles.sectionTitle}>평가 비교 (초기 · 중간 · 최종)</Text>
       {comparison && comparison.deltas.length > 0 ? (
         <EvalComparisonTable comparison={comparison} />
       ) : (
         <InfoBanner message="평가보고서를 제출하면 초기·중간·최종 점수 비교가 여기에 표시됩니다." />
       )}
+      </Card>
     </ScrollView>
   );
 }
@@ -352,11 +366,11 @@ const styles = StyleSheet.create({
   linkBanner: {
     marginTop: SPACING.md,
     borderRadius: RADIUS.md,
-    backgroundColor: PRIMARY[50],
+    backgroundColor: MED.bg,
     padding: SPACING.md,
     marginBottom: SPACING.sm,
   },
-  linkBannerText: { fontSize: 14, fontWeight: "700", color: PRIMARY[700] },
+  linkBannerText: { fontSize: 14, fontWeight: "700", color: MED.text },
   noPlanBanner: {
     marginTop: SPACING.md,
     borderRadius: RADIUS.md,

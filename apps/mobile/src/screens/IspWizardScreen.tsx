@@ -11,8 +11,11 @@ import { StepBar } from "../components/StepBar";
 import { WizardFooter } from "../components/WizardStep";
 import { ErrorBanner, InfoBanner } from "../components/ui";
 import { DateField } from "../components/DateField";
-import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
+import { Card } from "../components/Card";
+import { DOMAIN_COLORS, FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { SocialWorkerStackParamList } from "../navigation/types";
+
+const WEL = DOMAIN_COLORS.WEL;
 
 type Props = NativeStackScreenProps<SocialWorkerStackParamList, "IspWizard">;
 
@@ -238,7 +241,7 @@ export function IspWizardScreen({ navigation, route }: Props) {
       {error ? <ErrorBanner message={error} /> : null}
 
       {step === 1 && (
-        <View>
+        <Card>
           {!paramPersonId ? (
             <>
               <Text style={styles.label}>대상 당사자</Text>
@@ -294,11 +297,11 @@ export function IspWizardScreen({ navigation, route }: Props) {
             style={styles.input}
           />
           <Text style={styles.hint}>재사정 예정일이 30일 이내로 다가오면 D-30 경고가 표시됩니다.</Text>
-        </View>
+        </Card>
       )}
 
       {step === 2 && (
-        <View>
+        <Card>
           <Text style={styles.label}>주요 욕구 영역 (복수 선택)</Text>
           <View style={styles.pickWrap}>
             {NEED_AREAS.map((area) => (
@@ -333,11 +336,11 @@ export function IspWizardScreen({ navigation, route }: Props) {
               />
             ))}
           </View>
-        </View>
+        </Card>
       )}
 
       {step === 3 && (
-        <View>
+        <Card>
           <Text style={styles.helpText}>목표 영역별로 장·단기 목표와 담당·기한을 설정하세요.</Text>
           {goals.map((g, gi) => (
             <View key={gi} style={styles.goalCard}>
@@ -405,11 +408,11 @@ export function IspWizardScreen({ navigation, route }: Props) {
           >
             <Text style={styles.addBtnText}>＋ 목표 추가</Text>
           </Pressable>
-        </View>
+        </Card>
       )}
 
       {step === 4 && (
-        <View>
+        <Card>
           <InfoBanner message="서비스 계획은 선택입니다. 없으면 비워두고 넘어가세요." />
           {services.map((s, i) => (
             <View key={i} style={styles.goalCard}>
@@ -458,11 +461,11 @@ export function IspWizardScreen({ navigation, route }: Props) {
           >
             <Text style={styles.addBtnText}>＋ 서비스 추가</Text>
           </Pressable>
-        </View>
+        </Card>
       )}
 
       {step === 5 && (
-        <View>
+        <Card>
           <Text style={styles.helpText}>입력 내용을 확인하고 제출하세요.</Text>
           <View style={styles.summary}>
             <SumRow k="당사자" v={selectedClient?.fullName || route.params.personName || "-"} />
@@ -475,7 +478,7 @@ export function IspWizardScreen({ navigation, route }: Props) {
             <SumRow k="확인 요청 대상" v={selectedClient && isSelfConfirmingStage(selectedClient.lifeStage) ? "본인" : "보호자"} />
           </View>
           <InfoBanner message="ISP는 공식 문서입니다. 제출 시 당사자·보호자 확인 절차가 시작됩니다." />
-        </View>
+        </Card>
       )}
 
       <WizardFooter
@@ -506,8 +509,8 @@ const styles = StyleSheet.create({
   clientBanner: {
     fontSize: 15,
     fontWeight: "700",
-    color: PRIMARY[700],
-    backgroundColor: PRIMARY[50],
+    color: WEL.text,
+    backgroundColor: WEL.bg,
     borderRadius: RADIUS.md,
     padding: SPACING.md,
     marginBottom: SPACING.sm,

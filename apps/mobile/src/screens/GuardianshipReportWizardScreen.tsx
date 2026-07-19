@@ -18,8 +18,11 @@ import { StageBadge } from "../components/lifecycle/StageBadge";
 import { WizardFooter } from "../components/WizardStep";
 import { ErrorBanner, InfoBanner } from "../components/ui";
 import { DateField } from "../components/DateField";
-import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
+import { Card } from "../components/Card";
+import { DOMAIN_COLORS, FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { SocialWorkerStackParamList } from "../navigation/types";
+
+const LEG = DOMAIN_COLORS.LEG;
 
 type Props = NativeStackScreenProps<SocialWorkerStackParamList, "GuardianshipReportWizard">;
 
@@ -190,7 +193,7 @@ export function GuardianshipReportWizardScreen({ navigation, route }: Props) {
       {error ? <ErrorBanner message={error} /> : null}
 
       {step === 1 && (
-        <View>
+        <Card>
           {!paramPersonId ? (
             <>
               <Text style={styles.label}>대상 당사자</Text>
@@ -291,11 +294,11 @@ export function GuardianshipReportWizardScreen({ navigation, route }: Props) {
               />
             </>
           )}
-        </View>
+        </Card>
       )}
 
       {step === 2 && (
-        <View>
+        <Card>
           <Text style={styles.helpText}>
             보고 기간 동안의 재산관리·신상보호 수행 현황을 기록합니다. 법원 제출용 서술이므로
             구체적으로 작성하세요.
@@ -322,11 +325,11 @@ export function GuardianshipReportWizardScreen({ navigation, route }: Props) {
             multiline
             style={styles.textarea}
           />
-        </View>
+        </Card>
       )}
 
       {step === 3 && (
-        <View>
+        <Card>
           <Text style={styles.label}>특이사항 (선택)</Text>
           <TextInput
             accessibilityLabel="특이사항"
@@ -345,11 +348,11 @@ export function GuardianshipReportWizardScreen({ navigation, route }: Props) {
             onChange={setNextReportDue}
             style={styles.input}
           />
-        </View>
+        </Card>
       )}
 
       {step === 4 && (
-        <View>
+        <Card>
           <Text style={styles.helpText}>입력 내용을 확인하고 저장하세요.</Text>
           <View style={styles.summary}>
             <SumRow k="당사자" v={client?.fullName || route.params?.personName || "-"} />
@@ -365,7 +368,7 @@ export function GuardianshipReportWizardScreen({ navigation, route }: Props) {
             />
           </View>
           <InfoBanner message="후견감독보고서는 공식 서류입니다. 저장(제출) 시 당사자·보호자 확인 절차가 시작됩니다." />
-        </View>
+        </Card>
       )}
 
       <WizardFooter
@@ -396,8 +399,8 @@ const styles = StyleSheet.create({
   clientBanner: {
     fontSize: 15,
     fontWeight: "700",
-    color: PRIMARY[700],
-    backgroundColor: PRIMARY[50],
+    color: LEG.text,
+    backgroundColor: LEG.bg,
     borderRadius: RADIUS.md,
     padding: SPACING.md,
     marginBottom: SPACING.sm,
@@ -439,13 +442,13 @@ const styles = StyleSheet.create({
     padding: SPACING.xl,
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    borderColor: NEUTRAL.border,
-    backgroundColor: NEUTRAL.surface,
+    borderColor: LEG.accent,
+    backgroundColor: LEG.bg,
     alignItems: "center",
     gap: SPACING.sm,
   },
   guardIcon: { fontSize: 40 },
-  guardTitle: { fontSize: 17, fontWeight: "800", color: NEUTRAL.text, textAlign: "center" },
+  guardTitle: { fontSize: 17, fontWeight: "800", color: LEG.text, textAlign: "center" },
   guardText: { fontSize: 14, color: NEUTRAL.textMuted, textAlign: "center", lineHeight: 20 },
   summary: {
     borderRadius: RADIUS.md,

@@ -12,7 +12,8 @@ import {
 import { DomainChip } from "../components/DomainChip";
 import { RecordContentView } from "../components/records/RecordContentView";
 import { ErrorBanner } from "../components/ui";
-import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING, TOUCH_MIN } from "../theme/colors";
+import { Card } from "../components/Card";
+import { DOMAIN_COLORS, FONT, NEUTRAL, PRIMARY, RADIUS, SPACING, TOUCH_MIN } from "../theme/colors";
 import type { GuardianStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<GuardianStackParamList, "RecordForm">;
@@ -110,8 +111,8 @@ export function RecordFormScreen({ route, navigation }: Props) {
       </View>
 
       {isStructuredEdit && existing && (
-        <View style={styles.block}>
-          <Text style={styles.blockLabel}>
+        <View style={[styles.block, { borderColor: DOMAIN_COLORS[domain].accent, backgroundColor: DOMAIN_COLORS[domain].bg }]}>
+          <Text style={[styles.blockLabel, { color: DOMAIN_COLORS[domain].text }]}>
             원본 기록 내용(읽기 전용 · {existing.authorName ?? "전문가"} 작성)
           </Text>
           <View style={{ marginTop: SPACING.xs }}>
@@ -126,6 +127,7 @@ export function RecordFormScreen({ route, navigation }: Props) {
         </View>
       )}
 
+      <Card>
       {!isStructuredEdit && (
         <View style={{ marginTop: SPACING.lg }}>
           <Text style={styles.label}>도메인 선택</Text>
@@ -181,6 +183,7 @@ export function RecordFormScreen({ route, navigation }: Props) {
           <Text style={styles.attachBtnText}>📎 파일 첨부 (준비 중)</Text>
         </View>
       </View>
+      </Card>
 
       {error ? <ErrorBanner message={error} /> : null}
 

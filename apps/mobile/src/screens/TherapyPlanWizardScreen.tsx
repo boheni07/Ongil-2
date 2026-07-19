@@ -11,8 +11,11 @@ import { StepBar } from "../components/StepBar";
 import { WizardFooter } from "../components/WizardStep";
 import { ErrorBanner, InfoBanner } from "../components/ui";
 import { DateField } from "../components/DateField";
-import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
+import { Card } from "../components/Card";
+import { DOMAIN_COLORS, FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { TherapistStackParamList } from "../navigation/types";
+
+const MED = DOMAIN_COLORS.MED;
 
 type Props = NativeStackScreenProps<TherapistStackParamList, "TherapyPlanWizard">;
 
@@ -211,7 +214,7 @@ export function TherapyPlanWizardScreen({ navigation, route }: Props) {
       {error ? <ErrorBanner message={error} /> : null}
 
       {step === 1 && (
-        <View>
+        <Card>
           {!paramPersonId ? (
             <>
               <Text style={styles.label}>대상 아동</Text>
@@ -280,11 +283,11 @@ export function TherapyPlanWizardScreen({ navigation, route }: Props) {
             min={periodStart || undefined}
             style={styles.input}
           />
-        </View>
+        </Card>
       )}
 
       {step === 2 && (
-        <View>
+        <Card>
           <Text style={styles.helpText}>
             초기 평가 소견과 치료 진행 시 주의사항을 기록하세요. (선택)
           </Text>
@@ -298,11 +301,11 @@ export function TherapyPlanWizardScreen({ navigation, route }: Props) {
             multiline
             style={styles.textarea}
           />
-        </View>
+        </Card>
       )}
 
       {step === 3 && (
-        <View>
+        <Card>
           <Text style={styles.helpText}>
             영역별 장·단기 목표를 설정하세요. 목표가 있는 영역만 저장됩니다(최소 1개).
           </Text>
@@ -349,11 +352,11 @@ export function TherapyPlanWizardScreen({ navigation, route }: Props) {
               </View>
             );
           })}
-        </View>
+        </Card>
       )}
 
       {step === 4 && (
-        <View>
+        <Card>
           <Text style={styles.helpText}>회기 진행 빈도를 입력하세요.</Text>
           <Text style={styles.label}>회기 빈도</Text>
           <TextInput
@@ -364,11 +367,11 @@ export function TherapyPlanWizardScreen({ navigation, route }: Props) {
             placeholderTextColor={NEUTRAL.textMuted}
             style={styles.input}
           />
-        </View>
+        </Card>
       )}
 
       {step === 5 && (
-        <View>
+        <Card>
           <Text style={styles.helpText}>입력 내용을 확인하고 제출하세요.</Text>
           <View style={styles.summary}>
             <SumRow k="대상 아동" v={selectedClient?.fullName || route.params.personName || "-"} />
@@ -384,7 +387,7 @@ export function TherapyPlanWizardScreen({ navigation, route }: Props) {
             <SumRow k="확인 요청 대상" v={selectedClient && isSelfConfirmingStage(selectedClient.lifeStage) ? "본인" : "보호자"} />
           </View>
           <InfoBanner message="치료계획서는 공식 문서입니다. 제출 시 당사자·보호자 확인 절차가 시작됩니다." />
-        </View>
+        </Card>
       )}
 
       <WizardFooter
@@ -415,8 +418,8 @@ const styles = StyleSheet.create({
   clientBanner: {
     fontSize: 15,
     fontWeight: "700",
-    color: PRIMARY[700],
-    backgroundColor: PRIMARY[50],
+    color: MED.text,
+    backgroundColor: MED.bg,
     borderRadius: RADIUS.md,
     padding: SPACING.md,
     marginBottom: SPACING.sm,

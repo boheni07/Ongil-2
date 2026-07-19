@@ -26,8 +26,11 @@ import { useAsyncAction } from "../hooks/useAsyncAction";
 import { CategoryChip } from "../components/IconSelector";
 import { ErrorBanner, InfoBanner } from "../components/ui";
 import { DateField } from "../components/DateField";
-import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
+import { Card } from "../components/Card";
+import { DOMAIN_COLORS, FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { TherapistStackParamList } from "../navigation/types";
+
+const MED = DOMAIN_COLORS.MED;
 
 type Props = NativeStackScreenProps<TherapistStackParamList, "SessionNoteForm">;
 
@@ -199,6 +202,7 @@ export function SessionNoteFormScreen({ navigation, route }: Props) {
 
           {error ? <ErrorBanner message={error} /> : null}
 
+          <Card>
           <Text style={styles.label}>회기 일자</Text>
           <DateField
             accessibilityLabel="회기 일자. 예시 2026-07-08"
@@ -229,7 +233,10 @@ export function SessionNoteFormScreen({ navigation, route }: Props) {
             style={styles.textarea}
           />
 
+          </Card>
+
           {/* 계획 vs 실제 비교 */}
+          <Card>
           <Text style={styles.sectionTitle}>계획 vs 실제 비교</Text>
           <View style={styles.cmpRow}>
             <View style={[styles.cmpBox, styles.cmpPlan]}>
@@ -257,7 +264,10 @@ export function SessionNoteFormScreen({ navigation, route }: Props) {
             </Text>
           ) : null}
 
+          </Card>
+
           {/* 영역별 달성도 슬라이더 */}
+          <Card>
           <Text style={styles.sectionTitle}>영역별 달성도 체크</Text>
           {AREA_META.map((a) => (
             <ScoreSlider
@@ -269,6 +279,9 @@ export function SessionNoteFormScreen({ navigation, route }: Props) {
             />
           ))}
 
+          </Card>
+
+          <Card>
           <Text style={styles.sectionTitle}>다음 회기 계획 (선택)</Text>
           <TextInput
             accessibilityLabel="다음 회기 계획"
@@ -279,6 +292,8 @@ export function SessionNoteFormScreen({ navigation, route }: Props) {
             multiline
             style={styles.textarea}
           />
+
+          </Card>
 
           {!ctx?.therapyPlanId ? (
             <InfoBanner message="치료계획서를 먼저 작성하면 회기 일지를 저장할 수 있습니다." />
@@ -373,10 +388,10 @@ const styles = StyleSheet.create({
   linkBanner: {
     marginTop: SPACING.md,
     borderRadius: RADIUS.md,
-    backgroundColor: PRIMARY[50],
+    backgroundColor: MED.bg,
     padding: SPACING.md,
   },
-  linkBannerText: { fontSize: 14, fontWeight: "700", color: PRIMARY[700] },
+  linkBannerText: { fontSize: 14, fontWeight: "700", color: MED.text },
   noPlanBanner: {
     marginTop: SPACING.md,
     borderRadius: RADIUS.md,
@@ -410,7 +425,7 @@ const styles = StyleSheet.create({
   pickWrap: { flexDirection: "row", flexWrap: "wrap", gap: SPACING.sm, marginTop: SPACING.md },
   cmpRow: { flexDirection: "row", gap: SPACING.sm },
   cmpBox: { flex: 1, borderRadius: RADIUS.md, borderWidth: 1, padding: SPACING.md },
-  cmpPlan: { borderColor: PRIMARY[400], backgroundColor: PRIMARY[50] },
+  cmpPlan: { borderColor: MED.accent, backgroundColor: MED.bg },
   cmpReal: { borderColor: NEUTRAL.border, backgroundColor: NEUTRAL.surface },
   cmpHead: { fontSize: 13, fontWeight: "800", color: NEUTRAL.text, marginBottom: SPACING.sm },
   cmpItem: { fontSize: 13, color: NEUTRAL.text, lineHeight: 20 },

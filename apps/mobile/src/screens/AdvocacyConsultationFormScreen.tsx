@@ -15,8 +15,11 @@ import { CategoryChip } from "../components/IconSelector";
 import { StageBadge } from "../components/lifecycle/StageBadge";
 import { ErrorBanner, InfoBanner, PrimaryButton } from "../components/ui";
 import { formatDateTimeInput } from "../lib/format";
-import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
+import { Card } from "../components/Card";
+import { DOMAIN_COLORS, FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { SocialWorkerStackParamList } from "../navigation/types";
+
+const LEG = DOMAIN_COLORS.LEG;
 
 type Props = NativeStackScreenProps<SocialWorkerStackParamList, "AdvocacyConsultationForm">;
 
@@ -156,6 +159,7 @@ export function AdvocacyConsultationFormScreen({ navigation, route }: Props) {
       </Text>
       {error ? <ErrorBanner message={error} /> : null}
 
+      <Card>
       {!paramPersonId ? (
         <>
           <Text style={styles.label}>대상 당사자</Text>
@@ -251,6 +255,8 @@ export function AdvocacyConsultationFormScreen({ navigation, route }: Props) {
         style={styles.input}
       />
 
+      </Card>
+
       <InfoBanner message="권익옹호 상담기록은 일상 기록으로 확인 절차 없이 저장됩니다." />
 
       <View style={{ marginTop: SPACING.md }}>
@@ -281,8 +287,8 @@ const styles = StyleSheet.create({
   clientBanner: {
     fontSize: 15,
     fontWeight: "700",
-    color: PRIMARY[700],
-    backgroundColor: PRIMARY[50],
+    color: LEG.text,
+    backgroundColor: LEG.bg,
     borderRadius: RADIUS.md,
     padding: SPACING.md,
     marginTop: SPACING.sm,
@@ -314,13 +320,13 @@ const styles = StyleSheet.create({
     padding: SPACING.xl,
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    borderColor: NEUTRAL.border,
-    backgroundColor: NEUTRAL.surface,
+    borderColor: LEG.accent,
+    backgroundColor: LEG.bg,
     alignItems: "center",
     gap: SPACING.sm,
   },
   guardIcon: { fontSize: 40 },
-  guardTitle: { fontSize: 17, fontWeight: "800", color: NEUTRAL.text, textAlign: "center" },
+  guardTitle: { fontSize: 17, fontWeight: "800", color: LEG.text, textAlign: "center" },
   guardText: { fontSize: 14, color: NEUTRAL.textMuted, textAlign: "center", lineHeight: 20 },
   emptyBox: {
     marginTop: SPACING.lg,
