@@ -25,6 +25,7 @@ import {
 import { useAsyncAction } from "../hooks/useAsyncAction";
 import { CategoryChip } from "../components/IconSelector";
 import { ErrorBanner, InfoBanner } from "../components/ui";
+import { DateField } from "../components/DateField";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { TherapistStackParamList } from "../navigation/types";
 
@@ -199,12 +200,10 @@ export function SessionNoteFormScreen({ navigation, route }: Props) {
           {error ? <ErrorBanner message={error} /> : null}
 
           <Text style={styles.label}>회기 일자</Text>
-          <TextInput
+          <DateField
             accessibilityLabel="회기 일자. 예시 2026-07-08"
             value={sessionDate}
-            onChangeText={setSessionDate}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={NEUTRAL.textMuted}
+            onChange={setSessionDate}
             style={styles.input}
           />
 

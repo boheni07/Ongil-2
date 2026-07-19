@@ -302,10 +302,20 @@ export function TransitionPlanWizard({
               </Field>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="시작일">
-                  <DateField className={fieldClass} value={t.start} onChange={(v) => updateTraining(i, { start: v })} />
+                  <DateField
+                    className={fieldClass}
+                    value={t.start}
+                    onChange={(v) => updateTraining(i, { start: v })}
+                    max={t.end || undefined}
+                  />
                 </Field>
                 <Field label="종료일">
-                  <DateField className={fieldClass} value={t.end} onChange={(v) => updateTraining(i, { end: v })} />
+                  <DateField
+                    className={fieldClass}
+                    value={t.end}
+                    onChange={(v) => updateTraining(i, { end: v })}
+                    min={t.start || undefined}
+                  />
                 </Field>
               </div>
               <Field label="진행 상태">

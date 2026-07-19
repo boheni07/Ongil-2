@@ -10,6 +10,7 @@ import { CategoryChip } from "../components/IconSelector";
 import { StepBar } from "../components/StepBar";
 import { WizardFooter } from "../components/WizardStep";
 import { ErrorBanner, InfoBanner } from "../components/ui";
+import { DateField } from "../components/DateField";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { SocialWorkerStackParamList } from "../navigation/types";
 
@@ -270,30 +271,26 @@ export function IspWizardScreen({ navigation, route }: Props) {
             style={styles.input}
           />
           <Text style={styles.label}>지원 시작일</Text>
-          <TextInput
+          <DateField
             accessibilityLabel="지원 시작일. 예시 2026-01-15"
             value={periodStart}
-            onChangeText={setPeriodStart}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={NEUTRAL.textMuted}
+            onChange={setPeriodStart}
+            max={periodEnd || undefined}
             style={styles.input}
           />
           <Text style={styles.label}>지원 종료일</Text>
-          <TextInput
+          <DateField
             accessibilityLabel="지원 종료일. 예시 2026-12-31"
             value={periodEnd}
-            onChangeText={setPeriodEnd}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={NEUTRAL.textMuted}
+            onChange={setPeriodEnd}
+            min={periodStart || undefined}
             style={styles.input}
           />
           <Text style={styles.label}>재사정 예정일</Text>
-          <TextInput
+          <DateField
             accessibilityLabel="재사정 예정일. 예시 2026-08-07"
             value={reassessmentDate}
-            onChangeText={setReassessmentDate}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={NEUTRAL.textMuted}
+            onChange={setReassessmentDate}
             style={styles.input}
           />
           <Text style={styles.hint}>재사정 예정일이 30일 이내로 다가오면 D-30 경고가 표시됩니다.</Text>
@@ -445,12 +442,10 @@ export function IspWizardScreen({ navigation, route }: Props) {
                 />
               </View>
               <Text style={styles.label}>시작일</Text>
-              <TextInput
+              <DateField
                 accessibilityLabel={`서비스 ${i + 1} 시작일`}
                 value={s.start}
-                onChangeText={(v) => updateService(i, { start: v })}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={NEUTRAL.textMuted}
+                onChange={(v) => updateService(i, { start: v })}
                 style={styles.input}
               />
             </View>

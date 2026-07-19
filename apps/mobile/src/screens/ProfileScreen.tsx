@@ -6,6 +6,7 @@ import { useAsyncAction } from "../hooks/useAsyncAction";
 import { ScreenScaffold } from "../components/ScreenScaffold";
 import { StepBar } from "../components/StepBar";
 import { ErrorBanner, Field, PrimaryButton, ScreenTitle } from "../components/ui";
+import { formatPhoneNumber } from "../lib/format";
 import type { AuthStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Profile">;
@@ -79,9 +80,10 @@ export function ProfileScreen({ navigation, route }: Props) {
       <Field
         label="휴대폰 번호"
         value={phone}
-        onChangeText={setPhone}
+        onChangeText={(v) => setPhone(formatPhoneNumber(v))}
         placeholder="010-0000-0000"
-        keyboardType="phone-pad"
+        keyboardType="number-pad"
+        maxLength={13}
       />
 
       <PrimaryButton label="다음" onPress={onNext} loading={loading} />

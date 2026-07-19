@@ -10,6 +10,7 @@ import { CategoryChip } from "../components/IconSelector";
 import { StepBar } from "../components/StepBar";
 import { WizardFooter } from "../components/WizardStep";
 import { ErrorBanner, InfoBanner } from "../components/ui";
+import { DateField } from "../components/DateField";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { TeacherStackParamList } from "../navigation/types";
 
@@ -321,12 +322,10 @@ export function IepWizardScreen({ navigation, route }: Props) {
             style={styles.input}
           />
           <Text style={styles.label}>IEP 회의 날짜</Text>
-          <TextInput
+          <DateField
             accessibilityLabel="IEP 회의 날짜. 예시 2026-03-05"
             value={meetingDate}
-            onChangeText={setMeetingDate}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={NEUTRAL.textMuted}
+            onChange={setMeetingDate}
             style={styles.input}
           />
           <Text style={styles.label}>참석자 (쉼표로 구분)</Text>

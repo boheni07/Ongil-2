@@ -28,7 +28,8 @@
           "organization": "ongil",
           "project": "ongil-mobile"
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ]
   }
 }

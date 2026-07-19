@@ -258,10 +258,10 @@ export function TherapyPlanWizard({
         <div className="flex flex-col gap-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="치료 시작일" required>
-              <DateField className={fieldClass} value={periodStart} onChange={setPeriodStart} />
+              <DateField className={fieldClass} value={periodStart} onChange={setPeriodStart} max={periodEnd || undefined} />
             </Field>
             <Field label="치료 종료일" required>
-              <DateField className={fieldClass} value={periodEnd} onChange={setPeriodEnd} />
+              <DateField className={fieldClass} value={periodEnd} onChange={setPeriodEnd} min={periodStart || undefined} />
             </Field>
           </div>
           <p className="text-body text-muted-foreground">

@@ -17,6 +17,7 @@ import { StepBar } from "../components/StepBar";
 import { StageBadge } from "../components/lifecycle/StageBadge";
 import { WizardFooter } from "../components/WizardStep";
 import { ErrorBanner, InfoBanner } from "../components/ui";
+import { DateField } from "../components/DateField";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { SocialWorkerStackParamList } from "../navigation/types";
 
@@ -248,23 +249,21 @@ export function GuardianshipReportWizardScreen({ navigation, route }: Props) {
               <View style={styles.stRow}>
                 <View style={styles.stHalf}>
                   <Text style={styles.label}>보고 시작일</Text>
-                  <TextInput
+                  <DateField
                     accessibilityLabel="보고 시작일. 예시 2026-01-01"
                     value={periodStart}
-                    onChangeText={setPeriodStart}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor={NEUTRAL.textMuted}
+                    onChange={setPeriodStart}
+                    max={periodEnd || undefined}
                     style={styles.input}
                   />
                 </View>
                 <View style={styles.stHalf}>
                   <Text style={styles.label}>보고 종료일</Text>
-                  <TextInput
+                  <DateField
                     accessibilityLabel="보고 종료일. 예시 2026-12-31"
                     value={periodEnd}
-                    onChangeText={setPeriodEnd}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor={NEUTRAL.textMuted}
+                    onChange={setPeriodEnd}
+                    min={periodStart || undefined}
                     style={styles.input}
                   />
                 </View>
@@ -340,12 +339,10 @@ export function GuardianshipReportWizardScreen({ navigation, route }: Props) {
             style={styles.textarea}
           />
           <Text style={styles.label}>다음 보고 예정일</Text>
-          <TextInput
+          <DateField
             accessibilityLabel="다음 보고 예정일. 예시 2027-01-01"
             value={nextReportDue}
-            onChangeText={setNextReportDue}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={NEUTRAL.textMuted}
+            onChange={setNextReportDue}
             style={styles.input}
           />
         </View>

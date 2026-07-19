@@ -12,6 +12,7 @@ import { StepBar } from "../components/StepBar";
 import { StageBadge } from "../components/lifecycle/StageBadge";
 import { WizardFooter } from "../components/WizardStep";
 import { ErrorBanner, InfoBanner } from "../components/ui";
+import { DateField } from "../components/DateField";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { TeacherStackParamList } from "../navigation/types";
 
@@ -331,12 +332,10 @@ export function ItpWizardScreen({ navigation, route }: Props) {
             style={styles.textarea}
           />
           <Text style={styles.label}>다음 검토일</Text>
-          <TextInput
+          <DateField
             accessibilityLabel="다음 검토일. 예시 2027-03-01"
             value={nextReviewDate}
-            onChangeText={setNextReviewDate}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={NEUTRAL.textMuted}
+            onChange={setNextReviewDate}
             style={styles.input}
           />
         </View>

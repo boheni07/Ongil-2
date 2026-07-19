@@ -185,10 +185,10 @@ export function GuardianshipReportWizard({
             <>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="보고 시작일" required>
-                  <DateField className={fieldClass} value={periodStart} onChange={setPeriodStart} />
+                  <DateField className={fieldClass} value={periodStart} onChange={setPeriodStart} max={periodEnd || undefined} />
                 </Field>
                 <Field label="보고 종료일" required>
-                  <DateField className={fieldClass} value={periodEnd} onChange={setPeriodEnd} />
+                  <DateField className={fieldClass} value={periodEnd} onChange={setPeriodEnd} min={periodStart || undefined} />
                 </Field>
               </div>
               <Field label="후견 유형" required>

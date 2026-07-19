@@ -228,10 +228,10 @@ export function IspWizard({
           </Field>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="지원 시작일" required>
-              <DateField className={fieldClass} value={periodStart} onChange={setPeriodStart} />
+              <DateField className={fieldClass} value={periodStart} onChange={setPeriodStart} max={periodEnd || undefined} />
             </Field>
             <Field label="지원 종료일" required>
-              <DateField className={fieldClass} value={periodEnd} onChange={setPeriodEnd} />
+              <DateField className={fieldClass} value={periodEnd} onChange={setPeriodEnd} min={periodStart || undefined} />
             </Field>
           </div>
           <Field label="재사정 예정일" required>

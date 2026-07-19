@@ -21,6 +21,7 @@ import { useWizardDraft } from "../hooks/useWizardDraft";
 import { StepBar } from "../components/StepBar";
 import { WizardFooter } from "../components/WizardStep";
 import { ErrorBanner, InfoBanner } from "../components/ui";
+import { DateField } from "../components/DateField";
 import { DOMAIN_COLORS, FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { GuardianStackParamList } from "../navigation/types";
 
@@ -405,14 +406,11 @@ export function PermissionGrantScreen({ route, navigation }: Props) {
           })}
 
           <Text style={[styles.label, { marginTop: SPACING.lg }]}>유효 기간</Text>
-          <TextInput
+          <DateField
             accessibilityLabel="유효 기간 종료일. 예시 2026-12-31"
             value={validUntil}
-            onChangeText={setValidUntil}
-            editable={!indefinite}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={NEUTRAL.textMuted}
-            keyboardType="numbers-and-punctuation"
+            onChange={setValidUntil}
+            disabled={indefinite}
             style={[styles.input, indefinite && styles.inputDisabled]}
           />
           <Pressable

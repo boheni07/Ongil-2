@@ -24,6 +24,7 @@ import { useAsyncAction } from "../hooks/useAsyncAction";
 import { CategoryChip } from "../components/IconSelector";
 import { EvalComparisonTable } from "../components/EvalComparisonTable";
 import { ErrorBanner, InfoBanner } from "../components/ui";
+import { DateField } from "../components/DateField";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { TherapistStackParamList } from "../navigation/types";
 
@@ -267,12 +268,10 @@ export function EvalReportScreen({ navigation, route }: Props) {
       </View>
 
       <Text style={styles.label}>평가 일자</Text>
-      <TextInput
+      <DateField
         accessibilityLabel="평가 일자. 예시 2026-07-14"
         value={evalDate}
-        onChangeText={setEvalDate}
-        placeholder="YYYY-MM-DD"
-        placeholderTextColor={NEUTRAL.textMuted}
+        onChange={setEvalDate}
         style={styles.input}
       />
 

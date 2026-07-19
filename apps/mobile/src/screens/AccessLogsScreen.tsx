@@ -19,6 +19,7 @@ import {
   type AccessLogRow,
 } from "../lib/access-logs";
 import { DomainChip } from "../components/DomainChip";
+import { DateField } from "../components/DateField";
 import { ErrorBanner } from "../components/ui";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING, TOUCH_MIN } from "../theme/colors";
 import type { GuardianStackParamList } from "../navigation/types";
@@ -196,25 +197,21 @@ export function AccessLogsScreen({ route }: Props) {
 
         <Text style={styles.filterLabel}>기간 (YYYY-MM-DD)</Text>
         <View style={styles.dateRow}>
-          <TextInput
+          <DateField
             accessibilityLabel="조회 시작일"
             placeholder="시작일"
-            placeholderTextColor={NEUTRAL.textMuted}
             value={dateFrom}
-            onChangeText={setDateFrom}
-            autoCapitalize="none"
-            keyboardType="numbers-and-punctuation"
+            onChange={setDateFrom}
+            max={dateTo || undefined}
             style={styles.dateInput}
           />
           <Text style={styles.dateSep}>~</Text>
-          <TextInput
+          <DateField
             accessibilityLabel="조회 종료일"
             placeholder="종료일"
-            placeholderTextColor={NEUTRAL.textMuted}
             value={dateTo}
-            onChangeText={setDateTo}
-            autoCapitalize="none"
-            keyboardType="numbers-and-punctuation"
+            onChange={setDateTo}
+            min={dateFrom || undefined}
             style={styles.dateInput}
           />
         </View>

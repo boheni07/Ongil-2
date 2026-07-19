@@ -14,6 +14,7 @@ import { useWizardDraft } from "../hooks/useWizardDraft";
 import { CategoryChip } from "../components/IconSelector";
 import { StageBadge } from "../components/lifecycle/StageBadge";
 import { ErrorBanner, InfoBanner, PrimaryButton } from "../components/ui";
+import { formatDateTimeInput } from "../lib/format";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { SocialWorkerStackParamList } from "../navigation/types";
 
@@ -184,9 +185,11 @@ export function AdvocacyConsultationFormScreen({ navigation, route }: Props) {
       <TextInput
         accessibilityLabel="상담 일시. 예시 2026-07-18T14:30"
         value={consultedAt}
-        onChangeText={setConsultedAt}
+        onChangeText={(v) => setConsultedAt(formatDateTimeInput(v))}
         placeholder="YYYY-MM-DDTHH:mm"
         placeholderTextColor={NEUTRAL.textMuted}
+        keyboardType="number-pad"
+        maxLength={16}
         style={styles.input}
       />
 

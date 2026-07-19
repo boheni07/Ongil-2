@@ -10,6 +10,7 @@ import { CategoryChip } from "../components/IconSelector";
 import { StepBar } from "../components/StepBar";
 import { WizardFooter } from "../components/WizardStep";
 import { ErrorBanner, InfoBanner } from "../components/ui";
+import { DateField } from "../components/DateField";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { TherapistStackParamList } from "../navigation/types";
 
@@ -264,21 +265,19 @@ export function TherapyPlanWizardScreen({ navigation, route }: Props) {
             style={styles.input}
           />
           <Text style={styles.label}>치료 시작일</Text>
-          <TextInput
+          <DateField
             accessibilityLabel="치료 시작일. 예시 2026-07-08"
             value={periodStart}
-            onChangeText={setPeriodStart}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={NEUTRAL.textMuted}
+            onChange={setPeriodStart}
+            max={periodEnd || undefined}
             style={styles.input}
           />
           <Text style={styles.label}>치료 종료일</Text>
-          <TextInput
+          <DateField
             accessibilityLabel="치료 종료일. 예시 2026-10-08"
             value={periodEnd}
-            onChangeText={setPeriodEnd}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={NEUTRAL.textMuted}
+            onChange={setPeriodEnd}
+            min={periodStart || undefined}
             style={styles.input}
           />
         </View>

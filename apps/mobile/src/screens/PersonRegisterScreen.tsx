@@ -18,6 +18,8 @@ import { CategoryChip } from "../components/IconSelector";
 import { StepBar } from "../components/StepBar";
 import { WizardFooter } from "../components/WizardStep";
 import { ErrorBanner, InfoBanner } from "../components/ui";
+import { DateField } from "../components/DateField";
+import { formatPhoneNumber } from "../lib/format";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { GuardianStackParamList } from "../navigation/types";
 
@@ -191,13 +193,10 @@ export function PersonRegisterScreen({ navigation }: Props) {
             style={styles.input}
           />
           <Text style={styles.label}>생년월일 *</Text>
-          <TextInput
+          <DateField
             accessibilityLabel="생년월일. 예시 2008-03-15"
             value={birthDate}
-            onChangeText={setBirthDate}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={NEUTRAL.textMuted}
-            keyboardType="numbers-and-punctuation"
+            onChange={setBirthDate}
             style={styles.input}
           />
           <Text style={styles.label}>성별 (선택)</Text>
@@ -299,10 +298,11 @@ export function PersonRegisterScreen({ navigation }: Props) {
           <TextInput
             accessibilityLabel="전화번호"
             value={contactPhone}
-            onChangeText={setContactPhone}
-            placeholder="전화번호"
+            onChangeText={(v) => setContactPhone(formatPhoneNumber(v))}
+            placeholder="010-0000-0000"
             placeholderTextColor={NEUTRAL.textMuted}
-            keyboardType="phone-pad"
+            keyboardType="number-pad"
+            maxLength={13}
             style={[styles.input, { marginTop: SPACING.sm }]}
           />
         </View>

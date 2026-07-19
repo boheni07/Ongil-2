@@ -17,6 +17,7 @@ import { StepBar } from "../components/StepBar";
 import { StageBadge } from "../components/lifecycle/StageBadge";
 import { WizardFooter } from "../components/WizardStep";
 import { ErrorBanner, InfoBanner } from "../components/ui";
+import { DateField } from "../components/DateField";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { SocialWorkerStackParamList } from "../navigation/types";
 
@@ -282,12 +283,10 @@ export function TransitionPlanWizardScreen({ navigation, route }: Props) {
                 style={styles.input}
               />
               <Text style={styles.label}>다음 검토 예정일</Text>
-              <TextInput
+              <DateField
                 accessibilityLabel="다음 검토 예정일. 예시 2027-01-14"
                 value={nextReviewDate}
-                onChangeText={setNextReviewDate}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={NEUTRAL.textMuted}
+                onChange={setNextReviewDate}
                 style={styles.input}
               />
             </>

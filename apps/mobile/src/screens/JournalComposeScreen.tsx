@@ -30,6 +30,7 @@ import { CategoryChip } from "../components/IconSelector";
 import { StepBar } from "../components/StepBar";
 import { WizardFooter } from "../components/WizardStep";
 import { ErrorBanner, InfoBanner } from "../components/ui";
+import { DateField } from "../components/DateField";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { SupporterStackParamList } from "../navigation/types";
 
@@ -235,12 +236,10 @@ export function JournalComposeScreen({ navigation, route }: Props) {
       {step === 1 && (
         <View>
           <Text style={styles.label}>서비스 날짜</Text>
-          <TextInput
+          <DateField
             accessibilityLabel="서비스 날짜"
             value={serviceDate}
-            onChangeText={setServiceDate}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={NEUTRAL.textMuted}
+            onChange={setServiceDate}
             style={styles.input}
           />
           <Text style={styles.label}>이용자</Text>

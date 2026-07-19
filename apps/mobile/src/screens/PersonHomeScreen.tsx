@@ -26,6 +26,7 @@ import { formatKoreanDate, formatShortDate } from "../lib/date";
 import { useAsyncAction } from "../hooks/useAsyncAction";
 import { ErrorBanner } from "../components/ui";
 import { StageBadge } from "../components/lifecycle/StageBadge";
+import { DateField } from "../components/DateField";
 import { ACCENT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { PersonStackParamList } from "../navigation/types";
 
@@ -215,13 +216,10 @@ function ProfileForm({ onDone }: { onDone: () => Promise<void> }) {
       />
 
       <Text style={styles.bigLabel}>생년월일</Text>
-      <TextInput
+      <DateField
         accessibilityLabel="생년월일. 예시 2000-01-31"
         value={birthDate}
-        onChangeText={setBirthDate}
-        placeholder="YYYY-MM-DD"
-        placeholderTextColor={NEUTRAL.textMuted}
-        keyboardType="numbers-and-punctuation"
+        onChange={setBirthDate}
         style={styles.bigInput}
       />
 

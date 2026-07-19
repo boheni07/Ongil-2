@@ -11,6 +11,7 @@ import { CategoryChip } from "../components/IconSelector";
 import { StageBadge } from "../components/lifecycle/StageBadge";
 import { WizardFooter } from "../components/WizardStep";
 import { ErrorBanner, InfoBanner } from "../components/ui";
+import { DateField } from "../components/DateField";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { TeacherStackParamList } from "../navigation/types";
 
@@ -296,12 +297,10 @@ export function BipFormScreen({ navigation, route }: Props) {
       />
 
       <Text style={styles.label}>재검토 예정일</Text>
-      <TextInput
+      <DateField
         accessibilityLabel="재검토 예정일. 예시 2026-12-01"
         value={reviewDate}
-        onChangeText={setReviewDate}
-        placeholder="YYYY-MM-DD"
-        placeholderTextColor={NEUTRAL.textMuted}
+        onChange={setReviewDate}
         style={styles.input}
       />
 
