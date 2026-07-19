@@ -105,7 +105,7 @@ export function StageBadge({ lifeStage, className, simple = false, interactive =
         role="img"
         aria-label={`생애주기 단계: ${label}`}
         className={cn(
-          "inline-flex min-h-11 items-center gap-2 overflow-hidden rounded-(--br-sm) pr-4 pl-0 font-bold",
+          "inline-flex min-h-11 shrink-0 items-center gap-2 overflow-hidden rounded-(--br-sm) pr-4 pl-0 font-bold",
           simple ? "text-person-base" : "text-sm",
           meta.bgClass,
           meta.textClass,
@@ -127,7 +127,7 @@ export function StageBadge({ lifeStage, className, simple = false, interactive =
         data-slot="stage-badge"
         aria-label={`생애주기 단계: ${meta.label}. 눌러서 설명 보기`}
         className={cn(
-          "inline-flex min-h-11 items-center gap-1.5 overflow-hidden rounded-(--br-sm) border border-transparent pr-3 pl-0 text-sm font-bold outline-none",
+          "inline-flex min-h-11 shrink-0 items-center gap-1.5 overflow-hidden rounded-(--br-sm) border border-transparent pr-3 pl-0 text-sm font-bold outline-none",
           "focus-visible:border-2 focus-visible:border-[#1D9E75]",
           meta.bgClass,
           meta.textClass,

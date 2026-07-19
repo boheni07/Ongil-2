@@ -9,7 +9,7 @@ export function DraftBadge({ className }: { className?: string }) {
     <span
       data-slot="draft-badge"
       className={cn(
-        "rounded-[4px] bg-muted px-1.5 py-0.5 text-[11px] font-bold text-muted-foreground",
+        "shrink-0 whitespace-nowrap rounded-[4px] bg-muted px-1.5 py-0.5 text-[11px] font-bold text-muted-foreground",
         className
       )}
     >

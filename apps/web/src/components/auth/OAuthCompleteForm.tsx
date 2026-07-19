@@ -153,25 +153,25 @@ function ConsentRow({
   return (
     <div className="rounded-[10px] border border-border px-4 py-3">
       <div className="flex items-center justify-between gap-2">
-        <label htmlFor={id} className="flex flex-1 cursor-pointer items-center gap-2.5 text-sm text-foreground">
+        <label htmlFor={id} className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 text-sm text-foreground">
           <input
             id={id}
             type="checkbox"
             name={item.key}
             checked={checked}
             onChange={(e) => onToggle(e.target.checked)}
-            className="h-5 w-5 accent-primary-600"
+            className="h-5 w-5 shrink-0 accent-primary-600"
           />
           <span
             className={
               item.required
-                ? "rounded-[4px] bg-primary-100 px-1.5 py-0.5 text-xs font-bold text-primary-700"
-                : "rounded-[4px] bg-muted px-1.5 py-0.5 text-xs font-bold text-muted-foreground"
+                ? "shrink-0 whitespace-nowrap rounded-[4px] bg-primary-100 px-1.5 py-0.5 text-xs font-bold text-primary-700"
+                : "shrink-0 whitespace-nowrap rounded-[4px] bg-muted px-1.5 py-0.5 text-xs font-bold text-muted-foreground"
             }
           >
             {item.required ? "필수" : "선택"}
           </span>
-          {item.label}
+          <span className="min-w-0">{item.label}</span>
         </label>
         {item.viewHref && (
           <Link
