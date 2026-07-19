@@ -5,15 +5,16 @@ import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import type { PersonRegisterInput } from "@ongil/validation";
 import { registerPerson } from "@/app/(app)/dashboard/actions";
-import { WizardProgress } from "@/components/form/WizardProgress";
 import { Button } from "@/components/ui/button";
 
 /** persons.emergencyContactSchema에 대응하는 로컬 타입(스키마는 값만 export). */
 type EmergencyContactInput = { name: string; relation?: string; phone: string };
 
 /**
- * Flow-G-01 당사자 등록 6단계 위저드.
- * 기본정보 → 민감동의 → 장애정보 → 응급정보 → 사진 → 확인. 최종 확인에서만 registerPerson 호출.
+ * Flow-G-01 당사자 등록 — 기본정보·민감동의·장애정보·응급정보·사진을 한 화면에서 입력한다
+ * (2026-07-19, 기존 6단계 위저드를 병합해 대체 — 회원가입 폼 통합과 동일한 방향).
+ * 항목 수가 signup보다 적고 서로 독립적(순서 의존성 없음)이라 단계별 진행 검증이
+ * 필요 없어, 필수 항목(이름·생년월일·민감정보 동의)만 채워지면 바로 제출 가능하다.
  */
 
 const DISABILITY_TYPES = [
@@ -28,14 +29,12 @@ const DISABILITY_TYPES = [
   "신장장애",
   "기타",
 ];
-const STEP_LABELS = ["기본 정보", "민감정보 동의", "장애 정보", "응급 정보", "프로필 사진", "확인"];
 
 const fieldClass =
   "min-h-11 w-full rounded-(--br-md) border border-border bg-white px-3.5 text-body text-foreground outline-none focus-visible:border-primary-600";
 
 export function PersonRegisterWizard() {
   const router = useRouter();
-  const [step, setStep] = useState(1);
 
   const [fullName, setFullName] = useState("");
   const [birthDate, setBirthDate] = useState("");
@@ -67,7 +66,13 @@ export function PersonRegisterWizard() {
     };
   }
 
+  const canSubmit = Boolean(fullName.trim() && birthDate && consent);
+
   async function submit() {
+    if (!canSubmit) {
+      setError("이름·생년월일을 입력하고 민감정보 수집·이용에 동의해주세요.");
+      return;
+    }
     setBusy(true);
     setError(null);
     const res = await registerPerson(buildInput());
@@ -80,30 +85,34 @@ export function PersonRegisterWizard() {
     router.refresh();
   }
 
-  const canNext =
-    (step === 1 && fullName.trim() && birthDate) ||
-    (step === 2 && consent) ||
-    step === 3 ||
-    step === 4 ||
-    step === 5;
-
   return (
-    <div className="mx-auto flex min-h-full max-w-xl flex-1 flex-col">
+    <div className="mx-auto flex min-h-full max-w-2xl flex-1 flex-col">
       <h1 className="text-headline-1 font-extrabold text-foreground">당사자 등록</h1>
-      <p className="mt-1 text-body text-muted-foreground">돌보는 당사자의 정보를 단계별로 입력해주세요.</p>
+      <p className="mt-1 text-body text-muted-foreground">돌보는 당사자의 정보를 입력해주세요.</p>
 
-      <WizardProgress current={step} total={6} label={STEP_LABELS[step - 1]} className="mt-5 mb-6" />
-
-      {step === 1 && (
-        <div className="flex flex-col gap-4">
-          <Field label="이름" required>
-            <input className={fieldClass} value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="당사자 이름" />
-          </Field>
-          <Field label="생년월일" required>
-            <input type="date" className={fieldClass} value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
-          </Field>
+      <div className="mt-6 flex flex-col gap-8">
+        <fieldset className="flex flex-col gap-4">
+          <legend className="text-sm font-bold text-foreground">기본 정보</legend>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="이름" required>
+              <input
+                className={fieldClass}
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="당사자 이름"
+              />
+            </Field>
+            <Field label="생년월일" required>
+              <input
+                type="date"
+                className={fieldClass}
+                value={birthDate}
+                onChange={(e) => setBirthDate(e.target.value)}
+              />
+            </Field>
+          </div>
           <Field label="성별 (선택)">
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-2 sm:max-w-xs">
               {([
                 { v: "M", l: "남성" },
                 { v: "F", l: "여성" },
@@ -115,11 +124,10 @@ export function PersonRegisterWizard() {
               ))}
             </div>
           </Field>
-        </div>
-      )}
+        </fieldset>
 
-      {step === 2 && (
-        <div className="flex flex-col gap-4">
+        <fieldset className="flex flex-col gap-3">
+          <legend className="text-sm font-bold text-foreground">민감정보 동의</legend>
           <div className="rounded-xl bg-domain-med-bg p-4 text-body text-domain-med-text ring-1 ring-domain-med-accent/30">
             <p className="font-bold">민감정보·고유식별정보 수집·이용 동의 (개인정보보호법 §23)</p>
             <p className="mt-2 leading-relaxed text-foreground/80">
@@ -133,17 +141,16 @@ export function PersonRegisterWizard() {
               type="checkbox"
               checked={consent}
               onChange={(e) => setConsent(e.target.checked)}
-              className="mt-1 size-5 accent-primary-600"
+              className="mt-1 size-5 shrink-0 accent-primary-600"
             />
             <span className="text-body font-semibold text-foreground">
               위 민감정보 수집·이용에 동의합니다. (필수)
             </span>
           </label>
-        </div>
-      )}
+        </fieldset>
 
-      {step === 3 && (
-        <div className="flex flex-col gap-5">
+        <fieldset className="flex flex-col gap-5">
+          <legend className="text-sm font-bold text-foreground">장애 정보 (선택)</legend>
           <Field label="장애 유형 (복수 선택)">
             <div className="flex flex-wrap gap-2">
               {DISABILITY_TYPES.map((t) => (
@@ -153,8 +160,8 @@ export function PersonRegisterWizard() {
               ))}
             </div>
           </Field>
-          <Field label="장애 정도 (선택)">
-            <div className="grid grid-cols-2 gap-2">
+          <Field label="장애 정도">
+            <div className="grid grid-cols-2 gap-2 sm:max-w-xs">
               <Chip on={degree === "severe"} onClick={() => setDegree(degree === "severe" ? "" : "severe")}>
                 심한 장애
               </Chip>
@@ -163,71 +170,45 @@ export function PersonRegisterWizard() {
               </Chip>
             </div>
           </Field>
-        </div>
-      )}
+        </fieldset>
 
-      {step === 4 && (
-        <div className="flex flex-col gap-6">
-          <TagListField label="알레르기" placeholder="예) 땅콩" values={allergies} onChange={setAllergies} />
-          <TagListField label="금기·복용약물" placeholder="예) 발프로산" values={medications} onChange={setMedications} />
+        <fieldset className="flex flex-col gap-6">
+          <legend className="text-sm font-bold text-foreground">응급 정보 (선택)</legend>
+          <div className="grid gap-6 sm:grid-cols-2">
+            <TagListField label="알레르기" placeholder="예) 땅콩" values={allergies} onChange={setAllergies} />
+            <TagListField label="금기·복용약물" placeholder="예) 발프로산" values={medications} onChange={setMedications} />
+          </div>
           <ContactsField contacts={contacts} onChange={setContacts} />
-        </div>
-      )}
+        </fieldset>
 
-      {step === 5 && (
-        <div className="rounded-xl bg-white p-6 text-center ring-1 ring-foreground/10">
-          <p className="text-5xl" aria-hidden="true">
-            📷
-          </p>
-          <p className="mt-3 text-body font-semibold text-foreground">프로필 사진</p>
-          <p className="mt-1 text-caption text-muted-foreground">
-            사진 업로드는 준비 중입니다. 지금은 건너뛰고 나중에 추가할 수 있습니다.
-          </p>
-        </div>
-      )}
-
-      {step === 6 && (
-        <div className="rounded-xl bg-white p-5 ring-1 ring-foreground/10">
-          <h2 className="text-headline-3 font-bold text-accent-stone">입력 내용 확인</h2>
-          <dl className="mt-3 grid grid-cols-[110px_1fr] gap-y-2 text-body">
-            <Review k="이름" v={fullName || "-"} />
-            <Review k="생년월일" v={birthDate || "-"} />
-            <Review k="성별" v={gender === "M" ? "남성" : gender === "F" ? "여성" : gender ? "선택 안 함" : "-"} />
-            <Review k="민감정보 동의" v={consent ? "동의함" : "미동의"} />
-            <Review k="장애 유형" v={disabilityTypes.join(", ") || "-"} />
-            <Review k="장애 정도" v={degree === "severe" ? "심한 장애" : degree === "mild" ? "심하지 않은 장애" : "-"} />
-            <Review k="알레르기" v={allergies.join(", ") || "없음"} />
-            <Review k="복용약물" v={medications.join(", ") || "없음"} />
-            <Review k="비상연락" v={contacts.map((c) => `${c.name} ${c.phone}`).join(", ") || "없음"} />
-          </dl>
-        </div>
-      )}
+        <fieldset className="flex flex-col gap-3">
+          <legend className="text-sm font-bold text-foreground">프로필 사진 (선택)</legend>
+          <div className="rounded-xl bg-white p-6 text-center ring-1 ring-foreground/10">
+            <p className="text-5xl" aria-hidden="true">
+              📷
+            </p>
+            <p className="mt-3 text-body font-semibold text-foreground">프로필 사진</p>
+            <p className="mt-1 text-caption text-muted-foreground">
+              사진 업로드는 준비 중입니다. 지금은 건너뛰고 나중에 추가할 수 있습니다.
+            </p>
+          </div>
+        </fieldset>
+      </div>
 
       {error && (
-        <p role="alert" className="mt-4 text-body font-semibold text-red-600">
+        <p role="alert" className="mt-6 text-body font-semibold text-red-600">
           {error}
         </p>
       )}
 
-      <div className="mt-auto flex items-center gap-2 pt-8">
-        <Button
-          type="button"
-          variant="outline"
-          className="h-11"
-          onClick={() => (step === 1 ? router.push("/dashboard") : setStep((s) => s - 1))}
-        >
-          ← {step === 1 ? "취소" : "이전"}
+      <div className="mt-8 flex items-center gap-2 border-t border-border pt-6">
+        <Button type="button" variant="outline" className="h-11" onClick={() => router.push("/dashboard")}>
+          취소
         </Button>
         <div className="flex-1" />
-        {step < 6 ? (
-          <Button type="button" className="h-11" disabled={!canNext} onClick={() => setStep((s) => s + 1)}>
-            다음 →
-          </Button>
-        ) : (
-          <Button type="button" className="h-11 font-bold" disabled={busy} onClick={submit}>
-            {busy ? "등록 중..." : "당사자 등록"}
-          </Button>
-        )}
+        <Button type="button" className="h-11 font-bold" disabled={busy || !canSubmit} onClick={submit}>
+          {busy ? "등록 중..." : "당사자 등록"}
+        </Button>
       </div>
     </div>
   );
@@ -256,15 +237,6 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
     >
       {children}
     </button>
-  );
-}
-
-function Review({ k, v }: { k: string; v: string }) {
-  return (
-    <>
-      <dt className="text-muted-foreground">{k}</dt>
-      <dd className="text-foreground">{v}</dd>
-    </>
   );
 }
 
