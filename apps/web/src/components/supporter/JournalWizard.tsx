@@ -173,17 +173,22 @@ export function JournalWizard({ persons }: { persons: JournalPersonOption[] }) {
   }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-2xl flex-1 flex-col">
+    <div className="mx-auto flex min-h-full max-w-6xl flex-1 flex-col">
       <h1 className="text-headline-2 font-extrabold text-foreground">활동일지 작성</h1>
       <p className="mt-1 text-body text-muted-foreground">
         {personName} 님 · {serviceDate}
       </p>
 
-      <div className="mt-6 flex flex-col gap-5">
-        <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
-          <legend className="-mt-1 mb-1 px-1 text-label font-bold text-domain-dai-text">
-            📋 서비스 정보
-          </legend>
+      {/* 2026-07-20: 기존 max-w-2xl 단일 컬럼은 웹 넓은 화면을 못 살리는 모바일 폭 레이아웃이라
+          지적받았다 — 왼쪽에 입력 섹션, 오른쪽에 이전 일지 참조·제출 전 확인·액션 버튼을 스크롤
+          중에도 계속 보이는 고정(sticky) 사이드바로 재구성했다. lg 미만에서는 세로로 자연스럽게
+          쌓인다(오른쪽 → 왼쪽 아래). */}
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
+        <div className="flex flex-col gap-5">
+          <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
+            <legend className="-mt-1 mb-1 px-1 text-label font-bold text-domain-dai-text">
+              📋 서비스 정보
+            </legend>
           <Field label="이용자" required>
             <select className={fieldClass} value={personId} onChange={(e) => setPersonId(e.target.value)}>
               {persons.map((p) => (
@@ -232,75 +237,48 @@ export function JournalWizard({ persons }: { persons: JournalPersonOption[] }) {
           <legend className="-mt-1 mb-1 px-1 text-label font-bold text-domain-dai-text">
             🚶 활동 내역
           </legend>
-          <div className="grid gap-5 lg:grid-cols-[1fr_260px]">
-            <div>
-              <p className="mb-2 text-label font-semibold text-accent-stone">활동 카테고리 (복수 선택)</p>
-              <div className="grid grid-cols-3 gap-2">
-                {CATEGORIES.map((c) => {
-                  const on = c.key in minutes;
-                  return (
-                    <button
-                      key={c.key}
-                      type="button"
-                      aria-pressed={on}
-                      onClick={() => toggleCategory(c.key)}
-                      className={`flex min-h-11 flex-col items-center gap-1 rounded-(--br-md) border-2 px-2 py-2 text-caption font-semibold transition-colors ${
-                        on
-                          ? "border-domain-dai-accent bg-domain-dai-bg text-domain-dai-text"
-                          : "border-border text-accent-stone hover:border-domain-dai-accent/60"
-                      }`}
-                    >
-                      <span aria-hidden="true" className="text-xl">
-                        {c.emoji}
-                      </span>
-                      {c.key}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {selectedCategories.length > 0 && (
-                <div className="mt-4 flex flex-col gap-2">
-                  <p className="text-label font-semibold text-accent-stone">활동별 소요 시간(분)</p>
-                  {selectedCategories.map((key) => (
-                    <label key={key} className="flex items-center justify-between gap-3">
-                      <span className="text-body text-foreground">{key}</span>
-                      <input
-                        type="number"
-                        min={0}
-                        max={1440}
-                        value={minutes[key]}
-                        onChange={(e) => setMinutes((m) => ({ ...m, [key]: Math.max(0, Number(e.target.value) || 0) }))}
-                        className="h-10 w-24 rounded-(--br-md) border border-border px-3 text-right text-body outline-none focus-visible:border-primary-600"
-                      />
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <aside className="rounded-xl bg-primary-50/60 p-4 ring-1 ring-primary-100">
-              <h3 className="text-label font-bold text-primary-800">📎 이전 일지 참조</h3>
-              {prev === null && (
-                <Button type="button" variant="outline" size="sm" className="mt-3 w-full" onClick={loadPrevious}>
-                  이전 일지 불러오기
-                </Button>
-              )}
-              {prev === "loading" && <p className="mt-3 text-caption text-muted-foreground">불러오는 중...</p>}
-              {prev && prev !== "loading" && (
-                <div className="mt-3">
-                  <p className="text-caption text-muted-foreground">{prev.recordDate.slice(0, 10)}</p>
-                  <p className="mt-1 text-body text-foreground">
-                    {(prev.content.activities ?? []).map((a) => a.category).join(" · ") || "활동 기록 없음"}
-                  </p>
-                  <Button type="button" size="sm" className="mt-2 w-full" onClick={applyPrevious}>
-                    이 항목 불러오기
-                  </Button>
-                </div>
-              )}
-              {prev === undefined && <p className="mt-3 text-caption text-muted-foreground">참조할 이전 일지가 없습니다.</p>}
-            </aside>
+          <p className="mb-2 text-label font-semibold text-accent-stone">활동 카테고리 (복수 선택)</p>
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+            {CATEGORIES.map((c) => {
+              const on = c.key in minutes;
+              return (
+                <button
+                  key={c.key}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => toggleCategory(c.key)}
+                  className={`flex min-h-11 flex-col items-center gap-1 rounded-(--br-md) border-2 px-2 py-2 text-caption font-semibold transition-colors ${
+                    on
+                      ? "border-domain-dai-accent bg-domain-dai-bg text-domain-dai-text"
+                      : "border-border text-accent-stone hover:border-domain-dai-accent/60"
+                  }`}
+                >
+                  <span aria-hidden="true" className="text-xl">
+                    {c.emoji}
+                  </span>
+                  {c.key}
+                </button>
+              );
+            })}
           </div>
+
+          {selectedCategories.length > 0 && (
+            <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3">
+              {selectedCategories.map((key) => (
+                <label key={key} className="flex items-center justify-between gap-3">
+                  <span className="text-body text-foreground">{key}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={1440}
+                    value={minutes[key]}
+                    onChange={(e) => setMinutes((m) => ({ ...m, [key]: Math.max(0, Number(e.target.value) || 0) }))}
+                    className="h-10 w-24 rounded-(--br-md) border border-border px-3 text-right text-body outline-none focus-visible:border-primary-600"
+                  />
+                </label>
+              ))}
+            </div>
+          )}
         </fieldset>
 
         <fieldset className="flex flex-col gap-6 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
@@ -348,52 +326,78 @@ export function JournalWizard({ persons }: { persons: JournalPersonOption[] }) {
             />
           </Field>
         </fieldset>
-
-        {/* 프로토타입 S-12 5단계 "확인·제출" 요약 카드 — 위자드를 단일 화면으로 합치면서도
-            제출 전 한눈에 확인하는 감각은 남겨둔다(2026-07-19). */}
-        <div className="rounded-xl border border-domain-dai-accent/30 bg-domain-dai-bg p-5">
-          <h3 className="text-label font-bold text-domain-dai-text">✅ 제출 전 확인</h3>
-          <dl className="mt-3 flex flex-col gap-2 text-body">
-            <SummaryRow k="이용자" v={personName} />
-            <SummaryRow
-              k="날짜·시간"
-              v={`${serviceDate} · ${startTime || "--:--"}~${endTime || "--:--"}${previewHours != null ? ` (${previewHours}시간)` : ""}`}
-            />
-            <SummaryRow
-              k="활동"
-              v={selectedCategories.length > 0 ? selectedCategories.join(" · ") : "선택된 활동 없음"}
-            />
-            <SummaryRow
-              k="식사·건강"
-              v={`${MEALS.find((m) => m.value === meal)?.label} · ${HEALTHS.find((h) => h.value === health)?.label}`}
-            />
-            <SummaryRow k="특이사항" v={incidents.trim() || handover.trim() ? "있음" : "없음"} last />
-          </dl>
         </div>
-      </div>
 
-      {error && (
-        <p role="alert" className="mt-6 text-body font-semibold text-red-600">
-          {error}
-        </p>
-      )}
+        {/* 오른쪽 사이드바 — 스크롤해도 계속 보이도록 lg 이상에서 sticky. 이전 일지 참조·제출 전
+            확인 요약·액션 버튼을 한데 모아 넓은 화면에서 "옆에 두고 참고하며 입력"할 수 있게 한다. */}
+        <div className="flex flex-col gap-5 lg:sticky lg:top-6">
+          <aside className="rounded-xl bg-primary-50/60 p-4 ring-1 ring-primary-100">
+            <h3 className="text-label font-bold text-primary-800">📎 이전 일지 참조</h3>
+            {prev === null && (
+              <Button type="button" variant="outline" size="sm" className="mt-3 w-full" onClick={loadPrevious}>
+                이전 일지 불러오기
+              </Button>
+            )}
+            {prev === "loading" && <p className="mt-3 text-caption text-muted-foreground">불러오는 중...</p>}
+            {prev && prev !== "loading" && (
+              <div className="mt-3">
+                <p className="text-caption text-muted-foreground">{prev.recordDate.slice(0, 10)}</p>
+                <p className="mt-1 text-body text-foreground">
+                  {(prev.content.activities ?? []).map((a) => a.category).join(" · ") || "활동 기록 없음"}
+                </p>
+                <Button type="button" size="sm" className="mt-2 w-full" onClick={applyPrevious}>
+                  이 항목 불러오기
+                </Button>
+              </div>
+            )}
+            {prev === undefined && <p className="mt-3 text-caption text-muted-foreground">참조할 이전 일지가 없습니다.</p>}
+          </aside>
 
-      <div className="mt-8 flex flex-wrap items-center gap-2 border-t border-border pt-6">
-        <Button type="button" variant="outline" className="h-11" onClick={() => router.push("/home")}>
-          취소
-        </Button>
-        <div className="flex-1" />
-        <Button type="button" variant="ghost" className="h-11" disabled={busy} onClick={() => save(true)}>
-          💾 임시저장
-        </Button>
-        <Button
-          type="button"
-          className="h-11 bg-primary-600 font-bold"
-          disabled={busy || !canSubmit}
-          onClick={() => save(false)}
-        >
-          {busy ? "제출 중..." : "제출하기"}
-        </Button>
+          {/* 프로토타입 S-12 5단계 "확인·제출" 요약 카드 — 위자드를 단일 화면으로 합치면서도
+              제출 전 한눈에 확인하는 감각은 남겨둔다(2026-07-19). */}
+          <div className="rounded-xl border border-domain-dai-accent/30 bg-domain-dai-bg p-5">
+            <h3 className="text-label font-bold text-domain-dai-text">✅ 제출 전 확인</h3>
+            <dl className="mt-3 flex flex-col gap-2 text-body">
+              <SummaryRow k="이용자" v={personName} />
+              <SummaryRow
+                k="날짜·시간"
+                v={`${serviceDate} · ${startTime || "--:--"}~${endTime || "--:--"}${previewHours != null ? ` (${previewHours}시간)` : ""}`}
+              />
+              <SummaryRow
+                k="활동"
+                v={selectedCategories.length > 0 ? selectedCategories.join(" · ") : "선택된 활동 없음"}
+              />
+              <SummaryRow
+                k="식사·건강"
+                v={`${MEALS.find((m) => m.value === meal)?.label} · ${HEALTHS.find((h) => h.value === health)?.label}`}
+              />
+              <SummaryRow k="특이사항" v={incidents.trim() || handover.trim() ? "있음" : "없음"} last />
+            </dl>
+          </div>
+
+          {error && (
+            <p role="alert" className="text-body font-semibold text-red-600">
+              {error}
+            </p>
+          )}
+
+          <div className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm ring-1 ring-foreground/10">
+            <Button
+              type="button"
+              className="h-11 bg-primary-600 font-bold"
+              disabled={busy || !canSubmit}
+              onClick={() => save(false)}
+            >
+              {busy ? "제출 중..." : "제출하기"}
+            </Button>
+            <Button type="button" variant="ghost" className="h-11" disabled={busy} onClick={() => save(true)}>
+              💾 임시저장
+            </Button>
+            <Button type="button" variant="outline" className="h-11" onClick={() => router.push("/home")}>
+              취소
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
