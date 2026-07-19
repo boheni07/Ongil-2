@@ -122,7 +122,7 @@ export function GuardianshipReportWizard({
   }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-2xl flex-1 flex-col">
+    <div className="mx-auto flex min-h-full max-w-6xl flex-1 flex-col">
       <h1 className="text-headline-2 font-extrabold text-foreground">
         후견감독보고서 작성{" "}
         <span className="text-body font-medium text-muted-foreground">LEG-001</span>
@@ -132,8 +132,9 @@ export function GuardianshipReportWizard({
         {client && <StageBadge lifeStage={client.lifeStage} className="min-h-6 pr-2 text-[11px]" />}
       </p>
 
-      <div className="mt-6 flex flex-col gap-8">
-        <fieldset className="flex flex-col gap-4">
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
+      <div className="flex flex-col gap-6">
+        <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
           <legend className="text-sm font-bold text-foreground">대상·후견 유형</legend>
           <Field label="대상 당사자" required>
             <select
@@ -205,7 +206,7 @@ export function GuardianshipReportWizard({
 
         {!blocked && (
           <>
-            <fieldset className="flex flex-col gap-4">
+            <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
               <legend className="text-sm font-bold text-foreground">관리 현황</legend>
               <p className="text-body text-muted-foreground">
                 보고 기간 동안의 재산관리·신상보호 수행 현황을 기록합니다. 법원 제출용 서술이므로
@@ -231,7 +232,7 @@ export function GuardianshipReportWizard({
               </Field>
             </fieldset>
 
-            <fieldset className="flex flex-col gap-4">
+            <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
               <legend className="text-sm font-bold text-foreground">특이사항·기한</legend>
               <Field label="특이사항 (선택)">
                 <textarea
@@ -247,36 +248,43 @@ export function GuardianshipReportWizard({
               </Field>
             </fieldset>
 
-            <div className="rounded-(--br-md) bg-primary-50 p-4 text-body text-primary-700">
-              ✅ 후견감독보고서는 공식 서류로 저장 시 확인(Confirmation) 절차가 시작됩니다. 저장 후
-              당사자 타임라인과 법률·권리 기록에 반영됩니다.
-              <span className="mt-2 block font-bold">
-                📋 확인 요청 대상: {client && isSelfConfirmingStage(client.lifeStage) ? "본인" : "보호자"}
-              </span>
-            </div>
           </>
         )}
       </div>
 
-      {error && (
-        <p role="alert" className="mt-6 text-body font-semibold text-red-600">
-          {error}
-        </p>
-      )}
+      {/* 오른쪽 사이드바(lg:sticky) — 확인 요청 대상 안내·액션 버튼을 스크롤 중에도 계속
+          접근 가능하게 둔다(2026-07-20, JournalWizard와 동일 원칙). */}
+      <div className="flex flex-col gap-4 lg:sticky lg:top-6">
+        {!blocked && (
+          <div className="rounded-xl bg-domain-leg-bg p-4 text-body text-domain-leg-text ring-1 ring-domain-leg-accent/30">
+            ✅ 후견감독보고서는 공식 서류로 저장 시 확인(Confirmation) 절차가 시작됩니다. 저장 후
+            당사자 타임라인과 법률·권리 기록에 반영됩니다.
+            <span className="mt-2 block font-bold">
+              📋 확인 요청 대상: {client && isSelfConfirmingStage(client.lifeStage) ? "본인" : "보호자"}
+            </span>
+          </div>
+        )}
 
-      <div className="mt-8 flex items-center gap-2 border-t border-border pt-6">
-        <Button type="button" variant="outline" className="h-11" onClick={() => router.push("/records/leg")}>
-          취소
-        </Button>
-        <div className="flex-1" />
-        <Button
-          type="button"
-          className="h-11 bg-primary-600 font-bold"
-          disabled={busy || blocked || !canSubmit}
-          onClick={submit}
-        >
-          {busy ? "저장 중..." : "후견감독보고서 저장"}
-        </Button>
+        {error && (
+          <p role="alert" className="text-body font-semibold text-red-600">
+            {error}
+          </p>
+        )}
+
+        <div className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm ring-1 ring-foreground/10">
+          <Button
+            type="button"
+            className="h-11 bg-primary-600 font-bold"
+            disabled={busy || blocked || !canSubmit}
+            onClick={submit}
+          >
+            {busy ? "저장 중..." : "후견감독보고서 저장"}
+          </Button>
+          <Button type="button" variant="outline" className="h-11" onClick={() => router.push("/records/leg")}>
+            취소
+          </Button>
+        </div>
+      </div>
       </div>
     </div>
   );

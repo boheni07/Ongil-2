@@ -154,7 +154,7 @@ export function TransitionPlanWizard({
   }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-2xl flex-1 flex-col">
+    <div className="mx-auto flex min-h-full max-w-6xl flex-1 flex-col">
       <h1 className="text-headline-2 font-extrabold text-foreground">
         전환계획 작성{" "}
         <span className="text-body font-medium text-muted-foreground">TRA</span>
@@ -164,39 +164,9 @@ export function TransitionPlanWizard({
         {client && <StageBadge lifeStage={client.lifeStage} className="min-h-6 pr-2 text-[11px]" />}
       </p>
 
-      {/* 재작성 케이스 — 기존 계획 요약 */}
-      {client?.latestPlan && (
-        <div className="mt-6 flex flex-col gap-2 rounded-xl border border-domain-tra-accent/40 bg-domain-tra-bg/50 p-4">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-label font-bold text-domain-tra-text">기존 전환계획</span>
-            {client.latestPlan.requiresConfirmation && (
-              <ConfirmBadge confirmedAt={client.latestPlan.confirmedAt} />
-            )}
-          </div>
-          {client.latestPlan.roadmapStage && (
-            <RoadmapProgress stage={client.latestPlan.roadmapStage} />
-          )}
-          <p className="text-caption text-muted-foreground">
-            아래에서 새 전환계획을 작성하면 별도 기록으로 저장됩니다(기존 계획은 유지).
-          </p>
-        </div>
-      )}
-
-      {/* 참고 — 학교 개별화전환계획(EDU-005) 소프트 링크(FK 아님, person_id로만 연결) */}
-      {itpRef && (
-        <div className="mt-6 flex flex-col gap-1 rounded-xl border border-domain-edu-accent/40 bg-domain-edu-bg/50 p-4">
-          <span className="text-label font-bold text-domain-edu-text">
-            🎓 참고 — 학교 개별화전환계획(ITP)
-          </span>
-          <p className="text-caption text-muted-foreground">
-            진로 흥미영역: {itpRef.careerInterestAreas.join(", ") || "-"} · 다음 검토일{" "}
-            {itpRef.nextReviewDate ?? "-"}
-          </p>
-        </div>
-      )}
-
-      <div className="mt-6 flex flex-col gap-8">
-        <fieldset className="flex flex-col gap-4">
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
+      <div className="flex flex-col gap-6">
+        <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
           <legend className="text-sm font-bold text-foreground">대상·진로</legend>
           <Field label="대상 당사자" required>
             <select
@@ -247,7 +217,7 @@ export function TransitionPlanWizard({
 
         {!blocked && (
           <>
-            <fieldset className="flex flex-col gap-4">
+            <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
               <legend className="text-sm font-bold text-foreground">훈련 이력 (선택)</legend>
               <p className="text-body text-muted-foreground">
                 직업훈련·프로그램 이력을 입력합니다. 제공기관·기간·진행 상태를 기록하세요.
@@ -329,7 +299,7 @@ export function TransitionPlanWizard({
               </Button>
             </fieldset>
 
-            <fieldset className="flex flex-col gap-4">
+            <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
               <legend className="text-sm font-bold text-foreground">연계·검토</legend>
               <Field label="연계 기관 (선택, 한 줄에 하나)">
                 <textarea
@@ -352,41 +322,77 @@ export function TransitionPlanWizard({
               </Field>
             </fieldset>
 
-            <div className="rounded-(--br-md) bg-primary-50 p-4 text-body text-primary-700">
-              ✅ 전환계획은 공식 문서로 저장 시 확인(Confirmation) 절차가 시작됩니다. 저장 후 당사자
-              타임라인에 기록됩니다.
-              <span className="mt-2 block font-bold">
-                📋 확인 요청 대상: {client && isSelfConfirmingStage(client.lifeStage) ? "본인" : "보호자"}
-              </span>
-            </div>
           </>
         )}
       </div>
 
-      {error && (
-        <p role="alert" className="mt-6 text-body font-semibold text-red-600">
-          {error}
-        </p>
-      )}
+      {/* 오른쪽 사이드바(lg:sticky) — 기존 전환계획·학교 ITP 참고·확인 요청 대상 안내·액션
+          버튼을 스크롤 중에도 계속 접근 가능하게 둔다(2026-07-20, JournalWizard와 동일 원칙). */}
+      <div className="flex flex-col gap-4 lg:sticky lg:top-6">
+        {client?.latestPlan && (
+          <div className="flex flex-col gap-2 rounded-xl border border-domain-tra-accent/40 bg-domain-tra-bg/50 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-label font-bold text-domain-tra-text">기존 전환계획</span>
+              {client.latestPlan.requiresConfirmation && (
+                <ConfirmBadge confirmedAt={client.latestPlan.confirmedAt} />
+              )}
+            </div>
+            {client.latestPlan.roadmapStage && (
+              <RoadmapProgress stage={client.latestPlan.roadmapStage} />
+            )}
+            <p className="text-caption text-muted-foreground">
+              새 전환계획을 작성하면 별도 기록으로 저장됩니다(기존 계획은 유지).
+            </p>
+          </div>
+        )}
 
-      <div className="mt-8 flex items-center gap-2 border-t border-border pt-6">
-        <Button
-          type="button"
-          variant="outline"
-          className="h-11"
-          onClick={() => router.push(personId ? `/timeline?personId=${personId}` : "/home")}
-        >
-          취소
-        </Button>
-        <div className="flex-1" />
-        <Button
-          type="button"
-          className="h-11 bg-primary-600 font-bold"
-          disabled={busy || blocked || !canSubmit}
-          onClick={submit}
-        >
-          {busy ? "저장 중..." : "전환계획 저장"}
-        </Button>
+        {itpRef && (
+          <div className="flex flex-col gap-1 rounded-xl border border-domain-edu-accent/40 bg-domain-edu-bg/50 p-4">
+            <span className="text-label font-bold text-domain-edu-text">
+              🎓 참고 — 학교 개별화전환계획(ITP)
+            </span>
+            <p className="text-caption text-muted-foreground">
+              진로 흥미영역: {itpRef.careerInterestAreas.join(", ") || "-"} · 다음 검토일{" "}
+              {itpRef.nextReviewDate ?? "-"}
+            </p>
+          </div>
+        )}
+
+        {!blocked && (
+          <div className="rounded-xl bg-domain-tra-bg p-4 text-body text-domain-tra-text ring-1 ring-domain-tra-accent/30">
+            ✅ 전환계획은 공식 문서로 저장 시 확인(Confirmation) 절차가 시작됩니다. 저장 후 당사자
+            타임라인에 기록됩니다.
+            <span className="mt-2 block font-bold">
+              📋 확인 요청 대상: {client && isSelfConfirmingStage(client.lifeStage) ? "본인" : "보호자"}
+            </span>
+          </div>
+        )}
+
+        {error && (
+          <p role="alert" className="text-body font-semibold text-red-600">
+            {error}
+          </p>
+        )}
+
+        <div className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm ring-1 ring-foreground/10">
+          <Button
+            type="button"
+            className="h-11 bg-primary-600 font-bold"
+            disabled={busy || blocked || !canSubmit}
+            onClick={submit}
+          >
+            {busy ? "저장 중..." : "전환계획 저장"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11"
+            onClick={() => router.push(personId ? `/timeline?personId=${personId}` : "/home")}
+          >
+            취소
+          </Button>
+        </div>
+      </div>
       </div>
     </div>
   );

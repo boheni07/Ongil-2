@@ -175,7 +175,7 @@ export function IspWizard({
   }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-2xl flex-1 flex-col">
+    <div className="mx-auto flex min-h-full max-w-6xl flex-1 flex-col">
       <h1 className="text-headline-2 font-extrabold text-foreground">
         개인별지원계획 작성{" "}
         <span className="text-body font-medium text-muted-foreground">ISP</span>
@@ -185,8 +185,9 @@ export function IspWizard({
         {client && <StageBadge lifeStage={client.lifeStage} className="min-h-6 pr-2 text-[11px]" />}
       </p>
 
-      <div className="mt-6 flex flex-col gap-8">
-        <fieldset className="flex flex-col gap-4">
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
+      <div className="flex flex-col gap-6">
+        <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
           <legend className="text-sm font-bold text-foreground">기본 정보</legend>
           <Field label="대상 당사자" required>
             <select
@@ -222,7 +223,7 @@ export function IspWizard({
           </Field>
         </fieldset>
 
-        <fieldset className="flex flex-col gap-4">
+        <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
           <legend className="text-sm font-bold text-foreground">욕구 사정</legend>
           <Field label="주요 욕구 영역 (복수 선택)">
             <div className="flex flex-wrap gap-2">
@@ -269,7 +270,7 @@ export function IspWizard({
           </Field>
         </fieldset>
 
-        <fieldset className="flex flex-col gap-4">
+        <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
           <legend className="text-sm font-bold text-foreground">목표 영역</legend>
           <p className="text-body text-muted-foreground">
             목표 영역별로 장기·단기 목표와 담당·기한을 설정합니다. 달성률은 작성 이후 점검(W-14)에서
@@ -343,7 +344,7 @@ export function IspWizard({
           </Button>
         </fieldset>
 
-        <fieldset className="flex flex-col gap-4">
+        <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
           <legend className="text-sm font-bold text-foreground">서비스 계획 (선택)</legend>
           <p className="text-body text-muted-foreground">
             제공할 복지 서비스와 제공기관·빈도·개시일을 입력합니다.
@@ -419,34 +420,39 @@ export function IspWizard({
           </Button>
         </fieldset>
 
-        <div className="rounded-(--br-md) bg-primary-50 p-4 text-body text-primary-700">
+      </div>
+
+      {/* 오른쪽 사이드바(lg:sticky) — 확인 요청 대상 안내·액션 버튼을 스크롤 중에도 계속
+          접근 가능하게 둔다(2026-07-20, JournalWizard와 동일한 원칙). */}
+      <div className="flex flex-col gap-4 lg:sticky lg:top-6">
+        <div className="rounded-xl bg-domain-wel-bg p-4 text-body text-domain-wel-text ring-1 ring-domain-wel-accent/30">
           ✅ ISP는 공식 문서로 저장 시 확인(Confirmation) 절차가 시작됩니다. 저장 후 당사자
           타임라인과 ISP 점검 화면에 기록됩니다.
           <span className="mt-2 block font-bold">
             📋 확인 요청 대상: {client && isSelfConfirmingStage(client.lifeStage) ? "본인" : "보호자"}
           </span>
         </div>
+
+        {error && (
+          <p role="alert" className="text-body font-semibold text-red-600">
+            {error}
+          </p>
+        )}
+
+        <div className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm ring-1 ring-foreground/10">
+          <Button
+            type="button"
+            className="h-11 bg-primary-600 font-bold"
+            disabled={busy || !canSubmit}
+            onClick={submit}
+          >
+            {busy ? "저장 중..." : "ISP 저장"}
+          </Button>
+          <Button type="button" variant="outline" className="h-11" onClick={() => router.push("/home")}>
+            취소
+          </Button>
+        </div>
       </div>
-
-      {error && (
-        <p role="alert" className="mt-6 text-body font-semibold text-red-600">
-          {error}
-        </p>
-      )}
-
-      <div className="mt-8 flex items-center gap-2 border-t border-border pt-6">
-        <Button type="button" variant="outline" className="h-11" onClick={() => router.push("/home")}>
-          취소
-        </Button>
-        <div className="flex-1" />
-        <Button
-          type="button"
-          className="h-11 bg-primary-600 font-bold"
-          disabled={busy || !canSubmit}
-          onClick={submit}
-        >
-          {busy ? "저장 중..." : "ISP 저장"}
-        </Button>
       </div>
     </div>
   );
