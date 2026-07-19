@@ -4,6 +4,10 @@ import { cn } from "@/lib/utils";
 /**
  * docs/03-uiux.md §6-1 `SplitPane` — CSS Grid `300px 1fr`, min-width 1024px.
  * 예: T-14 IEP 점검(좌: 목표 목록 / 우: 인라인 편집), W-14 ISP 점검 등에서 사용.
+ * 좌우 패널이 각자 독립 스크롤되려면 그리드 자체가 고정 높이를 가져야 한다 —
+ * overflow-y-auto만으로는 부모가 콘텐츠에 맞춰 계속 늘어나 스크롤이 발생하지 않는다
+ * (2026-07-19 발견). 기본 높이는 호출부 헤더 크기가 제각각이라 근사치이며, 필요하면
+ * className으로 덮어쓸 수 있다.
  */
 export interface SplitPaneProps {
   left: ReactNode;
@@ -17,7 +21,10 @@ export function SplitPane({ left, right, leftLabel = "목록", className }: Spli
   return (
     <div
       data-slot="split-pane"
-      className={cn("grid min-w-[1024px] grid-cols-[300px_1fr] gap-0", className)}
+      className={cn(
+        "grid h-[calc(100vh-260px)] min-h-[420px] min-w-[1024px] grid-cols-[300px_1fr] gap-0",
+        className
+      )}
     >
       <div
         aria-label={leftLabel}

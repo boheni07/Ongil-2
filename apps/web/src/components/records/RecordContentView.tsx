@@ -6,6 +6,12 @@
  * 모든 스키마를 훑어 필드 키 → 한글 라벨, enum 값 → 한글 라벨 사전을 만들고, 배열/객체를
  * 재귀적으로 들여쓰기해 표시한다. 16종 각각 전용 뷰를 만드는 대신(과잉설계) 하나의 범용
  * 재귀 렌더러로 해소했다 — 신규 record_type이 추가돼도 라벨 사전만 채우면 된다.
+ *
+ * 2026-07-19: Postgres jsonb는 저장 시 키 순서를 보존하지 않아(원문 입력 순서와 무관하게
+ * 재정렬될 수 있음) 화면에 뜬 필드 순서가 뒤죽박죽으로 보인다는 피드백을 받았다. FIELD_ORDER
+ * 우선순위 맵으로 "무엇에 대한 기록인가(분류) → 이름 → 설명·목표 → 점수·측정값 → 일정 →
+ * 담당자 → 메모" 순의 상식적인 읽기 순서를 강제한다. 라벨/값 타이포그래피도 라벨은 더
+ * 작고 은은하게, 값은 더 크고 또렷하게 대비를 키웠다.
  */
 
 const FIELD_LABEL: Record<string, string> = {
@@ -181,6 +187,140 @@ const ENUM_LABEL: Record<string, Record<string, string>> = {
   },
 };
 
+/**
+ * 상식적인 읽기 순서: 이 기록이 "무엇에 대한 것인지"(분류·유형) → 이름·제목 →
+ * 설명·목표 본문 → 점수·측정값·상태 → 일정·기간 → 담당자 → 메모·특이사항.
+ * 목록에 없는 키는 5(중간)로 취급해 순서가 크게 튀지 않게 한다. 같은 우선순위 안에서는
+ * 원래(객체에 들어온) 순서를 그대로 유지한다(안정 정렬).
+ */
+const FIELD_ORDER: Record<string, number> = {
+  // 1. 분류/유형 — "무엇에 대한 기록인가"
+  domain: 1,
+  area: 1,
+  therapy_type: 1,
+  eval_type: 1,
+  roadmap_stage: 1,
+  report_kind: 1,
+  issueType: 1,
+  guardian_type: 1,
+  mood: 1,
+  meal: 1,
+  health: 1,
+  behavior_function: 1,
+  target_behavior: 1,
+
+  // 2. 이름/제목
+  title: 2,
+  service: 2,
+  service_name: 2,
+  program: 2,
+  activity: 2,
+  guardian_name: 2,
+  provider: 2,
+  school: 2,
+
+  // 3. 설명·목표 본문
+  body: 3,
+  goal: 3,
+  long_term: 3,
+  short_term: 3,
+  short_term_goals: 3,
+  career_goal: 3,
+  independent_living_plan: 3,
+  summary: 3,
+  content: 3,
+  discussion: 3,
+  situation: 3,
+  current_levels: 3,
+  antecedent_strategies: 3,
+  replacement_behavior: 3,
+  reinforcement_plan: 3,
+  crisis_procedure: 3,
+  property_management_summary: 3,
+  personal_care_summary: 3,
+  planned_goals: 3,
+  actual_progress: 3,
+  observations: 3,
+  next_session_plan: 3,
+  next_step_note: 3,
+  fba_basis: 3,
+
+  // 4. 점수·측정값·상태
+  score: 4,
+  domain_scores: 4,
+  achievement_rate: 4,
+  target_score: 4,
+  monthly_cost: 4,
+  status: 4,
+
+  // 6. 일정·기간
+  service_date: 6,
+  start_time: 6,
+  end_time: 6,
+  start_date: 6,
+  end_date: 6,
+  start: 6,
+  end: 6,
+  period: 6,
+  service_period: 6,
+  plan_period: 6,
+  report_period: 6,
+  meeting_date: 6,
+  meetingDate: 6,
+  session_date: 6,
+  eval_date: 6,
+  observedAt: 6,
+  consultedAt: 6,
+  deadline: 6,
+  review_date: 6,
+  next_review_date: 6,
+  next_report_due: 6,
+  reassessment_date: 6,
+  academic_year: 6,
+  scheduled_hours: 6,
+  service_hours: 6,
+  session_frequency: 6,
+  frequency: 6,
+
+  // 7. 담당자·관계자
+  responsible: 7,
+  case_manager: 7,
+  responsible_therapist: 7,
+  participants: 7,
+  funding_source: 7,
+  linked_agencies: 7,
+  referralAgency: 7,
+  therapy_plan_id: 7,
+  session_number: 7,
+  assessment_tool: 7,
+
+  // 8. 메모·특이사항 (가장 나중)
+  memo: 8,
+  note: 8,
+  precautions: 8,
+  recommendations: 8,
+  incidents: 8,
+  handover_note: 8,
+  actionTaken: 8,
+  decisions: 8,
+  evaluation: 8,
+  evaluation_note: 8,
+  needs: 8,
+  barriers: 8,
+};
+
+function fieldOrder(key: string): number {
+  return FIELD_ORDER[key] ?? 5;
+}
+
+/** [키, 값] 목록을 상식적인 읽기 순서로 정렬한다(안정 정렬 — 동순위는 원래 순서 유지). */
+function sortEntries(entries: [string, unknown][]): [string, unknown][] {
+  return entries
+    .map((entry, index) => ({ entry, index }))
+    .sort((a, b) => fieldOrder(a.entry[0]) - fieldOrder(b.entry[0]) || a.index - b.index)
+    .map(({ entry }) => entry);
+}
+
 function fieldLabel(key: string): string {
   return FIELD_LABEL[key] ?? key;
 }
@@ -211,7 +351,7 @@ function RenderValue({ fieldKey, value, depth }: { fieldKey: string; value: unkn
     return (
       <ul className="flex flex-col gap-3">
         {value.map((item, i) => (
-          <li key={i} className="rounded-(--br-sm) border border-border p-3 shadow-sm">
+          <li key={i} className="rounded-(--br-md) border border-border bg-muted/30 p-4 shadow-sm">
             {isPlainObject(item) ? (
               <ObjectFields obj={item} depth={depth + 1} />
             ) : (
@@ -231,14 +371,23 @@ function RenderValue({ fieldKey, value, depth }: { fieldKey: string; value: unkn
 }
 
 function ObjectFields({ obj, depth }: { obj: Record<string, unknown>; depth: number }) {
-  const entries = Object.entries(obj);
+  const entries = sortEntries(Object.entries(obj));
   if (entries.length === 0) return <span className="text-muted-foreground">-</span>;
   return (
-    <dl className={depth > 0 ? "flex flex-col gap-2" : "flex flex-col gap-3.5"}>
-      {entries.map(([k, v]) => (
-        <div key={k}>
-          <dt className="text-caption font-semibold text-muted-foreground">{fieldLabel(k)}</dt>
-          <dd className="mt-1 text-body text-foreground">
+    <dl className={depth > 0 ? "flex flex-col gap-3" : "flex flex-col gap-5"}>
+      {entries.map(([k, v], i) => (
+        <div
+          key={k}
+          className={
+            depth === 0 && i < entries.length - 1
+              ? "border-b border-border/60 pb-5"
+              : undefined
+          }
+        >
+          <dt className="text-[11px] font-bold tracking-wide text-muted-foreground/80 uppercase">
+            {fieldLabel(k)}
+          </dt>
+          <dd className="mt-1.5 text-[15px] leading-relaxed font-semibold text-foreground">
             <RenderValue fieldKey={k} value={v} depth={depth} />
           </dd>
         </div>

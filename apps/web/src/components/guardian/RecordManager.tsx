@@ -104,7 +104,13 @@ export function RecordManager({
         </div>
       </div>
 
-      <div className="mt-6 grid min-w-0 gap-0 rounded-xl bg-white shadow-md ring-1 ring-foreground/10 lg:grid-cols-[320px_1fr]">
+      {/*
+        좌우 패널이 각자 독립적으로 스크롤되려면 그리드 자체가 고정 높이를 가져야 한다 —
+        overflow-y-auto만으로는 부모가 콘텐츠에 맞춰 계속 늘어나 절대 스크롤이 발생하지
+        않는다(2026-07-19 피드백으로 발견). 56px 헤더 + 페이지 상하 패딩 + 이 페이지 자체
+        헤더 블록의 대략치를 뺀 높이로 고정하고, 작은 화면을 위한 최소 높이를 둔다.
+      */}
+      <div className="mt-6 grid h-[calc(100vh-260px)] min-h-[420px] min-w-0 gap-0 rounded-xl bg-white shadow-md ring-1 ring-foreground/10 lg:grid-cols-[320px_1fr]">
         <div className="min-h-0 overflow-y-auto border-b border-border lg:border-b-0 lg:border-r">
           <div className="p-3">
             <input
@@ -213,9 +219,11 @@ export function RecordManager({
 function GuardianBody({ content }: { content: unknown }) {
   const c = content as { title?: string; body?: string } | null;
   return (
-    <div className="field-block">
-      <p className="text-label font-semibold text-accent-stone">내용</p>
-      <p className="mt-1 whitespace-pre-wrap text-body text-foreground">{c?.body ?? ""}</p>
+    <div className="rounded-(--br-lg) border border-border bg-white p-5 shadow-sm">
+      <p className="text-[11px] font-bold tracking-wide text-muted-foreground/80 uppercase">내용</p>
+      <p className="mt-1.5 whitespace-pre-wrap text-[15px] leading-relaxed font-semibold text-foreground">
+        {c?.body ?? ""}
+      </p>
     </div>
   );
 }
@@ -230,15 +238,17 @@ function StructuredBody({
   const rest = { ...((content as Record<string, unknown>) ?? {}) };
   delete rest.guardianNote;
   return (
-    <div className="flex flex-col gap-3">
-      <div className="rounded-(--br-md) border border-border p-4">
-        <p className="mb-2 text-label font-semibold text-accent-stone">원본 기록 내용</p>
+    <div className="flex flex-col gap-4">
+      <div className="rounded-(--br-lg) border border-border bg-white p-5 shadow-sm">
+        <p className="mb-4 text-[11px] font-bold tracking-wide text-muted-foreground/80 uppercase">
+          원본 기록 내용
+        </p>
         <RecordContentView content={rest} />
       </div>
       {guardianNote && (
-        <div className="rounded-(--br-md) bg-primary-50 p-4">
-          <p className="text-label font-semibold text-primary-800">보호자 메모</p>
-          <p className="mt-1 text-body font-bold text-foreground">{guardianNote.title}</p>
+        <div className="rounded-(--br-lg) bg-primary-50 p-5 ring-1 ring-primary-100">
+          <p className="text-[11px] font-bold tracking-wide text-primary-700/80 uppercase">보호자 메모</p>
+          <p className="mt-1.5 text-[15px] font-bold text-foreground">{guardianNote.title}</p>
           <p className="mt-1 whitespace-pre-wrap text-body text-foreground">{guardianNote.body}</p>
         </div>
       )}
