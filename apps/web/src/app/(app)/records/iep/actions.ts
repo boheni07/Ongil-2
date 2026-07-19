@@ -119,14 +119,20 @@ export async function getTeacherStudents(): Promise<TeacherStudent[]> {
   } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const { data: perms } = await supabase
-    .from("permissions")
-    .select("person_id")
-    .eq("grantee_id", user.id)
-    .eq("is_active", true);
-  if (!perms || perms.length === 0) return [];
-
-  const personIds = [...new Set(perms.map((p) => p.person_id as string))];
+  const [permsRes, guardianRes] = await Promise.all([
+    supabase.from("permissions").select("person_id").eq("grantee_id", user.id).eq("is_active", true),
+    supabase.from("guardians").select("person_id").eq("user_id", user.id),
+  ]);
+  // 보호자는 도메인 제한 없이 모든 기록을 직접 작성할 수 있다(guardians 관계, RecordManager
+  // 안내문과 동일 원칙) — 2026-07-19, "구조화 기록도 각 분야 전용 입력폼으로 작성하고 싶다"는
+  // 피드백에 따라 담당(permissions) 목록에 자신이 보호자인 당사자를 합쳐 노출한다.
+  const personIds = [
+    ...new Set([
+      ...(permsRes.data ?? []).map((p) => p.person_id as string),
+      ...(guardianRes.data ?? []).map((g) => g.person_id as string),
+    ]),
+  ];
+  if (personIds.length === 0) return [];
 
   const [personsRes, iepRes] = await Promise.all([
     supabase.from("persons").select("id, full_name, birth_date").in("id", personIds),

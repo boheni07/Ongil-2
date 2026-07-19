@@ -134,7 +134,10 @@ export function TransitionPlanWizard({
       setError(res.error);
       return;
     }
-    router.push("/home");
+    // "/home"은 role별 분기라 보호자가 직접 이 폼을 쓸 때(2026-07-19, 구조화 기록 보호자 개방)
+    // "다음 단계에서 제공됩니다" 안내만 뜨는 막다른 길이 된다 — role 무관하게 항상 유효한
+    // 타임라인으로 보낸다(getTimeline은 RLS만으로 걸러지는 범용 조회).
+    router.push(`/timeline?personId=${personId}`);
     router.refresh();
   }
 
@@ -367,7 +370,12 @@ export function TransitionPlanWizard({
       )}
 
       <div className="mt-8 flex items-center gap-2 border-t border-border pt-6">
-        <Button type="button" variant="outline" className="h-11" onClick={() => router.push("/home")}>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11"
+          onClick={() => router.push(personId ? `/timeline?personId=${personId}` : "/home")}
+        >
           취소
         </Button>
         <div className="flex-1" />
