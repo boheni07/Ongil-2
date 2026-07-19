@@ -53,3 +53,12 @@ export const personRegisterSchema = z.object({
 });
 
 export type PersonRegisterInput = z.infer<typeof personRegisterSchema>;
+
+/**
+ * 당사자 정보 수정(2026-07-19) — 등록 스키마와 동일하나 sensitiveConsent는 뺀다. 민감정보
+ * 수집·이용 동의는 최초 등록 시 이미 받았고(consents 테이블에 영구 보관), 정보 수정은 그
+ * 동의를 다시 요구할 성격의 행위가 아니다(개인정보보호법상 "동의 범위 내 정정"에 해당).
+ */
+export const personUpdateSchema = personRegisterSchema.omit({ sensitiveConsent: true });
+
+export type PersonUpdateInput = z.infer<typeof personUpdateSchema>;

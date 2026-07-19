@@ -1,7 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
-import { personRegisterSchema, type PersonRegisterInput } from "@ongil/validation";
+import { personRegisterSchema, personUpdateSchema, type PersonRegisterInput, type PersonUpdateInput } from "@ongil/validation";
 import type { Role } from "@ongil/validation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -17,6 +17,11 @@ import { createClient } from "@/lib/supabase/server";
  */
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export interface ActionResult {
+  ok?: boolean;
+  error?: string;
+}
 
 export interface RegisterPersonResult {
   ok?: boolean;
@@ -221,6 +226,86 @@ export async function getGuardianPersons(): Promise<GuardianPerson[]> {
     avatarUrl: (row.avatar_url as string | null) ?? null,
     isAdult: Boolean(row.is_adult),
   }));
+}
+
+/**
+ * 당사자 정보 수정(2026-07-19) — persons UPDATE. RLS(persons_update, 신설)는 guardians
+ * 관계 보유자 전원(주보호자·공동보호자 모두)에게 열려 있고, 위조 방지를 위해 컬럼 권한을
+ * full_name/birth_date/gender/disability_types/disability_degree/emergency_info/
+ * avatar_url/updated_at으로만 제한한다(primary_guardian_id·is_adult·id는 이 경로로 절대
+ * 못 바꾼다 — 마이그레이션 p3_persons_update_rls 참고).
+ */
+export async function updateGuardianPerson(
+  personId: string,
+  input: PersonUpdateInput
+): Promise<ActionResult> {
+  if (!UUID_RE.test(personId)) return { error: "당사자 정보가 올바르지 않습니다." };
+
+  const parsed = personUpdateSchema.safeParse(input);
+  if (!parsed.success) return { error: firstIssue(parsed.error) };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "로그인이 필요합니다." };
+
+  const { fullName, birthDate, gender, disabilityTypes, disabilityDegree, emergencyInfo, avatarUrl } =
+    parsed.data;
+
+  const { error } = await supabase
+    .from("persons")
+    .update({
+      full_name: fullName,
+      birth_date: birthDate,
+      gender: gender ?? null,
+      disability_types: disabilityTypes,
+      disability_degree: disabilityDegree ?? null,
+      emergency_info: emergencyInfo ?? null,
+      avatar_url: avatarUrl ?? null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", personId);
+
+  if (error) {
+    return { error: `당사자 정보 수정에 실패했습니다: ${error.message}` };
+  }
+  return { ok: true };
+}
+
+/**
+ * 피보호자 목록에서 제외(2026-07-19) — 이 보호자 본인의 guardians 링크만 삭제한다(다른
+ * 이해관계자가 작성한 당사자 기록은 그대로 남는다, persons/records 자체는 건드리지 않음).
+ * RLS(guardians_delete, 신설)가 "주보호자(is_primary=true)는 삭제 불가"를 강제한다 —
+ * persons.primary_guardian_id가 ON DELETE RESTRICT라 주보호자 링크를 지우면 정합성이
+ * 깨지기 때문(주보호자 재지정은 별도 기능, 이번 범위 밖). 그 경우 이 함수는 0행 삭제로
+ * 조용히 실패하므로 명시적으로 감지해 안내 메시지를 준다.
+ */
+export async function removeGuardianPerson(personId: string): Promise<ActionResult> {
+  if (!UUID_RE.test(personId)) return { error: "당사자 정보가 올바르지 않습니다." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "로그인이 필요합니다." };
+
+  const { data, error } = await supabase
+    .from("guardians")
+    .delete()
+    .eq("person_id", personId)
+    .eq("user_id", user.id)
+    .select("id");
+
+  if (error) {
+    return { error: `목록에서 제외하지 못했습니다: ${error.message}` };
+  }
+  if (!data || data.length === 0) {
+    return {
+      error: "주보호자는 목록에서 제외할 수 없습니다. 먼저 다른 보호자를 주보호자로 지정해주세요.",
+    };
+  }
+  return { ok: true };
 }
 
 /**

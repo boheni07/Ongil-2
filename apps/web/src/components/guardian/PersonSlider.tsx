@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { EmergencyInfoInput } from "@ongil/validation";
 import {
   getPersonSummaryCards,
+  removeGuardianPerson,
   type GuardianPerson,
   type PersonSummaryCards,
 } from "@/app/(app)/dashboard/actions";
@@ -29,14 +31,36 @@ function toDomain(d: string): DomainKey {
 const GENDER_LABEL: Record<string, string> = { M: "남", F: "여", other: "" };
 
 export function PersonSlider({ persons }: { persons: GuardianPerson[] }) {
+  const router = useRouter();
   const [index, setIndex] = useState(0);
   const [summary, setSummary] = useState<PersonSummaryCards | null>(null);
   const [loading, setLoading] = useState(true);
   // Wave M-3(docs/11-livinglab-mega-workshop.md) — 다자녀 보호자가 슬라이더 화살표를 계속
   // 눌러야 전체를 못 본다는 리빙랩 관찰에 따라, 3명 이상일 때만 그리드 보기 토글을 노출한다.
   const [viewMode, setViewMode] = useState<"slider" | "grid">("slider");
+  const [removeError, setRemoveError] = useState<string | null>(null);
+  const [removing, setRemoving] = useState(false);
 
-  const selected = persons[index];
+  const selected = persons[Math.min(index, persons.length - 1)];
+
+  async function handleRemove() {
+    if (!selected) return;
+    const ok = window.confirm(
+      `${selected.fullName}님을 피보호자 목록에서 제외하시겠습니까?\n` +
+        "이 계정에서만 목록에서 사라지며, 다른 이해관계자가 작성한 기록은 그대로 유지됩니다."
+    );
+    if (!ok) return;
+    setRemoving(true);
+    setRemoveError(null);
+    const res = await removeGuardianPerson(selected.id);
+    setRemoving(false);
+    if (res.error) {
+      setRemoveError(res.error);
+      return;
+    }
+    setIndex((i) => Math.max(0, Math.min(i, persons.length - 2)));
+    router.refresh();
+  }
 
   useEffect(() => {
     let active = true;
@@ -101,6 +125,31 @@ export function PersonSlider({ persons }: { persons: GuardianPerson[] }) {
             </li>
           ))}
         </ul>
+      )}
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-body font-bold text-foreground">{selected.fullName}님 관리</p>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/dashboard/persons/${selected.id}/edit`}
+            className="rounded-(--br-md) border border-border bg-white px-3 py-1.5 text-caption font-semibold text-accent-stone shadow-sm hover:border-primary-400"
+          >
+            ✎ 정보 수정
+          </Link>
+          <button
+            type="button"
+            onClick={() => void handleRemove()}
+            disabled={removing}
+            className="rounded-(--br-md) border border-red-200 bg-white px-3 py-1.5 text-caption font-semibold text-red-600 shadow-sm hover:border-red-400 disabled:opacity-60"
+          >
+            {removing ? "제외하는 중..." : "목록에서 제외"}
+          </button>
+        </div>
+      </div>
+      {removeError && (
+        <p role="alert" className="text-caption font-semibold text-red-600">
+          {removeError}
+        </p>
       )}
 
       <section className="rounded-xl bg-domain-med-bg p-5 shadow-md ring-1 ring-domain-med-accent/40" aria-label="응급 정보">

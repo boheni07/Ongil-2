@@ -4,7 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import type { PersonRegisterInput } from "@ongil/validation";
-import { registerPerson, uploadPersonAvatar } from "@/app/(app)/dashboard/actions";
+import {
+  registerPerson,
+  updateGuardianPerson,
+  uploadPersonAvatar,
+  type GuardianPerson,
+} from "@/app/(app)/dashboard/actions";
 import { Button } from "@/components/ui/button";
 import { DateField } from "@/components/form/DateField";
 import { PhoneField } from "@/components/form/PhoneField";
@@ -35,23 +40,33 @@ const DISABILITY_TYPES = [
 const fieldClass =
   "min-h-11 w-full rounded-(--br-md) border border-border bg-white px-3.5 text-body text-foreground outline-none focus-visible:border-primary-600";
 
-export function PersonRegisterWizard() {
+export function PersonRegisterWizard({ existing = null }: { existing?: GuardianPerson | null }) {
   const router = useRouter();
+  const isEdit = Boolean(existing);
+  const existingEmergency = (existing?.emergencyInfo ?? null) as {
+    allergies?: string[];
+    medications?: string[];
+    contacts?: EmergencyContactInput[];
+  } | null;
 
-  const [fullName, setFullName] = useState("");
-  const [birthDate, setBirthDate] = useState("");
-  const [gender, setGender] = useState<"" | "M" | "F" | "other">("");
+  const [fullName, setFullName] = useState(existing?.fullName ?? "");
+  const [birthDate, setBirthDate] = useState(existing?.birthDate ?? "");
+  const [gender, setGender] = useState<"" | "M" | "F" | "other">(existing?.gender ?? "");
+  // 정보 수정 시에는 민감정보 동의를 다시 요구하지 않는다(최초 등록 시 이미 받아 consents에
+  // 영구 보관돼 있음) — isEdit이면 이 값은 UI에 노출되지 않고 canSubmit 계산에도 쓰이지 않는다.
   const [consent, setConsent] = useState(false);
-  const [disabilityTypes, setDisabilityTypes] = useState<string[]>([]);
-  const [degree, setDegree] = useState<"" | "severe" | "mild">("");
-  const [allergies, setAllergies] = useState<string[]>([]);
-  const [medications, setMedications] = useState<string[]>([]);
-  const [contacts, setContacts] = useState<EmergencyContactInput[]>([]);
+  const [disabilityTypes, setDisabilityTypes] = useState<string[]>(existing?.disabilityTypes ?? []);
+  const [degree, setDegree] = useState<"" | "severe" | "mild">(existing?.disabilityDegree ?? "");
+  const [allergies, setAllergies] = useState<string[]>(existingEmergency?.allergies ?? []);
+  const [medications, setMedications] = useState<string[]>(existingEmergency?.medications ?? []);
+  const [contacts, setContacts] = useState<EmergencyContactInput[]>(existingEmergency?.contacts ?? []);
 
   // 프로필 사진: avatarPreview는 선택 즉시 보여줄 로컬 objectURL(업로드 완료 여부와 무관하게
   // 항상 썸네일을 즉시 표시), avatarUrl은 업로드 성공 후 받은 공개 URL(실제 제출값).
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  // 수정 모드는 기존 avatarUrl을 미리보기로 바로 보여준다(로컬 objectURL이 아니라 이미
+  // 공개 URL이므로 avatarPreview에 그대로 넣어도 안전 — revokeObjectURL 대상이 아님).
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(existing?.avatarUrl ?? null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(existing?.avatarUrl ?? null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -107,13 +122,12 @@ export function PersonRegisterWizard() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
-  function buildInput(): PersonRegisterInput {
+function buildInput(): Omit<PersonRegisterInput, "sensitiveConsent"> {
     const hasEmergency = allergies.length || medications.length || contacts.length;
     return {
       fullName,
       birthDate,
       ...(gender ? { gender } : {}),
-      sensitiveConsent: true,
       disabilityTypes,
       ...(degree ? { disabilityDegree: degree } : {}),
       ...(hasEmergency ? { emergencyInfo: { allergies, medications, contacts } } : {}),
@@ -121,20 +135,25 @@ export function PersonRegisterWizard() {
     };
   }
 
-  const canSubmit = Boolean(fullName.trim() && birthDate && consent && !avatarUploading);
+  const canSubmit = Boolean(
+    fullName.trim() && birthDate && (isEdit || consent) && !avatarUploading
+  );
 
   async function submit() {
     if (avatarUploading) {
       setError("프로필 사진 업로드가 끝날 때까지 잠시 기다려주세요.");
       return;
     }
-    if (!fullName.trim() || !birthDate || !consent) {
+    if (!fullName.trim() || !birthDate || (!isEdit && !consent)) {
       setError("이름·생년월일을 입력하고 민감정보 수집·이용에 동의해주세요.");
       return;
     }
     setBusy(true);
     setError(null);
-    const res = await registerPerson(buildInput());
+    const res =
+      isEdit && existing
+        ? await updateGuardianPerson(existing.id, buildInput())
+        : await registerPerson({ ...buildInput(), sensitiveConsent: true });
     if (res.error && !res.ok) {
       setBusy(false);
       setError(res.error);
@@ -146,8 +165,12 @@ export function PersonRegisterWizard() {
 
   return (
     <div className="mx-auto flex min-h-full max-w-2xl flex-1 flex-col">
-      <h1 className="text-headline-1 font-extrabold text-foreground">당사자 등록</h1>
-      <p className="mt-1 text-body text-muted-foreground">돌보는 당사자의 정보를 입력해주세요.</p>
+      <h1 className="text-headline-1 font-extrabold text-foreground">
+        {isEdit ? "당사자 정보 수정" : "당사자 등록"}
+      </h1>
+      <p className="mt-1 text-body text-muted-foreground">
+        {isEdit ? `${existing?.fullName}님의 정보를 수정합니다.` : "돌보는 당사자의 정보를 입력해주세요."}
+      </p>
 
       <div className="mt-6 flex flex-col gap-8">
         <fieldset className="flex flex-col gap-4">
@@ -180,28 +203,30 @@ export function PersonRegisterWizard() {
           </Field>
         </fieldset>
 
-        <fieldset className="flex flex-col gap-3">
-          <legend className="text-sm font-bold text-foreground">민감정보 동의</legend>
-          <div className="rounded-xl bg-domain-med-bg p-4 text-body text-domain-med-text ring-1 ring-domain-med-accent/30">
-            <p className="font-bold">민감정보·고유식별정보 수집·이용 동의 (개인정보보호법 §23)</p>
-            <p className="mt-2 leading-relaxed text-foreground/80">
-              당사자의 장애 유형·정도, 건강·응급 정보 등 민감정보를 온길에 기록·보관하기 위해서는 보호자의
-              별도 동의가 필요합니다. 이 정보는 서비스 제공과 응급 대응 목적에만 사용되며, 언제든지 열람·정정·삭제를
-              요청할 수 있습니다.
-            </p>
-          </div>
-          <label className="flex items-start gap-3 rounded-xl border-2 border-border p-4 has-checked:border-primary-600 has-checked:bg-primary-50">
-            <input
-              type="checkbox"
-              checked={consent}
-              onChange={(e) => setConsent(e.target.checked)}
-              className="mt-1 size-5 shrink-0 accent-primary-600"
-            />
-            <span className="text-body font-semibold text-foreground">
-              위 민감정보 수집·이용에 동의합니다. (필수)
-            </span>
-          </label>
-        </fieldset>
+        {!isEdit && (
+          <fieldset className="flex flex-col gap-3">
+            <legend className="text-sm font-bold text-foreground">민감정보 동의</legend>
+            <div className="rounded-xl bg-domain-med-bg p-4 text-body text-domain-med-text ring-1 ring-domain-med-accent/30">
+              <p className="font-bold">민감정보·고유식별정보 수집·이용 동의 (개인정보보호법 §23)</p>
+              <p className="mt-2 leading-relaxed text-foreground/80">
+                당사자의 장애 유형·정도, 건강·응급 정보 등 민감정보를 온길에 기록·보관하기 위해서는 보호자의
+                별도 동의가 필요합니다. 이 정보는 서비스 제공과 응급 대응 목적에만 사용되며, 언제든지 열람·정정·삭제를
+                요청할 수 있습니다.
+              </p>
+            </div>
+            <label className="flex items-start gap-3 rounded-xl border-2 border-border p-4 has-checked:border-primary-600 has-checked:bg-primary-50">
+              <input
+                type="checkbox"
+                checked={consent}
+                onChange={(e) => setConsent(e.target.checked)}
+                className="mt-1 size-5 shrink-0 accent-primary-600"
+              />
+              <span className="text-body font-semibold text-foreground">
+                위 민감정보 수집·이용에 동의합니다. (필수)
+              </span>
+            </label>
+          </fieldset>
+        )}
 
         <fieldset className="flex flex-col gap-5">
           <legend className="text-sm font-bold text-foreground">장애 정보 (선택)</legend>
@@ -308,7 +333,7 @@ export function PersonRegisterWizard() {
         </Button>
         <div className="flex-1" />
         <Button type="button" className="h-11 font-bold" disabled={busy || !canSubmit} onClick={submit}>
-          {busy ? "등록 중..." : "당사자 등록"}
+          {busy ? "저장 중..." : isEdit ? "저장" : "당사자 등록"}
         </Button>
       </div>
     </div>
