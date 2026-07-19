@@ -50,7 +50,9 @@ export function Sidebar({ items, collapsed = false, onToggleCollapsed, className
         {items.map((item) => {
           const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
           return (
-            <li key={item.href}>
+            // href만으로 키를 만들면 "IEP 점검"/"ISP 점검"처럼 전용 화면이 없어 홈과 같은
+            // href를 공유하는 항목과 충돌한다(React 중복 키 경고).
+            <li key={`${item.href}::${item.label}`}>
               <Link
                 href={item.href}
                 aria-current={active ? "page" : undefined}
