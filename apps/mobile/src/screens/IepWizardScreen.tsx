@@ -47,9 +47,18 @@ interface Draft {
   };
   annualGoals: AnnualGoal[];
   supportServices: SupportService[];
+  transitionGoalArea: "" | "career" | "independent_living" | "community" | "further_education";
   transitionGoal: string;
   transitionSteps: string;
+  transitionAgencies: string;
 }
+
+const TRANSITION_GOAL_AREAS: { value: "career" | "independent_living" | "community" | "further_education"; label: string }[] = [
+  { value: "career", label: "진로·직업" },
+  { value: "independent_living", label: "자립생활" },
+  { value: "community", label: "지역사회 참여" },
+  { value: "further_education", label: "계속교육" },
+];
 
 const LEVEL_FIELDS: { key: keyof Draft["levels"]; label: string }[] = [
   { key: "korean", label: "국어" },
@@ -101,8 +110,10 @@ export function IepWizardScreen({ navigation, route }: Props) {
   const [supportServices, setSupportServices] = useState<SupportService[]>([
     { service: "", provider: "", frequency: "" },
   ]);
+  const [transitionGoalArea, setTransitionGoalArea] = useState<Draft["transitionGoalArea"]>("");
   const [transitionGoal, setTransitionGoal] = useState("");
   const [transitionSteps, setTransitionSteps] = useState("");
+  const [transitionAgencies, setTransitionAgencies] = useState("");
 
   const { loading, error, run } = useAsyncAction();
   const { checkRestore, saveDraft, clearDraft } = useWizardDraft<Draft>("iep:draft");
@@ -129,10 +140,25 @@ export function IepWizardScreen({ navigation, route }: Props) {
       levels,
       annualGoals,
       supportServices,
+      transitionGoalArea,
       transitionGoal,
       transitionSteps,
+      transitionAgencies,
     }),
-    [personId, school, academicYear, meetingDate, participants, levels, annualGoals, supportServices, transitionGoal, transitionSteps]
+    [
+      personId,
+      school,
+      academicYear,
+      meetingDate,
+      participants,
+      levels,
+      annualGoals,
+      supportServices,
+      transitionGoalArea,
+      transitionGoal,
+      transitionSteps,
+      transitionAgencies,
+    ]
   );
 
   const applyDraft = useCallback((d: Draft) => {
@@ -146,8 +172,10 @@ export function IepWizardScreen({ navigation, route }: Props) {
     setSupportServices(
       d.supportServices.length ? d.supportServices : [{ service: "", provider: "", frequency: "" }]
     );
+    setTransitionGoalArea(d.transitionGoalArea);
     setTransitionGoal(d.transitionGoal);
     setTransitionSteps(d.transitionSteps);
+    setTransitionAgencies(d.transitionAgencies);
   }, []);
 
   useEffect(() => {
@@ -225,11 +253,13 @@ export function IepWizardScreen({ navigation, route }: Props) {
     transition_plan:
       showTransition && transitionGoal.trim()
         ? {
+            ...(transitionGoalArea ? { goal_area: transitionGoalArea } : {}),
             goal: transitionGoal.trim(),
             steps: transitionSteps
               .split("\n")
               .map((s) => s.trim())
               .filter(Boolean),
+            ...(transitionAgencies.trim() ? { linked_agencies: transitionAgencies.trim() } : {}),
           }
         : undefined,
   });
@@ -486,9 +516,21 @@ export function IepWizardScreen({ navigation, route }: Props) {
       {step === 5 && (
         <View>
           <InfoBanner message="전환계획은 만 13세 이상 학생에게만 표시됩니다." />
-          <Text style={styles.label}>전환 목표</Text>
+          <Text style={styles.label}>전환 목표 영역</Text>
+          <View style={styles.pickWrap}>
+            {TRANSITION_GOAL_AREAS.map((o) => (
+              <CategoryChip
+                key={o.value}
+                emoji="🧭"
+                label={o.label}
+                selected={transitionGoalArea === o.value}
+                onPress={() => setTransitionGoalArea(transitionGoalArea === o.value ? "" : o.value)}
+              />
+            ))}
+          </View>
+          <Text style={styles.label}>희망 진로</Text>
           <TextInput
-            accessibilityLabel="전환 목표"
+            accessibilityLabel="희망 진로"
             value={transitionGoal}
             onChangeText={setTransitionGoal}
             placeholder="예: 바리스타 직업훈련 (진로·직업)"
@@ -496,15 +538,24 @@ export function IepWizardScreen({ navigation, route }: Props) {
             multiline
             style={styles.textarea}
           />
-          <Text style={styles.label}>전환 활동 단계 (줄바꿈으로 구분)</Text>
+          <Text style={styles.label}>전환 활동 계획 (줄바꿈으로 구분)</Text>
           <TextInput
-            accessibilityLabel="전환 활동 단계. 줄바꿈으로 구분"
+            accessibilityLabel="전환 활동 계획. 줄바꿈으로 구분"
             value={transitionSteps}
             onChangeText={setTransitionSteps}
             placeholder={"직업체험(카페 실습)\n대중교통 이용 훈련"}
             placeholderTextColor={NEUTRAL.textMuted}
             multiline
             style={styles.textarea}
+          />
+          <Text style={styles.label}>연계 기관</Text>
+          <TextInput
+            accessibilityLabel="연계 기관"
+            value={transitionAgencies}
+            onChangeText={setTransitionAgencies}
+            placeholder="발달장애인 훈련센터, 지역 장애인복지관"
+            placeholderTextColor={NEUTRAL.textMuted}
+            style={styles.input}
           />
         </View>
       )}

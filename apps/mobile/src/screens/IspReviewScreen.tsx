@@ -7,7 +7,7 @@ import { supabase } from "../lib/supabase";
 import { getIspDetail, updateIspGoal, type IspDetail } from "../lib/isp";
 import { useAsyncAction } from "../hooks/useAsyncAction";
 import { ErrorBanner } from "../components/ui";
-import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
+import { ACCENT, FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { SocialWorkerStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<SocialWorkerStackParamList, "IspReview">;
@@ -254,7 +254,7 @@ export function IspReviewScreen({ navigation, route }: Props) {
                   />
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="변경 저장"
+                    accessibilityLabel="점검 기록 추가"
                     onPress={() => saveGoal(i)}
                     disabled={saving}
                     style={({ pressed }) => [
@@ -263,7 +263,7 @@ export function IspReviewScreen({ navigation, route }: Props) {
                       pressed && !saving && styles.pressed,
                     ]}
                   >
-                    <Text style={styles.saveBtnText}>{saving ? "저장 중…" : "변경 저장"}</Text>
+                    <Text style={styles.saveBtnText}>{saving ? "저장 중…" : "점검 기록 추가"}</Text>
                   </Pressable>
                 </View>
               ) : null}
@@ -271,6 +271,17 @@ export function IspReviewScreen({ navigation, route }: Props) {
           );
         })
       )}
+
+      {/* 프로토타입 web-social-worker.html W-14의 "재사정 시작"(amber) — 새 ISP(재사정
+          버전)를 작성하는 기존 화면으로 보낸다(웹과 동일한 결정, 별도 재사정 상태 불필요). */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="재사정 시작"
+        onPress={() => navigation.navigate("IspWizard", { personId: detail.personId, personName })}
+        style={({ pressed }) => [styles.reassessBtn, pressed && styles.pressed]}
+      >
+        <Text style={styles.reassessBtnText}>🔄 재사정 시작</Text>
+      </Pressable>
 
       <Pressable
         accessibilityRole="button"
@@ -364,6 +375,17 @@ const styles = StyleSheet.create({
   },
   saveBtnDisabled: { backgroundColor: PRIMARY[400] },
   saveBtnText: { fontSize: 16, fontWeight: "700", color: "#fff" },
+  reassessBtn: {
+    marginTop: SPACING.md,
+    minHeight: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: RADIUS.md,
+    borderWidth: 1.5,
+    borderColor: ACCENT.amber,
+    backgroundColor: "#FFF8EC",
+  },
+  reassessBtnText: { fontSize: 16, fontWeight: "700", color: "#B56F10" },
   timelineBtn: {
     marginTop: SPACING.xl,
     minHeight: 48,

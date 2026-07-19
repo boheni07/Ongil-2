@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Pressable,
   ScrollView,
   Share,
@@ -261,6 +262,27 @@ export function PrivacySettingsScreen() {
         <Text style={styles.exportBtnText}>
           {busy === "export" ? "준비 중…" : "📤 데이터 내보내기"}
         </Text>
+      </Pressable>
+
+      {/* ── 정정·삭제 요청(프로토타입 app-guardian.html G-65 "✏️ 정정·삭제 요청") ─────────
+          별도 요청 접수·처리 워크플로우 자체가 설계된 적이 없어(웹 PrivacySettingsClient.tsx와
+          동일 결정), 이미 legal/privacy에 명시된 개인정보보호책임자 연락처로 안내한다. */}
+      <Text style={styles.sectionTitle}>개인정보 정정·삭제 요청</Text>
+      <Text style={styles.hint}>
+        위 목록에 없는 개인정보의 정정·삭제가 필요하면 개인정보보호책임자에게 요청할 수 있습니다.
+      </Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="정정·삭제 요청 메일 보내기"
+        onPress={() =>
+          void Linking.openURL(
+            "mailto:privacy@ongil.example?subject=" +
+              encodeURIComponent("[온길] 개인정보 정정·삭제 요청")
+          )
+        }
+        style={({ pressed }) => [styles.exportBtn, pressed && styles.pressed]}
+      >
+        <Text style={styles.exportBtnText}>✏️ 정정·삭제 요청</Text>
       </Pressable>
 
       {/* ── 위험 액션 ───────────────────────────── */}

@@ -138,6 +138,8 @@ export function SocialWorkerHomeScreen({ navigation }: Props) {
         </Pressable>
       </View>
 
+      <TodayTasks clients={clients} navigation={navigation} />
+
       <Text style={styles.sectionTitle}>담당 당사자</Text>
       {clients.length === 0 ? (
         <View style={styles.emptyBox}>
@@ -220,10 +222,60 @@ function Stat({ n, label }: { n: number; label: string }) {
   );
 }
 
+/**
+ * "오늘 할 일"(프로토타입 app-social-worker.html/web-social-worker.html W-01) — 실제로
+ * 판정 가능한 근거 데이터가 있는 건 ISP 재사정 임박/초과뿐이라(reassessmentDday) 그것만
+ * 보여준다(웹 SocialWorkerHome.tsx의 TodayTasks와 동일 결정, 2026-07-19).
+ */
+function TodayTasks({
+  clients,
+  navigation,
+}: {
+  clients: SocialWorkerClient[];
+  navigation: Props["navigation"];
+}) {
+  const tasks = clients.filter((c) => isReassessmentSoon(c.reassessmentDday));
+  if (tasks.length === 0) return null;
+  return (
+    <View style={styles.todayCard}>
+      <Text style={styles.todayTitle}>오늘 할 일</Text>
+      {tasks.map((c) => (
+        <Pressable
+          key={c.personId}
+          accessibilityRole="button"
+          onPress={() =>
+            c.latestIspRecordId
+              ? navigation.navigate("IspReview", { recordId: c.latestIspRecordId })
+              : navigation.navigate("IspWizard", { personId: c.personId, personName: c.fullName })
+          }
+          style={({ pressed }) => [styles.todayRow, pressed && styles.pressed]}
+        >
+          <View style={styles.todayDot} />
+          <Text style={styles.todayText}>
+            {c.fullName} ISP 재사정 D-{c.reassessmentDday}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: NEUTRAL.bg },
   content: { padding: SPACING.xl },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: NEUTRAL.bg },
+  todayCard: {
+    backgroundColor: "#fff",
+    borderRadius: RADIUS.lg,
+    padding: SPACING.lg,
+    marginTop: SPACING.lg,
+    borderWidth: 1,
+    borderColor: NEUTRAL.border,
+  },
+  todayTitle: { fontSize: FONT.body, fontWeight: "800", color: NEUTRAL.text, marginBottom: SPACING.xs },
+  todayRow: { flexDirection: "row", alignItems: "center", gap: SPACING.sm, paddingVertical: SPACING.sm },
+  todayDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: DOMAIN_COLORS.MED.accent },
+  todayText: { fontSize: FONT.caption, color: NEUTRAL.text },
   topRow: { flexDirection: "row", alignItems: "flex-start" },
   topActions: { flexDirection: "row", alignItems: "center", gap: SPACING.sm },
   title: { fontSize: FONT.h2, fontWeight: "800", color: NEUTRAL.text },

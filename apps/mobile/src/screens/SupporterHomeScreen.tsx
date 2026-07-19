@@ -9,6 +9,7 @@ import {
   submitSupportJournal,
   type SupportJournalSummary,
 } from "../lib/journal";
+import { getReceivedHandovers, type HandoverSummary } from "../lib/handover";
 import { flushQueue, getQueue } from "../lib/offline-queue";
 import { useNetworkSync } from "../hooks/useNetworkSync";
 import { formatKoreanDate, relativeDay } from "../lib/date";
@@ -24,6 +25,7 @@ export function SupporterHomeScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [journals, setJournals] = useState<SupportJournalSummary[]>([]);
+  const [handovers, setHandovers] = useState<HandoverSummary[]>([]);
   const [pendingSync, setPendingSync] = useState(0);
 
   const load = useCallback(async () => {
@@ -33,6 +35,7 @@ export function SupporterHomeScreen({ navigation }: Props) {
     const meta = user?.user_metadata ?? {};
     setName((meta.full_name as string) || (meta.name as string) || "");
     setJournals(await getSupporterJournals());
+    setHandovers(await getReceivedHandovers(5));
     setPendingSync((await getQueue("journal")).length);
     setLoading(false);
   }, []);
@@ -141,6 +144,42 @@ export function SupporterHomeScreen({ navigation }: Props) {
           </Pressable>
         ))
       )}
+
+      {/* 프로토타입 web-supporter.html/app-supporter.html S-01 "🔁 최근 인수인계" — 웹엔 없던
+          섹션이었으나(2026-07-19 신설), 모바일은 처음부터 함께 반영한다. */}
+      <Text style={styles.sectionTitle}>🔁 최근 인수인계</Text>
+      {handovers.length === 0 ? (
+        <Text style={styles.empty}>받은 인수인계가 없습니다.</Text>
+      ) : (
+        handovers.map((h) => (
+          <Pressable
+            key={h.id}
+            accessibilityRole="button"
+            accessibilityLabel={`${h.fromUserName ?? "알 수 없음"} → ${h.personName ?? "당사자"} 님 관련 인수인계`}
+            onPress={() => navigation.navigate("HandoverList")}
+            style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+          >
+            <View style={styles.handoverAv}>
+              <Text style={styles.handoverAvText}>{(h.fromUserName ?? "?").slice(0, 1)}</Text>
+            </View>
+            <View style={styles.rowMain}>
+              <Text style={styles.rowName}>
+                {h.fromUserName ?? "알 수 없음"} → {h.personName ?? "당사자"} 님 관련
+              </Text>
+              <Text style={styles.rowMeta} numberOfLines={1}>
+                {h.content} · {relativeDay(h.createdAt)}
+              </Text>
+            </View>
+            {h.priority === "high" ? (
+              <View style={styles.draftBadge}>
+                <Text style={styles.draftText}>중요</Text>
+              </View>
+            ) : !h.acknowledgedAt ? (
+              <View style={styles.unreadDot} />
+            ) : null}
+          </Pressable>
+        ))
+      )}
     </ScrollView>
   );
 }
@@ -226,4 +265,15 @@ const styles = StyleSheet.create({
   },
   draftText: { fontSize: 12, fontWeight: "700", color: "#B56F10" },
   chevron: { fontSize: 24, color: NEUTRAL.textMuted },
+  handoverAv: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: PRIMARY[50],
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: SPACING.md,
+  },
+  handoverAvText: { fontSize: 14, fontWeight: "800", color: PRIMARY[700] },
+  unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#E04545" },
 });
