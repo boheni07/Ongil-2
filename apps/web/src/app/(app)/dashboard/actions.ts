@@ -134,6 +134,62 @@ export async function registerPerson(input: PersonRegisterInput): Promise<Regist
   return { ok: true, personId };
 }
 
+const AVATAR_BUCKET = "person-avatars";
+const AVATAR_MAX_SIZE = 5242880; // 5 MiB (버킷 file_size_limit과 동일)
+const AVATAR_ALLOWED_MIME = ["image/png", "image/jpeg", "image/webp"];
+
+export interface UploadAvatarResult {
+  ok?: boolean;
+  error?: string;
+  url?: string;
+}
+
+function sanitizeFileName(name: string): string {
+  return name.replace(/[^\w.\-]+/g, "_").slice(-100) || "photo";
+}
+
+/**
+ * Flow-G-01 Step5 프로필 사진 업로드. 당사자 등록 시점엔 아직 persons 행이 없어
+ * person_id로 스코프할 수 없으므로 업로더(보호자) 자신의 폴더 `{user.id}/...`에 올린다
+ * (마이그레이션 20260719020000의 storage.objects RLS와 동일 규칙).
+ * 공개 버킷이라 업로드 직후 안정된 공개 URL을 바로 돌려줄 수 있다(presigned URL 불필요).
+ */
+export async function uploadPersonAvatar(formData: FormData): Promise<UploadAvatarResult> {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: "업로드할 사진을 선택해주세요." };
+  }
+  if (file.size > AVATAR_MAX_SIZE) {
+    return { error: "사진 크기는 5MB를 초과할 수 없습니다." };
+  }
+  if (!AVATAR_ALLOWED_MIME.includes(file.type)) {
+    return { error: `허용되지 않는 형식입니다 (${file.type || "unknown"}). PNG/JPEG/WebP 이미지만 가능합니다.` };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "로그인이 필요합니다." };
+
+  const role = (user.user_metadata?.role as Role | undefined) ?? null;
+  if (role !== "guardian") {
+    return { error: "보호자 계정만 사진을 업로드할 수 있습니다." };
+  }
+
+  const path = `${user.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
+  const { error: upErr } = await supabase.storage.from(AVATAR_BUCKET).upload(path, file, {
+    contentType: file.type,
+    upsert: false,
+  });
+  if (upErr) {
+    return { error: `업로드 실패: ${upErr.message}` };
+  }
+
+  const { data } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(path);
+  return { ok: true, url: data.publicUrl };
+}
+
 /**
  * G-01 대시보드 — 보호자가 접근 가능한 당사자 목록(응급정보 포함).
  * persons_select RLS가 접근 범위를 강제한다. 서버 컴포넌트에서 직접 호출.

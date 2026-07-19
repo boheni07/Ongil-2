@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import type { PersonRegisterInput } from "@ongil/validation";
-import { registerPerson } from "@/app/(app)/dashboard/actions";
+import { registerPerson, uploadPersonAvatar } from "@/app/(app)/dashboard/actions";
 import { Button } from "@/components/ui/button";
 
 /** persons.emergencyContactSchema에 대응하는 로컬 타입(스키마는 값만 export). */
@@ -46,11 +46,63 @@ export function PersonRegisterWizard() {
   const [medications, setMedications] = useState<string[]>([]);
   const [contacts, setContacts] = useState<EmergencyContactInput[]>([]);
 
+  // 프로필 사진: avatarPreview는 선택 즉시 보여줄 로컬 objectURL(업로드 완료 여부와 무관하게
+  // 항상 썸네일을 즉시 표시), avatarUrl은 업로드 성공 후 받은 공개 URL(실제 제출값).
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // 선택이 바뀌거나 컴포넌트가 사라질 때 이전 objectURL을 해제해 메모리 누수를 막는다.
+  useEffect(() => {
+    return () => {
+      if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    };
+  }, [avatarPreview]);
+
   function toggleType(t: string) {
     setDisabilityTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
+  }
+
+  async function handleAvatarSelect(file: File | undefined) {
+    if (!file) return;
+    setAvatarError(null);
+
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      setAvatarError("PNG/JPEG/WebP 이미지만 업로드할 수 있습니다.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarError("사진 크기는 5MB를 초과할 수 없습니다.");
+      return;
+    }
+
+    if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    setAvatarPreview(URL.createObjectURL(file));
+    setAvatarUrl(null);
+    setAvatarUploading(true);
+
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await uploadPersonAvatar(formData);
+    setAvatarUploading(false);
+    if (res.error || !res.url) {
+      setAvatarError(res.error ?? "업로드에 실패했습니다.");
+      return;
+    }
+    setAvatarUrl(res.url);
+  }
+
+  function removeAvatar() {
+    if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    setAvatarPreview(null);
+    setAvatarUrl(null);
+    setAvatarError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   function buildInput(): PersonRegisterInput {
@@ -63,13 +115,18 @@ export function PersonRegisterWizard() {
       disabilityTypes,
       ...(degree ? { disabilityDegree: degree } : {}),
       ...(hasEmergency ? { emergencyInfo: { allergies, medications, contacts } } : {}),
+      ...(avatarUrl ? { avatarUrl } : {}),
     };
   }
 
-  const canSubmit = Boolean(fullName.trim() && birthDate && consent);
+  const canSubmit = Boolean(fullName.trim() && birthDate && consent && !avatarUploading);
 
   async function submit() {
-    if (!canSubmit) {
+    if (avatarUploading) {
+      setError("프로필 사진 업로드가 끝날 때까지 잠시 기다려주세요.");
+      return;
+    }
+    if (!fullName.trim() || !birthDate || !consent) {
       setError("이름·생년월일을 입력하고 민감정보 수집·이용에 동의해주세요.");
       return;
     }
@@ -183,14 +240,61 @@ export function PersonRegisterWizard() {
 
         <fieldset className="flex flex-col gap-3">
           <legend className="text-sm font-bold text-foreground">프로필 사진 (선택)</legend>
-          <div className="rounded-xl bg-white p-6 text-center ring-1 ring-foreground/10">
-            <p className="text-5xl" aria-hidden="true">
-              📷
-            </p>
-            <p className="mt-3 text-body font-semibold text-foreground">프로필 사진</p>
-            <p className="mt-1 text-caption text-muted-foreground">
-              사진 업로드는 준비 중입니다. 지금은 건너뛰고 나중에 추가할 수 있습니다.
-            </p>
+          <div className="flex items-center gap-5 rounded-xl bg-white p-6 ring-1 ring-foreground/10">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              aria-label={avatarPreview ? "프로필 사진 변경" : "프로필 사진 선택"}
+              className="relative size-24 shrink-0 overflow-hidden rounded-full border-2 border-dashed border-border bg-muted transition-colors hover:border-primary-400"
+            >
+              {avatarPreview ? (
+                // eslint-disable-next-line @next/next/no-img-element -- 로컬 objectURL 즉시 미리보기(next/image는 blob: URL 미지원)
+                <img src={avatarPreview} alt="" className="size-full object-cover" />
+              ) : (
+                <span className="flex size-full items-center justify-center text-3xl" aria-hidden="true">
+                  📷
+                </span>
+              )}
+              {avatarUploading && (
+                <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-caption font-semibold text-white">
+                  업로드 중...
+                </span>
+              )}
+            </button>
+
+            <div className="flex flex-1 flex-col gap-2">
+              <p className="text-body font-semibold text-foreground">
+                {avatarUploading
+                  ? "사진을 업로드하고 있어요"
+                  : avatarUrl
+                    ? "사진이 등록되었습니다"
+                    : "당사자의 프로필 사진을 등록해보세요"}
+              </p>
+              <p className="text-caption text-muted-foreground">PNG·JPEG·WebP, 5MB 이하. 나중에 다시 바꿀 수 있어요.</p>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" className="h-9 px-4" onClick={() => fileInputRef.current?.click()}>
+                  {avatarPreview ? "사진 변경" : "사진 선택"}
+                </Button>
+                {avatarPreview && (
+                  <Button type="button" variant="ghost" className="h-9 px-3" onClick={removeAvatar}>
+                    제거
+                  </Button>
+                )}
+              </div>
+              {avatarError && (
+                <p role="alert" className="text-caption font-semibold text-red-600">
+                  {avatarError}
+                </p>
+              )}
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="sr-only"
+              onChange={(e) => handleAvatarSelect(e.target.files?.[0])}
+            />
           </div>
         </fieldset>
       </div>
