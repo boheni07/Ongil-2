@@ -11,6 +11,7 @@ import { CategoryChip } from "../components/IconSelector";
 import { WizardFooter } from "../components/WizardStep";
 import { ErrorBanner } from "../components/ui";
 import { formatDateTimeInput } from "../lib/format";
+import { Card } from "../components/Card";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { TeacherStackParamList } from "../navigation/types";
 
@@ -116,76 +117,78 @@ export function ObservationFormScreen({ navigation, route }: Props) {
       </Text>
       {error ? <ErrorBanner message={error} /> : null}
 
-      <Text style={styles.label}>관찰 일시</Text>
-      <TextInput
-        accessibilityLabel="관찰 일시. 예시 2026-07-08T10:30"
-        value={observedAt}
-        onChangeText={(v) => setObservedAt(formatDateTimeInput(v))}
-        placeholder="YYYY-MM-DDTHH:MM"
-        placeholderTextColor={NEUTRAL.textMuted}
-        keyboardType="number-pad"
-        maxLength={16}
-        style={styles.input}
-      />
+      <Card>
+        <Text style={styles.label}>관찰 일시</Text>
+        <TextInput
+          accessibilityLabel="관찰 일시. 예시 2026-07-08T10:30"
+          value={observedAt}
+          onChangeText={(v) => setObservedAt(formatDateTimeInput(v))}
+          placeholder="YYYY-MM-DDTHH:MM"
+          placeholderTextColor={NEUTRAL.textMuted}
+          keyboardType="number-pad"
+          maxLength={16}
+          style={styles.input}
+        />
 
-      <Text style={styles.label}>관찰 상황</Text>
-      <TextInput
-        accessibilityLabel="관찰 상황"
-        value={situation}
-        onChangeText={setSituation}
-        placeholder="예: 3교시 국어 모둠 활동"
-        placeholderTextColor={NEUTRAL.textMuted}
-        style={styles.input}
-      />
+        <Text style={styles.label}>관찰 상황</Text>
+        <TextInput
+          accessibilityLabel="관찰 상황"
+          value={situation}
+          onChangeText={setSituation}
+          placeholder="예: 3교시 국어 모둠 활동"
+          placeholderTextColor={NEUTRAL.textMuted}
+          style={styles.input}
+        />
 
-      <View style={styles.tagHead}>
-        <Text style={styles.label}>관찰 태그</Text>
-        <Text style={styles.tagCount}>{tags.length}개 선택됨</Text>
-      </View>
-      {TAG_CATEGORIES.map(([category, catTags]) => (
-        <View key={category} style={styles.tagCat}>
-          <Text style={styles.tagCatLabel}>{category}</Text>
-          <View style={styles.pickWrap}>
-            {catTags.map((t) => (
-              <CategoryChip
-                key={t}
-                emoji="🏷️"
-                label={t}
-                selected={tags.includes(t)}
-                onPress={() => toggleTag(t)}
-              />
-            ))}
-          </View>
+        <View style={styles.tagHead}>
+          <Text style={styles.label}>관찰 태그</Text>
+          <Text style={styles.tagCount}>{tags.length}개 선택됨</Text>
         </View>
-      ))}
-
-      <Text style={styles.label}>관찰 내용</Text>
-      <TextInput
-        accessibilityLabel="관찰 내용"
-        value={note}
-        onChangeText={setNote}
-        placeholder="관찰한 행동·상황을 구체적으로 기술하세요"
-        placeholderTextColor={NEUTRAL.textMuted}
-        multiline
-        style={styles.textarea}
-      />
-
-      {goalOptions.length > 0 ? (
-        <>
-          <Text style={styles.label}>연결할 IEP 목표 (선택)</Text>
-          <View style={styles.pickWrap}>
-            {goalOptions.map((label) => (
-              <CategoryChip
-                key={label}
-                emoji="🔗"
-                label={label}
-                selected={linkedGoalArea === label}
-                onPress={() => setLinkedGoalArea(linkedGoalArea === label ? "" : label)}
-              />
-            ))}
+        {TAG_CATEGORIES.map(([category, catTags]) => (
+          <View key={category} style={styles.tagCat}>
+            <Text style={styles.tagCatLabel}>{category}</Text>
+            <View style={styles.pickWrap}>
+              {catTags.map((t) => (
+                <CategoryChip
+                  key={t}
+                  emoji="🏷️"
+                  label={t}
+                  selected={tags.includes(t)}
+                  onPress={() => toggleTag(t)}
+                />
+              ))}
+            </View>
           </View>
-        </>
-      ) : null}
+        ))}
+
+        <Text style={styles.label}>관찰 내용</Text>
+        <TextInput
+          accessibilityLabel="관찰 내용"
+          value={note}
+          onChangeText={setNote}
+          placeholder="관찰한 행동·상황을 구체적으로 기술하세요"
+          placeholderTextColor={NEUTRAL.textMuted}
+          multiline
+          style={styles.textarea}
+        />
+
+        {goalOptions.length > 0 ? (
+          <>
+            <Text style={styles.label}>연결할 IEP 목표 (선택)</Text>
+            <View style={styles.pickWrap}>
+              {goalOptions.map((label) => (
+                <CategoryChip
+                  key={label}
+                  emoji="🔗"
+                  label={label}
+                  selected={linkedGoalArea === label}
+                  onPress={() => setLinkedGoalArea(linkedGoalArea === label ? "" : label)}
+                />
+              ))}
+            </View>
+          </>
+        ) : null}
+      </Card>
 
       <WizardFooter onPrev={() => navigation.goBack()} onSubmit={submit} loading={loading} />
     </ScrollView>

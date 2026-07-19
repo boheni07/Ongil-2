@@ -12,7 +12,10 @@ import { StageBadge } from "../components/lifecycle/StageBadge";
 import { WizardFooter } from "../components/WizardStep";
 import { ErrorBanner, InfoBanner } from "../components/ui";
 import { DateField } from "../components/DateField";
-import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
+import { Card } from "../components/Card";
+import { DOMAIN_COLORS, FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
+
+const EDU = DOMAIN_COLORS.EDU;
 import type { TeacherStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<TeacherStackParamList, "BipForm">;
@@ -182,127 +185,135 @@ export function BipFormScreen({ navigation, route }: Props) {
       </Text>
       {error ? <ErrorBanner message={error} /> : null}
 
-      {!paramPersonId ? (
-        <>
-          <Text style={styles.label}>대상 학생</Text>
-          <View style={styles.pickWrap}>
-            {students.map((s) => (
-              <CategoryChip
-                key={s.personId}
-                emoji="🧑‍🎓"
-                label={s.fullName}
-                selected={personId === s.personId}
-                onPress={() => setPersonId(s.personId)}
-              />
-            ))}
+      <Card>
+        {!paramPersonId ? (
+          <>
+            <Text style={styles.label}>대상 학생</Text>
+            <View style={styles.pickWrap}>
+              {students.map((s) => (
+                <CategoryChip
+                  key={s.personId}
+                  emoji="🧑‍🎓"
+                  label={s.fullName}
+                  selected={personId === s.personId}
+                  onPress={() => setPersonId(s.personId)}
+                />
+              ))}
+            </View>
+          </>
+        ) : (
+          <Text style={[styles.studentBanner, { color: EDU.text, backgroundColor: EDU.bg }]}>
+            학생: {route.params?.personName}
+          </Text>
+        )}
+
+        {student ? (
+          <View style={styles.stageRow}>
+            <StageBadge lifeStage={student.lifeStage} />
           </View>
-        </>
-      ) : (
-        <Text style={styles.studentBanner}>학생: {route.params?.personName}</Text>
-      )}
+        ) : null}
+      </Card>
 
-      {student ? (
-        <View style={styles.stageRow}>
-          <StageBadge lifeStage={student.lifeStage} />
+      <Card>
+        <Text style={styles.label}>행동 기능 (FBA)</Text>
+        <View style={styles.pickWrap}>
+          {BEHAVIOR_FUNCTIONS.map((f) => (
+            <CategoryChip
+              key={f.value}
+              emoji="🎯"
+              label={f.label}
+              selected={behaviorFunction === f.value}
+              onPress={() => setBehaviorFunction(f.value)}
+            />
+          ))}
         </View>
-      ) : null}
+        <Text style={styles.hintText}>
+          {BEHAVIOR_FUNCTIONS.find((f) => f.value === behaviorFunction)?.hint}
+        </Text>
 
-      <Text style={styles.label}>행동 기능 (FBA)</Text>
-      <View style={styles.pickWrap}>
-        {BEHAVIOR_FUNCTIONS.map((f) => (
-          <CategoryChip
-            key={f.value}
-            emoji="🎯"
-            label={f.label}
-            selected={behaviorFunction === f.value}
-            onPress={() => setBehaviorFunction(f.value)}
-          />
-        ))}
-      </View>
-      <Text style={styles.hintText}>
-        {BEHAVIOR_FUNCTIONS.find((f) => f.value === behaviorFunction)?.hint}
-      </Text>
+        <Text style={styles.label}>기능평가 근거 (선택, 복수선택 가능)</Text>
+        <View style={styles.pickWrap}>
+          {FBA_BASIS_OPTIONS.map((opt) => (
+            <CategoryChip
+              key={opt.value}
+              emoji="🔎"
+              label={opt.label}
+              selected={fbaBasis.includes(opt.value)}
+              onPress={() => toggleFba(opt.value)}
+            />
+          ))}
+        </View>
+      </Card>
 
-      <Text style={styles.label}>기능평가 근거 (선택, 복수선택 가능)</Text>
-      <View style={styles.pickWrap}>
-        {FBA_BASIS_OPTIONS.map((opt) => (
-          <CategoryChip
-            key={opt.value}
-            emoji="🔎"
-            label={opt.label}
-            selected={fbaBasis.includes(opt.value)}
-            onPress={() => toggleFba(opt.value)}
-          />
-        ))}
-      </View>
+      <Card>
+        <Text style={styles.label}>중재 대상 행동</Text>
+        <TextInput
+          accessibilityLabel="중재 대상 행동"
+          value={targetBehavior}
+          onChangeText={setTargetBehavior}
+          placeholder="중재가 필요한 문제 행동을 관찰 가능한 용어로 구체적으로 기술하세요."
+          placeholderTextColor={NEUTRAL.textMuted}
+          maxLength={2000}
+          multiline
+          style={styles.textarea}
+        />
 
-      <Text style={styles.label}>중재 대상 행동</Text>
-      <TextInput
-        accessibilityLabel="중재 대상 행동"
-        value={targetBehavior}
-        onChangeText={setTargetBehavior}
-        placeholder="중재가 필요한 문제 행동을 관찰 가능한 용어로 구체적으로 기술하세요."
-        placeholderTextColor={NEUTRAL.textMuted}
-        maxLength={2000}
-        multiline
-        style={styles.textarea}
-      />
+        <Text style={styles.label}>선행사건 중재 전략</Text>
+        <TextInput
+          accessibilityLabel="선행사건 중재 전략"
+          value={antecedentStrategies}
+          onChangeText={setAntecedentStrategies}
+          placeholder="문제 행동을 유발하는 선행사건을 조정·예방하기 위한 전략을 기록하세요."
+          placeholderTextColor={NEUTRAL.textMuted}
+          maxLength={3000}
+          multiline
+          style={styles.textarea}
+        />
 
-      <Text style={styles.label}>선행사건 중재 전략</Text>
-      <TextInput
-        accessibilityLabel="선행사건 중재 전략"
-        value={antecedentStrategies}
-        onChangeText={setAntecedentStrategies}
-        placeholder="문제 행동을 유발하는 선행사건을 조정·예방하기 위한 전략을 기록하세요."
-        placeholderTextColor={NEUTRAL.textMuted}
-        maxLength={3000}
-        multiline
-        style={styles.textarea}
-      />
+        <Text style={styles.label}>대체행동</Text>
+        <TextInput
+          accessibilityLabel="대체행동"
+          value={replacementBehavior}
+          onChangeText={setReplacementBehavior}
+          placeholder="같은 기능을 수행하되 사회적으로 수용 가능한 대체행동을 기록하세요."
+          placeholderTextColor={NEUTRAL.textMuted}
+          maxLength={2000}
+          multiline
+          style={styles.textarea}
+        />
 
-      <Text style={styles.label}>대체행동</Text>
-      <TextInput
-        accessibilityLabel="대체행동"
-        value={replacementBehavior}
-        onChangeText={setReplacementBehavior}
-        placeholder="같은 기능을 수행하되 사회적으로 수용 가능한 대체행동을 기록하세요."
-        placeholderTextColor={NEUTRAL.textMuted}
-        maxLength={2000}
-        multiline
-        style={styles.textarea}
-      />
+        <Text style={styles.label}>강화 계획</Text>
+        <TextInput
+          accessibilityLabel="강화 계획"
+          value={reinforcementPlan}
+          onChangeText={setReinforcementPlan}
+          placeholder="대체행동을 촉진할 강화물·강화 일정·소거 절차 등을 기록하세요."
+          placeholderTextColor={NEUTRAL.textMuted}
+          maxLength={3000}
+          multiline
+          style={styles.textarea}
+        />
 
-      <Text style={styles.label}>강화 계획</Text>
-      <TextInput
-        accessibilityLabel="강화 계획"
-        value={reinforcementPlan}
-        onChangeText={setReinforcementPlan}
-        placeholder="대체행동을 촉진할 강화물·강화 일정·소거 절차 등을 기록하세요."
-        placeholderTextColor={NEUTRAL.textMuted}
-        maxLength={3000}
-        multiline
-        style={styles.textarea}
-      />
+        <Text style={styles.label}>위기대응 절차 (선택)</Text>
+        <TextInput
+          accessibilityLabel="위기대응 절차"
+          value={crisisProcedure}
+          onChangeText={setCrisisProcedure}
+          placeholder="심각한 위기 행동 발생 시 안전 확보 절차를 기록하세요. (경도 사례는 비워둘 수 있습니다)"
+          placeholderTextColor={NEUTRAL.textMuted}
+          maxLength={3000}
+          multiline
+          style={styles.textarea}
+        />
 
-      <Text style={styles.label}>위기대응 절차 (선택)</Text>
-      <TextInput
-        accessibilityLabel="위기대응 절차"
-        value={crisisProcedure}
-        onChangeText={setCrisisProcedure}
-        placeholder="심각한 위기 행동 발생 시 안전 확보 절차를 기록하세요. (경도 사례는 비워둘 수 있습니다)"
-        placeholderTextColor={NEUTRAL.textMuted}
-        maxLength={3000}
-        multiline
-        style={styles.textarea}
-      />
-
-      <Text style={styles.label}>재검토 예정일</Text>
-      <DateField
-        accessibilityLabel="재검토 예정일. 예시 2026-12-01"
-        value={reviewDate}
-        onChange={setReviewDate}
-        style={styles.input}
-      />
+        <Text style={styles.label}>재검토 예정일</Text>
+        <DateField
+          accessibilityLabel="재검토 예정일. 예시 2026-12-01"
+          value={reviewDate}
+          onChange={setReviewDate}
+          style={styles.input}
+        />
+      </Card>
 
       <InfoBanner
         message={`행동중재계획은 공식 지원계획 문서로 저장 시 확인 절차가 시작됩니다. 확인 요청 대상: ${
