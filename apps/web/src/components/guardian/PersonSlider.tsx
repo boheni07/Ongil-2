@@ -19,6 +19,7 @@ import { DomainChip } from "@/components/timeline/DomainChip";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import type { DomainKey } from "@ongil/shared";
 import { computeAge, computeLifeStage } from "@/lib/lifecycle";
+import { useCurrentPerson } from "./CurrentPersonProvider";
 
 /**
  * G-01 PersonCard 수평 슬라이더 + 선택 당사자의 응급정보 PinnedCard + 요약 3카드.
@@ -67,7 +68,26 @@ export function PersonSlider({
   personStats: Record<string, PersonCardStats>;
 }) {
   const router = useRouter();
-  const [index, setIndex] = useState(0);
+  const { personId: currentPersonId, setPersonId } = useCurrentPerson();
+  const [index, setIndexState] = useState(() => {
+    const i = persons.findIndex((p) => p.id === currentPersonId);
+    return i >= 0 ? i : 0;
+  });
+  // 헤더 콤보박스에서 당사자를 바꾸면 여기도 즉시 따라가고, 반대로 카드/화살표를 조작하면
+  // setPersonId로 헤더·사이드바에 알린다(두 UI가 같은 CurrentPersonProvider 상태를 공유).
+  const setIndex = (updater: number | ((i: number) => number)) => {
+    setIndexState((prev) => {
+      const next = typeof updater === "function" ? (updater as (i: number) => number)(prev) : updater;
+      const person = persons[next];
+      if (person) setPersonId(person.id);
+      return next;
+    });
+  };
+  useEffect(() => {
+    if (!currentPersonId) return;
+    const i = persons.findIndex((p) => p.id === currentPersonId);
+    if (i >= 0) setIndexState(i);
+  }, [currentPersonId, persons]);
   const [summary, setSummary] = useState<PersonSummaryCards | null>(null);
   const [notifications, setNotifications] = useState<RecentNotificationItem[]>([]);
   const [loading, setLoading] = useState(true);

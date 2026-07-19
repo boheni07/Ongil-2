@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Bell, LogOut, Settings, UserRoundPen } from "lucide-react";
@@ -29,6 +30,8 @@ export interface GlobalHeaderProps {
   userAvatarUrl?: string | null;
   notificationCount?: number;
   className?: string;
+  /** 보호자 전용 "당사자 선택" 콤보박스(프로토타입 `.person-select`) — 로고 옆에 렌더링. */
+  personSelector?: ReactNode;
 }
 
 export function GlobalHeader({
@@ -36,6 +39,7 @@ export function GlobalHeader({
   userAvatarUrl,
   notificationCount = 0,
   className,
+  personSelector,
 }: GlobalHeaderProps) {
   const router = useRouter();
 
@@ -53,10 +57,13 @@ export function GlobalHeader({
         className
       )}
     >
-      <Link href="/" className="flex items-center gap-0.5 text-lg font-extrabold" aria-label="온길 홈으로 이동">
-        <span className="text-primary-600">온</span>
-        <span className="text-accent-stone">길</span>
-      </Link>
+      <div className="flex items-center gap-4">
+        <Link href="/" className="flex items-center gap-0.5 text-lg font-extrabold" aria-label="온길 홈으로 이동">
+          <span className="text-primary-600">온</span>
+          <span className="text-accent-stone">길</span>
+        </Link>
+        {personSelector}
+      </div>
 
       <div className="flex items-center gap-2">
         <Button

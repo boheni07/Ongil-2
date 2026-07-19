@@ -1,6 +1,6 @@
 "use server";
 
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import {
   personRegisterSchema,
   personUpdateSchema,
@@ -11,6 +11,7 @@ import {
 } from "@ongil/validation";
 import type { Role } from "@ongil/validation";
 import { createClient } from "@/lib/supabase/server";
+import { CURRENT_PERSON_COOKIE } from "@/lib/current-person";
 
 /**
  * P1-5 보호자 대시보드 (G-01) + 당사자 등록 6단계(Flow-G-01) Server Action 모음.
@@ -278,6 +279,24 @@ export async function getGuardianPersons(): Promise<GuardianPerson[]> {
     avatarUrl: (row.avatar_url as string | null) ?? null,
     isAdult: Boolean(row.is_adult),
   }));
+}
+
+/**
+ * 헤더 콤보박스/PersonSlider에서 선택한 "현재 당사자"를 쿠키로 영속화한다(재방문·전체
+ * 새로고침 시 초기값 복원용 — 같은 방문 중 즉시 반영은 CurrentPersonProvider가 담당).
+ * persons_select RLS로 이 보호자 소유가 아닌 personId는 조회 자체가 안 되므로 별도
+ * 소유권 검사 없이 조회 성공 여부로 검증한다.
+ */
+export async function setCurrentPerson(personId: string): Promise<void> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("persons").select("id").eq("id", personId).maybeSingle();
+  if (!data) return;
+  const store = await cookies();
+  store.set(CURRENT_PERSON_COOKIE, personId, {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+    sameSite: "lax",
+  });
 }
 
 /**

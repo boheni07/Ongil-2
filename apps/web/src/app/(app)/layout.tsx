@@ -1,13 +1,9 @@
 import {
   Home,
   FileText,
-  LayoutDashboard,
   PencilLine,
   ArrowLeftRight,
-  TrendingUp,
   FolderOpen,
-  Lock,
-  ScrollText,
   Settings,
   ClipboardList,
   Eye,
@@ -22,30 +18,24 @@ import { GlobalHeader } from "@/components/layout/GlobalHeader";
 import { Sidebar, type SidebarItem } from "@/components/layout/Sidebar";
 import { AccountSwitcher } from "@/components/layout/AccountSwitcher";
 import { getUnreadNotificationCount } from "@/app/(app)/notifications/actions";
+import { resolveCurrentPersonId } from "@/lib/current-person";
+import { CurrentPersonProvider } from "@/components/guardian/CurrentPersonProvider";
+import { PersonHeaderSelect } from "@/components/guardian/PersonHeaderSelect";
+import { GuardianSidebar } from "@/components/guardian/GuardianSidebar";
 
 /**
  * 2026-07-19: `/prototypes` 5개 역할 사이드바(web-guardian/teacher/social-worker/therapist/
  * supporter.html) 원문을 그대로 옮겼다 — 항목 라벨·순서·"설정"(보호자는 "동의·권리 관리")
- * 포함까지 프로토타입과 1:1. 프로토타입은 헤더의 "당사자 선택" 드롭다운으로 사이드바 항목이
- * 참조하는 "현재 당사자"를 바꾸는 구조인데, 실제 구현엔 그 전역 선택 상태가 없어 보호자의
- * 당사자별 항목(타임라인/기록 관리/권한 관리/접근 로그)은 첫 번째 당사자로 기본 연결한다
- * (여러 당사자 전환은 기존처럼 대시보드의 PersonSlider에서). 특수교사 "IEP 점검"·사회복지사
- * "ISP 점검"은 특정 기록을 골라야 하는 화면이라 목록 랜딩 페이지가 없어 홈(담당 학생/당사자
- * 카드에서 개별 점검 진입)으로 연결한다 — 다른 항목은 전부 프로토타입과 동일하게 독립 화면으로
- * 바로 연결된다.
+ * 포함까지 프로토타입과 1:1. 특수교사 "IEP 점검"·사회복지사 "ISP 점검"은 특정 기록을 골라야
+ * 하는 화면이라 목록 랜딩 페이지가 없어 홈(담당 학생/당사자 카드에서 개별 점검 진입)으로
+ * 연결한다 — 다른 항목은 전부 프로토타입과 동일하게 독립 화면으로 바로 연결된다.
+ *
+ * 2026-07-20: 보호자는 헤더의 "당사자 선택" 드롭다운으로 사이드바가 참조하는 "현재 당사자"를
+ * 바꿀 수 있어야 하는데(프로토타입 원문 동작), 이 함수는 요청 시점 1회만 실행되는 Server
+ * Component라 그 전환을 반영할 수 없다 — 보호자는 `GuardianSidebar`(클라이언트, CurrentPersonProvider
+ * 참조)로 분리했고 이 함수는 나머지 4역할+기본값만 담당한다.
  */
-function sidebarItems(role: string | null, firstPersonId: string | null): SidebarItem[] {
-  if (role === "guardian") {
-    const p = firstPersonId;
-    return [
-      { label: "대시보드", href: "/dashboard", icon: <LayoutDashboard /> },
-      { label: "생애주기 타임라인", href: p ? `/persons/${p}/timeline` : "/dashboard", icon: <TrendingUp /> },
-      { label: "기록 관리", href: p ? `/persons/${p}/records` : "/dashboard", icon: <FolderOpen /> },
-      { label: "권한 관리", href: p ? `/persons/${p}/permissions` : "/dashboard", icon: <Lock /> },
-      { label: "접근 로그", href: p ? `/persons/${p}/access-logs` : "/dashboard", icon: <ScrollText /> },
-      { label: "동의·권리 관리", href: "/settings/privacy", icon: <Settings /> },
-    ];
-  }
+function sidebarItems(role: string | null): SidebarItem[] {
   if (role === "teacher") {
     return [
       { label: "홈", href: "/home", icon: <Home /> },
@@ -122,7 +112,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const unreadCount = user ? await getUnreadNotificationCount() : 0;
   const displayName = fullName ?? user?.email ?? null;
-  const firstPersonId = role === "guardian" ? ((await getGuardianPersons())[0]?.id ?? null) : null;
 
   // 당사자 모드(§7-1): 사이드바 없이 중앙 정렬 단일 컬럼 폰 셸, 넉넉한 여백.
   if (role === "person") {
@@ -139,18 +128,40 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     );
   }
 
+  const footer = process.env.NODE_ENV !== "production" ? <AccountSwitcher currentEmail={user?.email ?? null} /> : undefined;
+
+  // 보호자: 헤더 콤보박스↔사이드바↔PersonSlider가 같은 "현재 당사자"를 공유해야 하므로
+  // CurrentPersonProvider(클라이언트 Context)로 헤더+본문 전체를 감싼다. 초기값은 쿠키로
+  // 복원(resolveCurrentPersonId)하고, 이후 전환은 페이지 이동 없이 Context로 즉시 반영된다.
+  if (role === "guardian") {
+    const persons = await getGuardianPersons();
+    const currentPersonId = await resolveCurrentPersonId(persons.map((p) => p.id));
+    return (
+      <CurrentPersonProvider
+        initialPersonId={currentPersonId}
+        persons={persons.map((p) => ({ id: p.id, fullName: p.fullName, birthDate: p.birthDate }))}
+      >
+        <div className="flex flex-1 flex-col bg-white">
+          <GlobalHeader
+            userName={displayName}
+            userAvatarUrl={avatarUrl}
+            notificationCount={unreadCount}
+            personSelector={<PersonHeaderSelect />}
+          />
+          <div className="flex flex-1">
+            <GuardianSidebar footer={footer} />
+            <main className="flex flex-1 flex-col bg-[#fafaf9] px-6 py-8">{children}</main>
+          </div>
+        </div>
+      </CurrentPersonProvider>
+    );
+  }
+
   return (
     <div className="flex flex-1 flex-col bg-white">
       <GlobalHeader userName={displayName} userAvatarUrl={avatarUrl} notificationCount={unreadCount} />
       <div className="flex flex-1">
-        <Sidebar
-          items={sidebarItems(role, firstPersonId)}
-          footer={
-            process.env.NODE_ENV !== "production" ? (
-              <AccountSwitcher currentEmail={user?.email ?? null} />
-            ) : undefined
-          }
-        />
+        <Sidebar items={sidebarItems(role)} footer={footer} />
         <main className="flex flex-1 flex-col bg-[#fafaf9] px-6 py-8">{children}</main>
       </div>
     </div>
