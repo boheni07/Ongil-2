@@ -8,7 +8,6 @@ import {
   type TransitionClient,
 } from "@/app/(app)/records/transition/actions";
 import { getLatestItpSummary, type ItpReferenceSummary } from "@/app/(app)/records/itp/actions";
-import { WizardProgress } from "@/components/form/WizardProgress";
 import { DateField } from "@/components/form/DateField";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { ConfirmBadge } from "@/components/records/ConfirmBadge";
@@ -17,14 +16,11 @@ import { Button } from "@/components/ui/button";
 import { isPreTransitionStage, isSelfConfirmingStage } from "@/lib/lifecycle";
 
 /**
- * W-16 전환계획(TRA-001) 작성 위저드 — IspWizard.tsx와 동일 구조.
- * 당사자 선택 → 진로·로드맵 → 훈련 이력 → 연계·검토 → 확인·저장.
- * 만 13세 미만(영유아기·아동기)은 폼을 렌더하지 않고 안내 메시지로 막는다
- * (docs/02-ia.md §3-9 진입가드 — 서버가 최종 방어선이지만 UX상 미리 알린다).
- * 매 제출은 새 레코드 INSERT다(기존 레코드 수정 아님 — ISP와 동일).
+ * W-16 전환계획(TRA-001) 작성 — 대상·진로·훈련이력·연계·검토를 한 화면에서 입력한다
+ * (2026-07-19, 기존 4단계 위저드를 병합해 대체). 만 13세 미만(영유아기·아동기)은
+ * 폼을 렌더하지 않고 안내 메시지로 막는다(docs/02-ia.md §3-9 진입가드 — 서버가
+ * 최종 방어선이지만 UX상 미리 알린다). 매 제출은 새 레코드 INSERT다(ISP와 동일).
  */
-
-const STEP_LABELS = ["대상·진로", "훈련 이력", "연계·검토", "확인·저장"];
 
 const fieldClass =
   "min-h-11 w-full rounded-(--br-md) border border-border bg-white px-3.5 py-2 text-body text-foreground outline-none focus-visible:border-primary-600";
@@ -55,7 +51,6 @@ export function TransitionPlanWizard({
   initialPersonId?: string;
 }) {
   const router = useRouter();
-  const [step, setStep] = useState(1);
   const [personId, setPersonId] = useState(
     initialPersonId && clients.some((c) => c.personId === initialPersonId)
       ? initialPersonId
@@ -122,9 +117,13 @@ export function TransitionPlanWizard({
     };
   }
 
+  const canSubmit = Boolean(
+    personId && !blocked && careerGoal.trim() && caseManager.trim() && nextReviewDate
+  );
+
   async function submit() {
-    if (!personId) {
-      setError("당사자를 선택해주세요.");
+    if (!canSubmit) {
+      setError("당사자·희망 진로·담당자·다음 검토일을 모두 입력해주세요.");
       return;
     }
     setBusy(true);
@@ -139,24 +138,6 @@ export function TransitionPlanWizard({
     router.refresh();
   }
 
-  function nextStep() {
-    setError(null);
-    setStep((s) => Math.min(4, s + 1));
-  }
-  function prevStep() {
-    setError(null);
-    if (step === 1) {
-      router.push("/home");
-      return;
-    }
-    setStep((s) => Math.max(1, s - 1));
-  }
-
-  const canNext =
-    (step === 1 && Boolean(personId && !blocked && careerGoal.trim())) ||
-    step === 2 ||
-    (step === 3 && Boolean(caseManager.trim() && nextReviewDate));
-
   if (clients.length === 0) {
     return (
       <div className="rounded-xl bg-white p-6 ring-1 ring-foreground/10">
@@ -170,7 +151,7 @@ export function TransitionPlanWizard({
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="mx-auto flex min-h-full max-w-2xl flex-1 flex-col">
       <h1 className="text-headline-2 font-extrabold text-foreground">
         전환계획 작성{" "}
         <span className="text-body font-medium text-muted-foreground">TRA</span>
@@ -180,11 +161,9 @@ export function TransitionPlanWizard({
         {client && <StageBadge lifeStage={client.lifeStage} className="min-h-6 pr-2 text-[11px]" />}
       </p>
 
-      <WizardProgress current={step} total={4} label={STEP_LABELS[step - 1]} className="mt-5 mb-6" />
-
       {/* 재작성 케이스 — 기존 계획 요약 */}
       {client?.latestPlan && (
-        <div className="mb-5 flex flex-col gap-2 rounded-xl border border-domain-tra-accent/40 bg-domain-tra-bg/50 p-4">
+        <div className="mt-6 flex flex-col gap-2 rounded-xl border border-domain-tra-accent/40 bg-domain-tra-bg/50 p-4">
           <div className="flex items-center justify-between gap-2">
             <span className="text-label font-bold text-domain-tra-text">기존 전환계획</span>
             {client.latestPlan.requiresConfirmation && (
@@ -202,7 +181,7 @@ export function TransitionPlanWizard({
 
       {/* 참고 — 학교 개별화전환계획(EDU-005) 소프트 링크(FK 아님, person_id로만 연결) */}
       {itpRef && (
-        <div className="mb-5 flex flex-col gap-1 rounded-xl border border-domain-edu-accent/40 bg-domain-edu-bg/50 p-4">
+        <div className="mt-6 flex flex-col gap-1 rounded-xl border border-domain-edu-accent/40 bg-domain-edu-bg/50 p-4">
           <span className="text-label font-bold text-domain-edu-text">
             🎓 참고 — 학교 개별화전환계획(ITP)
           </span>
@@ -213,8 +192,9 @@ export function TransitionPlanWizard({
         </div>
       )}
 
-      {step === 1 && (
-        <div className="flex flex-col gap-4">
+      <div className="mt-6 flex flex-col gap-8">
+        <fieldset className="flex flex-col gap-4">
+          <legend className="text-sm font-bold text-foreground">대상·진로</legend>
           <Field label="대상 당사자" required>
             <select
               className={fieldClass}
@@ -260,166 +240,145 @@ export function TransitionPlanWizard({
               </Field>
             </>
           )}
-        </div>
-      )}
+        </fieldset>
 
-      {step === 2 && (
-        <div className="flex flex-col gap-4">
-          <p className="text-body text-muted-foreground">
-            직업훈련·프로그램 이력을 입력합니다. 제공기관·기간·진행 상태를 기록하세요. (선택)
-          </p>
-          {trainings.map((t, i) => (
-            <div key={i} className="flex flex-col gap-3 rounded-xl border border-border bg-white p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-label font-bold text-domain-tra-text">훈련 {i + 1}</span>
-                {trainings.length > 1 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="h-11 px-3"
-                    onClick={() => setTrainings((prev) => prev.filter((_, idx) => idx !== i))}
-                    aria-label={`훈련 ${i + 1} 삭제`}
-                  >
-                    삭제
-                  </Button>
-                )}
-              </div>
-              <Field label="프로그램">
-                <input
-                  className={fieldClass}
-                  value={t.program}
-                  onChange={(e) => updateTraining(i, { program: e.target.value })}
-                  placeholder="예: 바리스타 직무훈련"
+        {!blocked && (
+          <>
+            <fieldset className="flex flex-col gap-4">
+              <legend className="text-sm font-bold text-foreground">훈련 이력 (선택)</legend>
+              <p className="text-body text-muted-foreground">
+                직업훈련·프로그램 이력을 입력합니다. 제공기관·기간·진행 상태를 기록하세요.
+              </p>
+              {trainings.map((t, i) => (
+                <div key={i} className="flex flex-col gap-3 rounded-xl border border-border bg-white p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-label font-bold text-domain-tra-text">훈련 {i + 1}</span>
+                    {trainings.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="h-11 px-3"
+                        onClick={() => setTrainings((prev) => prev.filter((_, idx) => idx !== i))}
+                        aria-label={`훈련 ${i + 1} 삭제`}
+                      >
+                        삭제
+                      </Button>
+                    )}
+                  </div>
+                  <Field label="프로그램">
+                    <input
+                      className={fieldClass}
+                      value={t.program}
+                      onChange={(e) => updateTraining(i, { program: e.target.value })}
+                      placeholder="예: 바리스타 직무훈련"
+                    />
+                  </Field>
+                  <Field label="제공기관">
+                    <input
+                      className={fieldClass}
+                      value={t.provider}
+                      onChange={(e) => updateTraining(i, { provider: e.target.value })}
+                      placeholder="예: OO직업재활센터"
+                    />
+                  </Field>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Field label="시작일">
+                      <DateField
+                        className={fieldClass}
+                        value={t.start}
+                        onChange={(v) => updateTraining(i, { start: v })}
+                        max={t.end || undefined}
+                      />
+                    </Field>
+                    <Field label="종료일">
+                      <DateField
+                        className={fieldClass}
+                        value={t.end}
+                        onChange={(v) => updateTraining(i, { end: v })}
+                        min={t.start || undefined}
+                      />
+                    </Field>
+                  </div>
+                  <Field label="진행 상태">
+                    <select
+                      className={fieldClass}
+                      value={t.status}
+                      onChange={(e) =>
+                        updateTraining(i, { status: e.target.value as TrainingDraft["status"] })
+                      }
+                    >
+                      {(["planned", "ongoing", "completed"] as const).map((s) => (
+                        <option key={s} value={s}>
+                          {TRAINING_STATUS_LABEL[s]}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => setTrainings((prev) => [...prev, emptyTraining()])}
+              >
+                ＋ 훈련 이력 추가
+              </Button>
+            </fieldset>
+
+            <fieldset className="flex flex-col gap-4">
+              <legend className="text-sm font-bold text-foreground">연계·검토</legend>
+              <Field label="연계 기관 (선택, 한 줄에 하나)">
+                <textarea
+                  className={`${fieldClass} min-h-24`}
+                  value={linkedAgencies}
+                  onChange={(e) => setLinkedAgencies(e.target.value)}
+                  placeholder={"예:\n한국장애인고용공단\nOO발달장애인지원센터"}
                 />
               </Field>
-              <Field label="제공기관">
+              <Field label="담당자(사례관리자)" required>
                 <input
                   className={fieldClass}
-                  value={t.provider}
-                  onChange={(e) => updateTraining(i, { provider: e.target.value })}
-                  placeholder="예: OO직업재활센터"
+                  value={caseManager}
+                  onChange={(e) => setCaseManager(e.target.value)}
+                  placeholder="예: 최복지 사회복지사"
                 />
               </Field>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="시작일">
-                  <DateField
-                    className={fieldClass}
-                    value={t.start}
-                    onChange={(v) => updateTraining(i, { start: v })}
-                    max={t.end || undefined}
-                  />
-                </Field>
-                <Field label="종료일">
-                  <DateField
-                    className={fieldClass}
-                    value={t.end}
-                    onChange={(v) => updateTraining(i, { end: v })}
-                    min={t.start || undefined}
-                  />
-                </Field>
-              </div>
-              <Field label="진행 상태">
-                <select
-                  className={fieldClass}
-                  value={t.status}
-                  onChange={(e) =>
-                    updateTraining(i, { status: e.target.value as TrainingDraft["status"] })
-                  }
-                >
-                  {(["planned", "ongoing", "completed"] as const).map((s) => (
-                    <option key={s} value={s}>
-                      {TRAINING_STATUS_LABEL[s]}
-                    </option>
-                  ))}
-                </select>
+              <Field label="다음 검토일" required>
+                <DateField className={fieldClass} value={nextReviewDate} onChange={setNextReviewDate} />
               </Field>
+            </fieldset>
+
+            <div className="rounded-(--br-md) bg-primary-50 p-4 text-body text-primary-700">
+              ✅ 전환계획은 공식 문서로 저장 시 확인(Confirmation) 절차가 시작됩니다. 저장 후 당사자
+              타임라인에 기록됩니다.
+              <span className="mt-2 block font-bold">
+                📋 확인 요청 대상: {client && isSelfConfirmingStage(client.lifeStage) ? "본인" : "보호자"}
+              </span>
             </div>
-          ))}
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            onClick={() => setTrainings((prev) => [...prev, emptyTraining()])}
-          >
-            ＋ 훈련 이력 추가
-          </Button>
-        </div>
-      )}
-
-      {step === 3 && (
-        <div className="flex flex-col gap-4">
-          <Field label="연계 기관 (선택, 한 줄에 하나)">
-            <textarea
-              className={`${fieldClass} min-h-24`}
-              value={linkedAgencies}
-              onChange={(e) => setLinkedAgencies(e.target.value)}
-              placeholder={"예:\n한국장애인고용공단\nOO발달장애인지원센터"}
-            />
-          </Field>
-          <Field label="담당자(사례관리자)" required>
-            <input
-              className={fieldClass}
-              value={caseManager}
-              onChange={(e) => setCaseManager(e.target.value)}
-              placeholder="예: 최복지 사회복지사"
-            />
-          </Field>
-          <Field label="다음 검토일" required>
-            <DateField className={fieldClass} value={nextReviewDate} onChange={setNextReviewDate} />
-          </Field>
-        </div>
-      )}
-
-      {step === 4 && (
-        <div className="flex flex-col gap-4">
-          <div className="rounded-xl bg-domain-tra-bg p-4 ring-1 ring-domain-tra-accent/40">
-            <SummaryRow k="당사자" v={client?.fullName ?? "-"} />
-            <SummaryRow k="희망 진로" v={careerGoal || "-"} />
-            <SummaryRow k="담당자" v={caseManager || "-"} />
-            <SummaryRow k="훈련 이력" v={`${trainings.filter((t) => t.program.trim()).length}개`} />
-            <SummaryRow k="다음 검토일" v={nextReviewDate || "-"} last />
-          </div>
-
-          <div>
-            <p className="mb-2 text-label font-semibold text-accent-stone">전환 로드맵</p>
-            <RoadmapProgress stage={roadmapStage} />
-          </div>
-
-          <div className="rounded-(--br-md) bg-primary-50 p-4 text-body text-primary-700">
-            ✅ 전환계획은 공식 문서로 저장 시 확인(Confirmation) 절차가 시작됩니다. 저장 후 당사자
-            타임라인에 기록됩니다.
-            <span className="mt-2 block font-bold">
-              📋 확인 요청 대상: {client && isSelfConfirmingStage(client.lifeStage) ? "본인" : "보호자"}
-            </span>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </div>
 
       {error && (
-        <p role="alert" className="mt-4 text-body font-semibold text-red-600">
+        <p role="alert" className="mt-6 text-body font-semibold text-red-600">
           {error}
         </p>
       )}
 
-      <div className="mt-auto flex flex-wrap items-center gap-2 pt-8">
-        <Button type="button" variant="outline" className="h-11" onClick={prevStep}>
-          ← {step === 1 ? "취소" : "이전"}
+      <div className="mt-8 flex items-center gap-2 border-t border-border pt-6">
+        <Button type="button" variant="outline" className="h-11" onClick={() => router.push("/home")}>
+          취소
         </Button>
         <div className="flex-1" />
-        {step < 4 ? (
-          <Button type="button" className="h-11" disabled={!canNext} onClick={nextStep}>
-            다음 →
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            className="h-11 bg-primary-600 font-bold"
-            disabled={busy || blocked}
-            onClick={submit}
-          >
-            {busy ? "저장 중..." : "전환계획 저장"}
-          </Button>
-        )}
+        <Button
+          type="button"
+          className="h-11 bg-primary-600 font-bold"
+          disabled={busy || blocked || !canSubmit}
+          onClick={submit}
+        >
+          {busy ? "저장 중..." : "전환계획 저장"}
+        </Button>
       </div>
     </div>
   );
@@ -441,18 +400,5 @@ function Field({
       </span>
       {children}
     </label>
-  );
-}
-
-function SummaryRow({ k, v, last }: { k: string; v: string; last?: boolean }) {
-  return (
-    <div
-      className={`flex justify-between gap-4 py-2 text-body ${
-        last ? "" : "border-b border-domain-tra-accent/25"
-      }`}
-    >
-      <span className="shrink-0 font-semibold text-domain-tra-text">{k}</span>
-      <span className="text-right text-foreground">{v}</span>
-    </div>
   );
 }
