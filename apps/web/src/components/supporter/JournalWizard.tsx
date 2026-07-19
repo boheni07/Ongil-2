@@ -179,9 +179,11 @@ export function JournalWizard({ persons }: { persons: JournalPersonOption[] }) {
         {personName} 님 · {serviceDate}
       </p>
 
-      <div className="mt-6 flex flex-col gap-8">
-        <fieldset className="flex flex-col gap-4">
-          <legend className="text-sm font-bold text-foreground">서비스 정보</legend>
+      <div className="mt-6 flex flex-col gap-5">
+        <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
+          <legend className="-mt-1 mb-1 px-1 text-label font-bold text-domain-dai-text">
+            📋 서비스 정보
+          </legend>
           <Field label="이용자" required>
             <select className={fieldClass} value={personId} onChange={(e) => setPersonId(e.target.value)}>
               {persons.map((p) => (
@@ -206,7 +208,7 @@ export function JournalWizard({ persons }: { persons: JournalPersonOption[] }) {
             <Field label="서비스 시간 (자동)">
               <input
                 readOnly
-                className={`${fieldClass} bg-muted font-bold`}
+                className={`${fieldClass} border-domain-dai-accent/40 bg-domain-dai-bg font-bold text-domain-dai-text`}
                 value={previewHours != null ? `${previewHours}시간` : "종료 시간 입력"}
               />
             </Field>
@@ -226,8 +228,10 @@ export function JournalWizard({ persons }: { persons: JournalPersonOption[] }) {
           </Field>
         </fieldset>
 
-        <fieldset className="flex flex-col gap-4">
-          <legend className="text-sm font-bold text-foreground">활동 내역</legend>
+        <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
+          <legend className="-mt-1 mb-1 px-1 text-label font-bold text-domain-dai-text">
+            🚶 활동 내역
+          </legend>
           <div className="grid gap-5 lg:grid-cols-[1fr_260px]">
             <div>
               <p className="mb-2 text-label font-semibold text-accent-stone">활동 카테고리 (복수 선택)</p>
@@ -241,7 +245,9 @@ export function JournalWizard({ persons }: { persons: JournalPersonOption[] }) {
                       aria-pressed={on}
                       onClick={() => toggleCategory(c.key)}
                       className={`flex min-h-11 flex-col items-center gap-1 rounded-(--br-md) border-2 px-2 py-2 text-caption font-semibold transition-colors ${
-                        on ? "border-primary-600 bg-primary-50 text-primary-800" : "border-border text-accent-stone hover:border-primary-400"
+                        on
+                          ? "border-domain-dai-accent bg-domain-dai-bg text-domain-dai-text"
+                          : "border-border text-accent-stone hover:border-domain-dai-accent/60"
                       }`}
                     >
                       <span aria-hidden="true" className="text-xl">
@@ -297,8 +303,10 @@ export function JournalWizard({ persons }: { persons: JournalPersonOption[] }) {
           </div>
         </fieldset>
 
-        <fieldset className="flex flex-col gap-6">
-          <legend className="text-sm font-bold text-foreground">건강·식사</legend>
+        <fieldset className="flex flex-col gap-6 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
+          <legend className="-mt-1 mb-1 px-1 text-label font-bold text-domain-dai-text">
+            💪 건강·식사
+          </legend>
           <div>
             <p className="mb-3 text-label font-semibold text-accent-stone">🍚 식사 상태</p>
             <div className="flex flex-wrap gap-3">
@@ -317,8 +325,10 @@ export function JournalWizard({ persons }: { persons: JournalPersonOption[] }) {
           </div>
         </fieldset>
 
-        <fieldset className="flex flex-col gap-4">
-          <legend className="text-sm font-bold text-foreground">특이사항 (선택)</legend>
+        <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
+          <legend className="-mt-1 mb-1 px-1 text-label font-bold text-domain-dai-text">
+            📝 특이사항 <span className="font-normal text-muted-foreground">(선택)</span>
+          </legend>
           <Field label="특이사항 / 사고·안전">
             <textarea
               className={`${fieldClass} min-h-24 py-2`}
@@ -338,6 +348,28 @@ export function JournalWizard({ persons }: { persons: JournalPersonOption[] }) {
             />
           </Field>
         </fieldset>
+
+        {/* 프로토타입 S-12 5단계 "확인·제출" 요약 카드 — 위자드를 단일 화면으로 합치면서도
+            제출 전 한눈에 확인하는 감각은 남겨둔다(2026-07-19). */}
+        <div className="rounded-xl border border-domain-dai-accent/30 bg-domain-dai-bg p-5">
+          <h3 className="text-label font-bold text-domain-dai-text">✅ 제출 전 확인</h3>
+          <dl className="mt-3 flex flex-col gap-2 text-body">
+            <SummaryRow k="이용자" v={personName} />
+            <SummaryRow
+              k="날짜·시간"
+              v={`${serviceDate} · ${startTime || "--:--"}~${endTime || "--:--"}${previewHours != null ? ` (${previewHours}시간)` : ""}`}
+            />
+            <SummaryRow
+              k="활동"
+              v={selectedCategories.length > 0 ? selectedCategories.join(" · ") : "선택된 활동 없음"}
+            />
+            <SummaryRow
+              k="식사·건강"
+              v={`${MEALS.find((m) => m.value === meal)?.label} · ${HEALTHS.find((h) => h.value === health)?.label}`}
+            />
+            <SummaryRow k="특이사항" v={incidents.trim() || handover.trim() ? "있음" : "없음"} last />
+          </dl>
+        </div>
       </div>
 
       {error && (
@@ -375,5 +407,16 @@ function Field({ label, required, children }: { label: string; required?: boolea
       </span>
       {children}
     </label>
+  );
+}
+
+function SummaryRow({ k, v, last }: { k: string; v: string; last?: boolean }) {
+  return (
+    <div
+      className={`flex items-baseline justify-between gap-3 ${last ? "" : "border-b border-domain-dai-accent/20 pb-2"}`}
+    >
+      <dt className="shrink-0 text-caption font-semibold text-domain-dai-text/70">{k}</dt>
+      <dd className="text-right font-semibold text-foreground">{v}</dd>
+    </div>
   );
 }
