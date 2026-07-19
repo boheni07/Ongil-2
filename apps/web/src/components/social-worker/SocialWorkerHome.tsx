@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getSocialWorkerClients } from "@/app/(app)/records/isp/actions";
+import { getSocialWorkerClients, type SocialWorkerClient } from "@/app/(app)/records/isp/actions";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
 import { CaseManagementMenu } from "@/components/social-worker/CaseManagementMenu";
@@ -59,6 +59,10 @@ export async function SocialWorkerHome({ userName }: { userName: string | null }
         <Stat n={String(reassessSoon)} label="ISP 재사정 임박" />
         <Stat n={String(ispMissing)} label="ISP 미작성" />
       </div>
+
+      <TodayTasks
+        clients={sortedClients.filter((c) => c.reassessmentDday != null && c.reassessmentDday <= 30)}
+      />
 
       <h2 className="mt-8 mb-3 text-headline-3 font-bold text-accent-stone">담당 당사자</h2>
       {total === 0 ? (
@@ -132,6 +136,48 @@ export async function SocialWorkerHome({ userName }: { userName: string | null }
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * "오늘 할 일"(프로토타입 web-social-worker.html W-01, 271~275줄) — 프로토타입은 4종 예시를
+ * 정적으로 나열하지만(재사정·전환계획 훈련기관 배정·서비스 이용 점검·인수인계 작성), 실제로
+ * 산출 가능한 근거 데이터가 있는 건 ISP 재사정 임박/초과뿐이다(reassessmentDday, 이미
+ * getSocialWorkerClients가 계산해 옴). 나머지 3종은 "훈련기관 미배정"·"서비스 점검 주기"를
+ * 판정할 근거 필드 자체가 DB에 없어(별도 설계 필요), 가짜 목업 항목을 채워 넣는 대신 실제로
+ * 근거 있는 항목만 보여준다 — 목록이 비면 섹션 자체를 숨긴다.
+ */
+function TodayTasks({ clients }: { clients: SocialWorkerClient[] }) {
+  if (clients.length === 0) return null;
+  return (
+    <section className="mt-6 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
+      <h3 className="mb-2 text-body font-bold text-accent-stone">오늘 할 일</h3>
+      <ul className="flex flex-col">
+        {clients.map((c) => (
+          <li key={c.personId} className="border-b border-border/60 py-2.5 last:border-0">
+            <Link
+              href={
+                c.latestIspRecordId
+                  ? `/records/isp/${c.latestIspRecordId}/review`
+                  : `/records/isp/new?personId=${c.personId}`
+              }
+              className="flex items-center gap-2.5 text-caption text-foreground hover:text-primary-700"
+            >
+              <span
+                aria-hidden="true"
+                className={`size-2 shrink-0 rounded-full ${
+                  (c.reassessmentDday ?? 0) < 0 ? "bg-red-500" : "bg-domain-med-accent"
+                }`}
+              />
+              {c.fullName}{" "}
+              {(c.reassessmentDday ?? 0) < 0
+                ? `ISP 재사정 기한 초과 (${Math.abs(c.reassessmentDday ?? 0)}일 지남)`
+                : `ISP 재사정 D-${c.reassessmentDday}`}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

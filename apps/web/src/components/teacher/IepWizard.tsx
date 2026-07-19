@@ -75,8 +75,12 @@ export function IepWizard({
   const [services, setServices] = useState<SupportServiceDraft[]>([
     { service: "", provider: "", frequency: "" },
   ]);
+  const [transitionGoalArea, setTransitionGoalArea] = useState<
+    "" | "career" | "independent_living" | "community" | "further_education"
+  >("");
   const [transitionGoal, setTransitionGoal] = useState("");
   const [transitionSteps, setTransitionSteps] = useState("");
+  const [transitionAgencies, setTransitionAgencies] = useState("");
 
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -145,11 +149,13 @@ export function IepWizard({
 
     if (showTransition) {
       base.transition_plan = {
+        ...(transitionGoalArea ? { goal_area: transitionGoalArea } : {}),
         goal: transitionGoal.trim(),
         steps: transitionSteps
           .split("\n")
           .map((s) => s.trim())
           .filter(Boolean),
+        ...(transitionAgencies.trim() ? { linked_agencies: transitionAgencies.trim() } : {}),
       };
     }
     return base;
@@ -449,7 +455,20 @@ export function IepWizard({
             <div className="rounded-(--br-md) bg-domain-tra-bg p-3 text-caption font-semibold text-domain-tra-text">
               🔀 전환계획은 만 13세 이상 학생에게 표시됩니다.
             </div>
-            <Field label="전환 목표">
+            <Field label="전환 목표 영역">
+              <select
+                className={fieldClass}
+                value={transitionGoalArea}
+                onChange={(e) => setTransitionGoalArea(e.target.value as typeof transitionGoalArea)}
+              >
+                <option value="">선택 안 함</option>
+                <option value="career">진로·직업</option>
+                <option value="independent_living">자립생활</option>
+                <option value="community">지역사회 참여</option>
+                <option value="further_education">계속교육</option>
+              </select>
+            </Field>
+            <Field label="희망 진로">
               <input
                 className={fieldClass}
                 value={transitionGoal}
@@ -462,7 +481,15 @@ export function IepWizard({
                 className={`${fieldClass} min-h-28`}
                 value={transitionSteps}
                 onChange={(e) => setTransitionSteps(e.target.value)}
-                placeholder={"직업체험(카페 실습)\n자립생활 훈련(대중교통 이용)\n연계 기관 상담"}
+                placeholder={"직업체험(카페 실습)\n자립생활 훈련(대중교통 이용)"}
+              />
+            </Field>
+            <Field label="연계 기관">
+              <input
+                className={fieldClass}
+                value={transitionAgencies}
+                onChange={(e) => setTransitionAgencies(e.target.value)}
+                placeholder="발달장애인 훈련센터, 지역 장애인복지관"
               />
             </Field>
           </fieldset>

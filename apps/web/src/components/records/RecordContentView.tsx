@@ -80,6 +80,7 @@ const FIELD_LABEL: Record<string, string> = {
   provider: "제공기관",
   frequency: "빈도",
   transition_plan: "전환계획",
+  goal_area: "전환 목표 영역",
   steps: "단계",
   observedAt: "관찰 일시",
   situation: "관찰 상황",
@@ -210,6 +211,12 @@ const ENUM_LABEL: Record<string, Record<string, string>> = {
   // 그대로 노출되던 결함 수정). domain_scores는 보통 ScoreCards로 렌더되지만 혹시 그 경로를
   // 타지 않는 경우를 대비해 domain 키도 함께 매핑해둔다.
   area: { physical: "신체", language: "언어", cognitive: "인지", social: "사회성" },
+  goal_area: {
+    career: "진로·직업",
+    independent_living: "자립생활",
+    community: "지역사회 참여",
+    further_education: "계속교육",
+  },
   domain: { physical: "신체", language: "언어", cognitive: "인지", social: "사회성" },
 };
 
@@ -223,6 +230,7 @@ const FIELD_ORDER: Record<string, number> = {
   // 1. 분류/유형 — "무엇에 대한 기록인가"
   domain: 1,
   area: 1,
+  goal_area: 1,
   therapy_type: 1,
   eval_type: 1,
   roadmap_stage: 1,

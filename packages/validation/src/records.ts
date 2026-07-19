@@ -181,7 +181,15 @@ export const iepSchema = z.object({
     )
     .default([]),
   transition_plan: z
-    .object({ goal: z.string(), steps: z.array(z.string()).default([]) })
+    .object({
+      // 전환 목표 영역(2026-07-19, 프로토타입 web-teacher.html T-13 대조로 보강 — 기존
+      // goal/steps 2필드만 있어 실제 서식에 없던 목표영역·연계기관을 추가). optional인 이유는
+      // 이 필드 추가 이전에 저장된 기존 IEP 레코드와의 하위호환.
+      goal_area: z.enum(["career", "independent_living", "community", "further_education"]).optional(),
+      goal: z.string(),
+      steps: z.array(z.string()).default([]),
+      linked_agencies: z.string().optional(),
+    })
     .optional(),
 });
 

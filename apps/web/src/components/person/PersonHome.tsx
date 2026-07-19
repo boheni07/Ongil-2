@@ -66,18 +66,27 @@ export async function PersonHome({ userName }: { userName: string | null }) {
         </span>
       </Link>
 
-      <div className="mt-4 flex flex-col gap-3">
+      {/* 프로토타입 web-person.html .tiles — 56px 아이콘의 대형 정사각 타일 버튼 2개.
+          당사자 모드는 접근성 우선(큰 터치타겟) 원칙이라 밑줄 텍스트 링크로 축소하지 않는다
+          (2026-07-19, 프로토타입 대조로 발견한 후퇴를 되돌림). */}
+      <div className="mt-4 grid grid-cols-2 gap-4">
         <Link
           href="/records"
-          className="inline-block text-person-base font-semibold text-primary-700 underline"
+          className="flex flex-col items-center gap-2 rounded-2xl border-[3px] border-primary-100 bg-primary-50 px-4 py-6 text-center transition-colors active:bg-primary-100"
         >
-          내 기록 보기 →
+          <span aria-hidden="true" className="text-[56px] leading-none">
+            📖
+          </span>
+          <span className="text-person-base font-bold text-accent-stone">내 기록 보기</span>
         </Link>
         <Link
           href="/settings/privacy"
-          className="inline-block text-person-base font-semibold text-primary-700 underline"
+          className="flex flex-col items-center gap-2 rounded-2xl border-[3px] border-primary-100 bg-primary-50 px-4 py-6 text-center transition-colors active:bg-primary-100"
         >
-          개인정보·동의 관리 →
+          <span aria-hidden="true" className="text-[56px] leading-none">
+            ⚙️
+          </span>
+          <span className="text-person-base font-bold text-accent-stone">설정</span>
         </Link>
       </div>
 
