@@ -1,50 +1,23 @@
-"use client";
-
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Bell, LogOut, Settings, UserRoundPen } from "lucide-react";
+import { Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLinkItem,
-} from "@/components/ui/dropdown-menu";
 
 /**
- * docs/03-uiux.md §6-1 `GlobalHeader` — 높이 56px(`--hh`), 로고·알림·프로필.
+ * docs/03-uiux.md §6-1 `GlobalHeader` — 높이 56px(`--hh`), 로고·알림.
  *
- * 알림벨·프로필 메뉴는 자체적으로 클릭 동작을 갖는다(2026-07-18 Wave D-1 스팟체크 발견 —
- * 이전엔 onNotificationClick/onProfileClick 콜백 props에 의존했는데 (app)/layout.tsx가
- * Server Component라 함수를 넘길 수 없어 결국 아무도 전달하지 않았고, 두 버튼 모두 클릭해도
- * 반응이 없는 상태로 방치돼 있었다). 서버 컴포넌트는 이제 notificationCount(숫자, 직렬화
- * 가능)만 넘기면 된다.
+ * 2026-07-19: 우측의 아바타·드롭다운(프로필 수정/설정/로그아웃)을 사이드바 최하단
+ * `UserMenu`로 옮겼다("알림은 우측 상단, 로그인 사용자는 좌측 메뉴 하단" 피드백) — 헤더에는
+ * 알림 벨만 남는다. 당사자(person) 모드처럼 사이드바가 없는 레이아웃은 layout.tsx가 폰 셸
+ * 하단에 `UserMenu`를 직접 배치해 동일한 메뉴를 제공한다. 순수 표시용 컴포넌트라 더 이상
+ * 클라이언트 상태·서버 액션이 필요 없어 Server Component로 되돌렸다.
  */
 export interface GlobalHeaderProps {
-  userName?: string | null;
-  userAvatarUrl?: string | null;
   notificationCount?: number;
   className?: string;
 }
 
-export function GlobalHeader({
-  userName,
-  userAvatarUrl,
-  notificationCount = 0,
-  className,
-}: GlobalHeaderProps) {
-  const router = useRouter();
-
-  async function handleSignOut() {
-    await createClient().auth.signOut();
-    router.push("/login");
-    router.refresh();
-  }
-
+export function GlobalHeader({ notificationCount = 0, className }: GlobalHeaderProps) {
   return (
     <header
       data-slot="global-header"
@@ -58,51 +31,22 @@ export function GlobalHeader({
         <span className="text-accent-stone">길</span>
       </Link>
 
-      <div className="flex items-center gap-2">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          render={<Link href="/notifications" />}
-          aria-label={notificationCount > 0 ? `알림 ${notificationCount}건` : "알림"}
-          className="relative min-h-11 min-w-11"
-        >
-          <Bell className="size-5" aria-hidden="true" />
-          {notificationCount > 0 ? (
-            <span
-              aria-hidden="true"
-              className="absolute top-1.5 right-1.5 flex h-2 w-2 rounded-full bg-domain-med-accent"
-            />
-          ) : null}
-        </Button>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            aria-label={userName ? `${userName}님 프로필 메뉴` : "프로필 메뉴"}
-            className="flex min-h-11 min-w-11 items-center gap-2 rounded-(--br-md) px-1 outline-none hover:bg-primary-50"
-          >
-            <Avatar className="size-8">
-              {userAvatarUrl ? <AvatarImage src={userAvatarUrl} alt="" /> : null}
-              <AvatarFallback>{userName ? userName.slice(0, 1) : "?"}</AvatarFallback>
-            </Avatar>
-            {userName ? <span className="text-sm font-medium text-accent-stone">{userName}</span> : null}
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuLinkItem render={<Link href="/settings/profile" />}>
-              <UserRoundPen className="mr-2 size-4" aria-hidden="true" />
-              프로필 수정
-            </DropdownMenuLinkItem>
-            <DropdownMenuLinkItem render={<Link href="/settings" />}>
-              <Settings className="mr-2 size-4" aria-hidden="true" />
-              설정
-            </DropdownMenuLinkItem>
-            <DropdownMenuItem onClick={handleSignOut}>
-              <LogOut className="mr-2 size-4" aria-hidden="true" />
-              로그아웃
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        render={<Link href="/notifications" />}
+        aria-label={notificationCount > 0 ? `알림 ${notificationCount}건` : "알림"}
+        className="relative min-h-11 min-w-11"
+      >
+        <Bell className="size-5" aria-hidden="true" />
+        {notificationCount > 0 ? (
+          <span
+            aria-hidden="true"
+            className="absolute top-1.5 right-1.5 flex h-2 w-2 rounded-full bg-domain-med-accent"
+          />
+        ) : null}
+      </Button>
     </header>
   );
 }
