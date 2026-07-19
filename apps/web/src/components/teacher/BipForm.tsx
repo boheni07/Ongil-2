@@ -115,7 +115,7 @@ export function BipForm({
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="mx-auto flex min-h-full max-w-6xl flex-1 flex-col">
       <h1 className="text-headline-2 font-extrabold text-foreground">
         행동중재계획(BIP) 작성{" "}
         <span className="text-body font-medium text-muted-foreground">EDU-003</span>
@@ -125,7 +125,8 @@ export function BipForm({
         {student && <StageBadge lifeStage={student.lifeStage} className="min-h-6 pr-2 text-[11px]" />}
       </p>
 
-      <div className="mt-6 flex flex-col gap-4 rounded-xl bg-white p-5 ring-1 ring-foreground/10">
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
+      <div className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="대상 학생" required>
             <select
@@ -233,7 +234,12 @@ export function BipForm({
           <DateField className={fieldClass} value={reviewDate} onChange={setReviewDate} />
         </Field>
 
-        <div className="rounded-(--br-md) bg-primary-50 p-4 text-body text-primary-700">
+      </div>
+
+      {/* 오른쪽 사이드바(lg:sticky) — 확인 요청 대상 안내·액션 버튼을 스크롤 중에도 계속
+          접근 가능하게 둔다(2026-07-20, JournalWizard와 동일 원칙). */}
+      <div className="flex flex-col gap-4 lg:sticky lg:top-6">
+        <div className="rounded-xl bg-domain-edu-bg p-4 text-body text-domain-edu-text ring-1 ring-domain-edu-accent/30">
           ✅ 행동중재계획은 공식 지원계획 문서로 저장 시 확인(Confirmation) 절차가 시작됩니다.
           <span className="mt-2 block font-bold">
             📋 확인 요청 대상:{" "}
@@ -247,10 +253,7 @@ export function BipForm({
           </p>
         )}
 
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="outline" className="h-11" onClick={() => router.push("/records/bip")}>
-            취소
-          </Button>
+        <div className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm ring-1 ring-foreground/10">
           <Button
             type="button"
             className="h-11 bg-domain-edu-accent font-bold text-domain-edu-text"
@@ -259,7 +262,11 @@ export function BipForm({
           >
             {busy ? "저장 중..." : "행동중재계획 저장"}
           </Button>
+          <Button type="button" variant="outline" className="h-11" onClick={() => router.push("/records/bip")}>
+            취소
+          </Button>
         </div>
+      </div>
       </div>
     </div>
   );

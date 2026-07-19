@@ -116,13 +116,16 @@ export function ObservationForm({
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="mx-auto flex min-h-full max-w-3xl flex-1 flex-col">
       <h1 className="text-headline-2 font-extrabold text-foreground">관찰기록 작성</h1>
       <p className="mt-1 text-body text-muted-foreground">
         행동·언어·사회성·학습 태그를 복수 선택할 수 있습니다.
       </p>
 
-      <div className="mt-6 flex flex-col gap-4 rounded-xl bg-white p-5 ring-1 ring-foreground/10">
+      {/* 관찰기록은 일상 기록(requires_confirmation=false)이라 확인요청 안내·기존기록 요약
+          같은 사이드바 콘텐츠가 없다 — BIP/IEP 등 공식문서와 달리 폭만 적당히 좁혀 가독성을
+          확보한다(2026-07-20, 짧은 폼에 억지로 사이드바를 붙이지 않는다는 판단). */}
+      <div className="mt-6 flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="대상 학생" required>
             <select

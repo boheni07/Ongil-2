@@ -160,7 +160,7 @@ export function EvalReportForm({
     !busy && !loadingContext && !!context?.therapyPlanId && summary.trim().length > 0;
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="mx-auto flex min-h-full max-w-6xl flex-1 flex-col">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-headline-2 font-extrabold text-foreground">평가보고서 작성</h1>

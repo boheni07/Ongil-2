@@ -98,7 +98,7 @@ export function CaseConferenceForm({
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="mx-auto flex min-h-full max-w-3xl flex-1 flex-col">
       <h1 className="text-headline-2 font-extrabold text-foreground">
         사례회의록 작성{" "}
         <span className="text-body font-medium text-muted-foreground">WEL-006</span>

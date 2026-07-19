@@ -105,7 +105,7 @@ export function AdvocacyConsultationForm({
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="mx-auto flex min-h-full max-w-3xl flex-1 flex-col">
       <h1 className="text-headline-2 font-extrabold text-foreground">
         권익옹호 상담기록 작성{" "}
         <span className="text-body font-medium text-muted-foreground">LEG-002</span>
