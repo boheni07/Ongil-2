@@ -7,11 +7,20 @@
  * 재귀적으로 들여쓰기해 표시한다. 16종 각각 전용 뷰를 만드는 대신(과잉설계) 하나의 범용
  * 재귀 렌더러로 해소했다 — 신규 record_type이 추가돼도 라벨 사전만 채우면 된다.
  *
- * 2026-07-19: Postgres jsonb는 저장 시 키 순서를 보존하지 않아(원문 입력 순서와 무관하게
- * 재정렬될 수 있음) 화면에 뜬 필드 순서가 뒤죽박죽으로 보인다는 피드백을 받았다. FIELD_ORDER
- * 우선순위 맵으로 "무엇에 대한 기록인가(분류) → 이름 → 설명·목표 → 점수·측정값 → 일정 →
- * 담당자 → 메모" 순의 상식적인 읽기 순서를 강제한다. 라벨/값 타이포그래피도 라벨은 더
- * 작고 은은하게, 값은 더 크고 또렷하게 대비를 키웠다.
+ * 2026-07-19 1차: Postgres jsonb는 저장 시 키 순서를 보존하지 않아 화면 순서가 뒤죽박죽으로
+ * 보인다는 피드백으로 FIELD_ORDER 우선순위 맵을 도입해 상식적인 읽기 순서를 강제했다.
+ *
+ * 2026-07-19 2차: "아래로 계속 펼쳐지는 목록"이 아니라 일반 문서 서식처럼 보이면 좋겠다는
+ * 피드백에 따라 간이 UIUX 리뷰(당사자·보호자·전문가 3개 사용자 관점 시뮬레이션)를 거쳐
+ * 섹션 기반 레이아웃으로 재구성했다. 검토 결론:
+ *   - 보호자 관점: "다 똑같은 굵기·줄 간격이라 어디까지가 한 덩어리인지 안 보인다" →
+ *     의미 단위(개요/세부내용/측정/일정/담당자/메모)로 섹션을 나누고 섹션 제목을 둔다.
+ *   - 전문가(교사·치료사) 관점: "평가 점수 같은 숫자는 목록보다 한눈에 비교되면 좋겠다" →
+ *     domain_scores처럼 "분야+점수" 배열은 미니 스탯 카드(막대 그래프 포함)로 특별 렌더.
+ *   - 공통: 이름·날짜 같은 짧은 값은 굳이 한 줄씩 세로로 쌓지 않고 2열로 나란히(문서의
+ *     "표" 관행과 비슷하게) — 긴 서술형 텍스트만 전체 폭으로 펼친다.
+ * FIELD_ORDER의 우선순위 그룹을 그대로 섹션 경계로 재사용한다(그룹 1·2=개요, 3=세부내용,
+ * 4=측정·평가, 5=기타, 6=일정, 7=담당자, 8=메모).
  */
 
 const FIELD_LABEL: Record<string, string> = {
@@ -188,9 +197,9 @@ const ENUM_LABEL: Record<string, Record<string, string>> = {
 };
 
 /**
- * 상식적인 읽기 순서: 이 기록이 "무엇에 대한 것인지"(분류·유형) → 이름·제목 →
+ * 상식적인 읽기 순서 겸 섹션 그룹 — 이 기록이 "무엇에 대한 것인지"(분류·유형) → 이름·제목 →
  * 설명·목표 본문 → 점수·측정값·상태 → 일정·기간 → 담당자 → 메모·특이사항.
- * 목록에 없는 키는 5(중간)로 취급해 순서가 크게 튀지 않게 한다. 같은 우선순위 안에서는
+ * 목록에 없는 키는 5(기타)로 취급해 순서가 크게 튀지 않게 한다. 같은 우선순위 안에서는
  * 원래(객체에 들어온) 순서를 그대로 유지한다(안정 정렬).
  */
 const FIELD_ORDER: Record<string, number> = {
@@ -244,6 +253,14 @@ const FIELD_ORDER: Record<string, number> = {
   next_session_plan: 3,
   next_step_note: 3,
   fba_basis: 3,
+  annual_goals: 3,
+  support_services: 3,
+  training_records: 3,
+  work_experience_log: 3,
+  services: 3,
+  needs: 3,
+  transition_plan: 3,
+  steps: 3,
 
   // 4. 점수·측정값·상태
   score: 4,
@@ -305,9 +322,19 @@ const FIELD_ORDER: Record<string, number> = {
   decisions: 8,
   evaluation: 8,
   evaluation_note: 8,
-  needs: 8,
   barriers: 8,
 };
+
+/** 섹션 제목 — FIELD_ORDER 우선순위 그룹을 그대로 섹션 경계로 쓴다. */
+const SECTION_GROUPS: { priorities: number[]; title: string }[] = [
+  { priorities: [1, 2], title: "개요" },
+  { priorities: [3], title: "세부 내용" },
+  { priorities: [4], title: "측정·평가" },
+  { priorities: [6], title: "일정" },
+  { priorities: [7], title: "담당자" },
+  { priorities: [8], title: "메모·특이사항" },
+  { priorities: [5], title: "기타" },
+];
 
 function fieldOrder(key: string): number {
   return FIELD_ORDER[key] ?? 5;
@@ -336,6 +363,19 @@ function formatPrimitive(key: string, v: unknown): string {
   return String(v);
 }
 
+/** 짧은 값(이름·날짜·상태 등)인지 판단 — 짧으면 2열 표 형태로, 길면 전체 폭으로 펼친다. */
+function isCompactValue(fieldKey: string, value: unknown): boolean {
+  if (value === null || value === undefined || value === "") return true;
+  if (Array.isArray(value)) {
+    if (value.length === 0) return true;
+    const primitiveArray = value.every((v) => !isPlainObject(v) && !Array.isArray(v));
+    if (!primitiveArray) return false;
+    return value.map((v) => formatPrimitive(fieldKey, v)).join(", ").length <= 40;
+  }
+  if (isPlainObject(value)) return false;
+  return formatPrimitive(fieldKey, value).length <= 40;
+}
+
 /** 값 하나를 렌더 — 배열/객체는 재귀, 원시값은 라벨 매핑 후 텍스트로. */
 function RenderValue({ fieldKey, value, depth }: { fieldKey: string; value: unknown; depth: number }) {
   if (value === null || value === undefined) {
@@ -344,6 +384,11 @@ function RenderValue({ fieldKey, value, depth }: { fieldKey: string; value: unkn
 
   if (Array.isArray(value)) {
     if (value.length === 0) return <span className="text-muted-foreground">없음</span>;
+
+    if (fieldKey === "domain_scores" && isScoreArray(value)) {
+      return <ScoreCards items={value} />;
+    }
+
     const primitiveArray = value.every((v) => !isPlainObject(v) && !Array.isArray(v));
     if (primitiveArray) {
       return <span>{value.map((v) => formatPrimitive(fieldKey, v)).join(", ")}</span>;
@@ -370,24 +415,18 @@ function RenderValue({ fieldKey, value, depth }: { fieldKey: string; value: unkn
   return <span>{formatPrimitive(fieldKey, value)}</span>;
 }
 
+/** 재귀(중첩) 필드용 — 섹션 구분 없이 라벨/값을 순서대로 나열. 배열 항목·객체 내부에서 쓴다. */
 function ObjectFields({ obj, depth }: { obj: Record<string, unknown>; depth: number }) {
   const entries = sortEntries(Object.entries(obj));
   if (entries.length === 0) return <span className="text-muted-foreground">-</span>;
   return (
-    <dl className={depth > 0 ? "flex flex-col gap-3" : "flex flex-col gap-5"}>
-      {entries.map(([k, v], i) => (
-        <div
-          key={k}
-          className={
-            depth === 0 && i < entries.length - 1
-              ? "border-b border-border/60 pb-5"
-              : undefined
-          }
-        >
+    <dl className="flex flex-col gap-3">
+      {entries.map(([k, v]) => (
+        <div key={k}>
           <dt className="text-[11px] font-bold tracking-wide text-muted-foreground/80 uppercase">
             {fieldLabel(k)}
           </dt>
-          <dd className="mt-1.5 text-[15px] leading-relaxed font-semibold text-foreground">
+          <dd className="mt-1 text-[14px] leading-relaxed font-semibold text-foreground">
             <RenderValue fieldKey={k} value={v} depth={depth} />
           </dd>
         </div>
@@ -396,10 +435,116 @@ function ObjectFields({ obj, depth }: { obj: Record<string, unknown>; depth: num
   );
 }
 
+interface ScoreItem {
+  label: string;
+  value: number;
+}
+
+function isScoreArray(value: unknown[]): value is Record<string, unknown>[] {
+  return value.every((v) => {
+    if (!isPlainObject(v)) return false;
+    return typeof v.score === "number" || typeof v.achievement_rate === "number" || typeof v.target_score === "number";
+  });
+}
+
+/** domain_scores처럼 "분야 + 점수" 배열은 목록 대신 막대그래프가 붙은 미니 스탯 카드로 보여준다
+ * (2026-07-19 UIUX 리뷰 — 전문가 사용자는 점수를 목록보다 한눈에 비교하고 싶어했다). */
+function ScoreCards({ items }: { items: Record<string, unknown>[] }) {
+  const scores: ScoreItem[] = items.map((it, i) => {
+    const rawLabel = (it.domain as string) ?? (it.area as string) ?? `항목 ${i + 1}`;
+    const value = (it.score as number) ?? (it.achievement_rate as number) ?? (it.target_score as number) ?? 0;
+    return { label: fieldLabel(rawLabel), value };
+  });
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      {scores.map((s, i) => (
+        <div key={i} className="rounded-(--br-md) border border-border bg-white p-3.5 shadow-sm">
+          <p className="text-[11px] font-bold tracking-wide text-muted-foreground/80 uppercase">{s.label}</p>
+          <p className="mt-1 text-2xl font-extrabold text-primary-700">
+            {s.value}
+            <span className="ml-0.5 text-xs font-semibold text-muted-foreground">점</span>
+          </p>
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary-600"
+              style={{ width: `${Math.min(100, Math.max(0, s.value))}%` }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** 짧은 필드들은 2열 표처럼, 긴 필드들은 전체 폭 단락처럼 — 한 섹션 안에서 함께 배치한다. */
+function SectionFields({ entries }: { entries: [string, unknown][] }) {
+  const compact = entries.filter(([k, v]) => isCompactValue(k, v));
+  const rich = entries.filter(([k, v]) => !isCompactValue(k, v));
+  return (
+    <>
+      {compact.length > 0 && (
+        <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+          {compact.map(([k, v]) => (
+            <div key={k}>
+              <dt className="text-[11px] font-bold tracking-wide text-muted-foreground/80 uppercase">
+                {fieldLabel(k)}
+              </dt>
+              <dd className="mt-1 text-[15px] font-semibold text-foreground">
+                <RenderValue fieldKey={k} value={v} depth={0} />
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {rich.length > 0 && (
+        <dl className={compact.length > 0 ? "mt-4 flex flex-col gap-4" : "flex flex-col gap-4"}>
+          {rich.map(([k, v]) => (
+            <div key={k}>
+              <dt className="text-[11px] font-bold tracking-wide text-muted-foreground/80 uppercase">
+                {fieldLabel(k)}
+              </dt>
+              <dd className="mt-1.5 text-[15px] leading-relaxed font-semibold text-foreground">
+                <RenderValue fieldKey={k} value={v} depth={0} />
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </>
+  );
+}
+
+/** 최상위 문서 레이아웃 — 의미 단위 섹션(개요/세부내용/측정평가/일정/담당자/메모)으로 나눠
+ * 렌더한다. 한 화면 아래로 계속 이어지는 평면 목록 대신, 일반 보고서 서식처럼 소제목으로
+ * 덩어리를 구분한다. */
+function DocumentBody({ obj }: { obj: Record<string, unknown> }) {
+  const sorted = sortEntries(Object.entries(obj));
+  const sections = SECTION_GROUPS.map((g) => ({
+    title: g.title,
+    entries: sorted.filter(([k]) => g.priorities.includes(fieldOrder(k))),
+  })).filter((s) => s.entries.length > 0);
+
+  if (sections.length === 0) return <span className="text-muted-foreground">-</span>;
+
+  return (
+    <div className="flex flex-col gap-6">
+      {sections.map((section, i) => (
+        <section
+          key={section.title}
+          className={i < sections.length - 1 ? "border-b border-border/60 pb-6" : undefined}
+        >
+          <h3 className="mb-3 text-[13px] font-bold tracking-wide text-primary-700">{section.title}</h3>
+          <SectionFields entries={section.entries} />
+        </section>
+      ))}
+    </div>
+  );
+}
+
 /** G-20 상세 우측 패널 "원본 기록 내용" 본문. content가 객체가 아니면 안내만 표시한다. */
 export function RecordContentView({ content }: { content: unknown }) {
   if (!isPlainObject(content)) {
     return <p className="text-body text-muted-foreground">표시할 내용이 없습니다.</p>;
   }
-  return <ObjectFields obj={content} depth={0} />;
+  return <DocumentBody obj={content} />;
 }
