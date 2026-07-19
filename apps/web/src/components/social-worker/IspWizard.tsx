@@ -4,21 +4,17 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { IspInput } from "@ongil/validation";
 import { createIsp, type SocialWorkerClient } from "@/app/(app)/records/isp/actions";
-import { WizardProgress } from "@/components/form/WizardProgress";
 import { DateField } from "@/components/form/DateField";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
 import { isSelfConfirmingStage } from "@/lib/lifecycle";
 
 /**
- * W-13 ISP 작성 5단계 위저드(프로토타입 web-social-worker.html 282~328줄).
- * 기본정보 → 욕구사정 → 목표영역 → 서비스계획 → 확인·제출.
- * 프로토타입엔 욕구사정(2단계)만 상세하나, 나머지 단계는 WEL-004 스키마
- * (service_period, reassessment_date, case_manager, needs[], goals[], services[])에 맞춰 구성한다.
- * 중간 단계는 클라이언트 상태만 유지하고 마지막 확인에서 createIsp(snake_case content)를 호출한다.
+ * W-13 ISP 작성 — 기본정보·욕구사정·목표영역·서비스계획을 한 화면에서 입력한다
+ * (2026-07-19, 기존 5단계 위저드를 병합해 대체). WEL-004 스키마(service_period,
+ * reassessment_date, case_manager, needs[], goals[], services[])는 그대로 유지한다.
+ * 제출 시 createIsp(snake_case content)를 호출한다.
  */
-
-const STEP_LABELS = ["기본 정보", "욕구 사정", "목표 영역", "서비스 계획", "확인·저장"];
 
 const NEED_AREAS = [
   "자립생활 지원",
@@ -64,7 +60,6 @@ export function IspWizard({
   initialPersonId?: string;
 }) {
   const router = useRouter();
-  const [step, setStep] = useState(1);
   const [personId, setPersonId] = useState(
     initialPersonId && clients.some((c) => c.personId === initialPersonId)
       ? initialPersonId
@@ -141,9 +136,18 @@ export function IspWizard({
     };
   }
 
+  const canSubmit = Boolean(
+    personId &&
+      caseManager.trim() &&
+      periodStart &&
+      periodEnd &&
+      reassessmentDate &&
+      goals.some((g) => g.area.trim() || g.long_term.trim())
+  );
+
   async function submit() {
-    if (!personId) {
-      setError("당사자를 선택해주세요.");
+    if (!canSubmit) {
+      setError("당사자·담당자·지원 기간·재사정 예정일과 목표 영역을 하나 이상 입력해주세요.");
       return;
     }
     setBusy(true);
@@ -158,26 +162,6 @@ export function IspWizard({
     router.refresh();
   }
 
-  function nextStep() {
-    setError(null);
-    setStep((s) => Math.min(5, s + 1));
-  }
-  function prevStep() {
-    setError(null);
-    if (step === 1) {
-      router.push("/home");
-      return;
-    }
-    setStep((s) => Math.max(1, s - 1));
-  }
-
-  const canNext =
-    (step === 1 &&
-      Boolean(personId && caseManager.trim() && periodStart && periodEnd && reassessmentDate)) ||
-    step === 2 ||
-    (step === 3 && goals.some((g) => g.area.trim() || g.long_term.trim())) ||
-    step === 4;
-
   if (clients.length === 0) {
     return (
       <div className="rounded-xl bg-white p-6 ring-1 ring-foreground/10">
@@ -191,7 +175,7 @@ export function IspWizard({
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="mx-auto flex min-h-full max-w-2xl flex-1 flex-col">
       <h1 className="text-headline-2 font-extrabold text-foreground">
         개인별지원계획 작성{" "}
         <span className="text-body font-medium text-muted-foreground">ISP</span>
@@ -201,10 +185,9 @@ export function IspWizard({
         {client && <StageBadge lifeStage={client.lifeStage} className="min-h-6 pr-2 text-[11px]" />}
       </p>
 
-      <WizardProgress current={step} total={5} label={STEP_LABELS[step - 1]} className="mt-5 mb-6" />
-
-      {step === 1 && (
-        <div className="flex flex-col gap-4">
+      <div className="mt-6 flex flex-col gap-8">
+        <fieldset className="flex flex-col gap-4">
+          <legend className="text-sm font-bold text-foreground">기본 정보</legend>
           <Field label="대상 당사자" required>
             <select
               className={fieldClass}
@@ -237,11 +220,10 @@ export function IspWizard({
           <Field label="재사정 예정일" required>
             <DateField className={fieldClass} value={reassessmentDate} onChange={setReassessmentDate} />
           </Field>
-        </div>
-      )}
+        </fieldset>
 
-      {step === 2 && (
-        <div className="flex flex-col gap-4">
+        <fieldset className="flex flex-col gap-4">
+          <legend className="text-sm font-bold text-foreground">욕구 사정</legend>
           <Field label="주요 욕구 영역 (복수 선택)">
             <div className="flex flex-wrap gap-2">
               {NEED_AREAS.map((area) => {
@@ -285,11 +267,10 @@ export function IspWizard({
               ))}
             </select>
           </Field>
-        </div>
-      )}
+        </fieldset>
 
-      {step === 3 && (
-        <div className="flex flex-col gap-4">
+        <fieldset className="flex flex-col gap-4">
+          <legend className="text-sm font-bold text-foreground">목표 영역</legend>
           <p className="text-body text-muted-foreground">
             목표 영역별로 장기·단기 목표와 담당·기한을 설정합니다. 달성률은 작성 이후 점검(W-14)에서
             기록합니다.
@@ -360,13 +341,12 @@ export function IspWizard({
           >
             ＋ 목표 영역 추가
           </Button>
-        </div>
-      )}
+        </fieldset>
 
-      {step === 4 && (
-        <div className="flex flex-col gap-4">
+        <fieldset className="flex flex-col gap-4">
+          <legend className="text-sm font-bold text-foreground">서비스 계획 (선택)</legend>
           <p className="text-body text-muted-foreground">
-            제공할 복지 서비스와 제공기관·빈도·개시일을 입력합니다. (선택)
+            제공할 복지 서비스와 제공기관·빈도·개시일을 입력합니다.
           </p>
           {services.map((s, i) => (
             <div key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_110px_150px_auto]">
@@ -437,58 +417,36 @@ export function IspWizard({
           >
             ＋ 서비스 추가
           </Button>
-        </div>
-      )}
+        </fieldset>
 
-      {step === 5 && (
-        <div className="flex flex-col gap-4">
-          <div className="rounded-xl bg-domain-wel-bg p-4 ring-1 ring-domain-wel-accent/40">
-            <SummaryRow k="당사자" v={client?.fullName ?? "-"} />
-            <SummaryRow k="담당자" v={caseManager || "-"} />
-            <SummaryRow k="지원 기간" v={`${periodStart || "-"} ~ ${periodEnd || "-"}`} />
-            <SummaryRow k="재사정 예정일" v={reassessmentDate || "-"} />
-            <SummaryRow k="욕구 영역" v={needAreas.length ? `${needAreas.length}개` : "미선택"} />
-            <SummaryRow
-              k="목표 영역"
-              v={`${goals.filter((g) => g.area.trim() || g.long_term.trim()).length}개`}
-            />
-            <SummaryRow k="서비스 계획" v={`${services.filter((s) => s.service.trim()).length}개`} last />
-          </div>
-          <div className="rounded-(--br-md) bg-primary-50 p-4 text-body text-primary-700">
-            ✅ ISP는 공식 문서로 저장 시 확인(Confirmation) 절차가 시작됩니다. 저장 후 당사자
-            타임라인과 ISP 점검 화면에 기록됩니다.
-            <span className="mt-2 block font-bold">
-              📋 확인 요청 대상: {client && isSelfConfirmingStage(client.lifeStage) ? "본인" : "보호자"}
-            </span>
-          </div>
+        <div className="rounded-(--br-md) bg-primary-50 p-4 text-body text-primary-700">
+          ✅ ISP는 공식 문서로 저장 시 확인(Confirmation) 절차가 시작됩니다. 저장 후 당사자
+          타임라인과 ISP 점검 화면에 기록됩니다.
+          <span className="mt-2 block font-bold">
+            📋 확인 요청 대상: {client && isSelfConfirmingStage(client.lifeStage) ? "본인" : "보호자"}
+          </span>
         </div>
-      )}
+      </div>
 
       {error && (
-        <p role="alert" className="mt-4 text-body font-semibold text-red-600">
+        <p role="alert" className="mt-6 text-body font-semibold text-red-600">
           {error}
         </p>
       )}
 
-      <div className="mt-auto flex flex-wrap items-center gap-2 pt-8">
-        <Button type="button" variant="outline" className="h-11" onClick={prevStep}>
-          ← {step === 1 ? "취소" : "이전"}
+      <div className="mt-8 flex items-center gap-2 border-t border-border pt-6">
+        <Button type="button" variant="outline" className="h-11" onClick={() => router.push("/home")}>
+          취소
         </Button>
         <div className="flex-1" />
-        {step < 5 ? (
-          <Button type="button" className="h-11" disabled={!canNext} onClick={nextStep}>
-            다음 →
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            className="h-11 bg-primary-600 font-bold"
-            disabled={busy}
-            onClick={submit}
-          >
-            {busy ? "저장 중..." : "ISP 저장"}
-          </Button>
-        )}
+        <Button
+          type="button"
+          className="h-11 bg-primary-600 font-bold"
+          disabled={busy || !canSubmit}
+          onClick={submit}
+        >
+          {busy ? "저장 중..." : "ISP 저장"}
+        </Button>
       </div>
     </div>
   );
@@ -510,18 +468,5 @@ function Field({
       </span>
       {children}
     </label>
-  );
-}
-
-function SummaryRow({ k, v, last }: { k: string; v: string; last?: boolean }) {
-  return (
-    <div
-      className={`flex justify-between gap-4 py-2 text-body ${
-        last ? "" : "border-b border-domain-wel-accent/25"
-      }`}
-    >
-      <span className="shrink-0 font-semibold text-domain-wel-text">{k}</span>
-      <span className="text-right text-foreground">{v}</span>
-    </div>
   );
 }

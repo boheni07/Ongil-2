@@ -4,21 +4,16 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { TherapyArea, TherapyPlanInput } from "@ongil/validation";
 import { createTherapyPlan, type TherapistClient } from "@/app/(app)/records/therapy/actions";
-import { WizardProgress } from "@/components/form/WizardProgress";
 import { DateField } from "@/components/form/DateField";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { computeAge, isSelfConfirmingStage } from "@/lib/lifecycle";
 import { Button } from "@/components/ui/button";
 
 /**
- * TH-13 치료계획서 작성 5단계 위저드(프로토타입 web-therapist.html 226~265줄).
- * 대상·기본정보 → 초기평가 → 치료목표 → 회기계획 → 검토·확정.
- * 프로토타입은 3단계(치료목표: 치료기간 + 4개 영역별 목표)만 상세히 나와 있어, 나머지 단계는
- * therapyPlanSchema(MED-005)에 맞춰 구성했다. goals[].area는 4개 치료영역 enum이라
+ * TH-13 치료계획서 작성 — 대상·기본정보·초기평가·치료목표·회기계획을 한 화면에서 입력한다
+ * (2026-07-19, 기존 5단계 위저드를 병합해 대체). goals[].area는 4개 치료영역 enum이라
  * 4개 영역을 고정 행으로 두고 입력된(장기/단기 중 하나라도 채운) 영역만 전송한다(최소 1개 필수).
  */
-
-const STEP_LABELS = ["대상·기본정보", "초기 평가", "치료 목표", "회기 계획", "검토·확정"];
 
 const fieldClass =
   "min-h-11 w-full rounded-(--br-md) border border-border bg-white px-3.5 py-2 text-body text-foreground outline-none focus-visible:border-primary-600";
@@ -61,7 +56,6 @@ export function TherapyPlanWizard({
   initialPersonId?: string;
 }) {
   const router = useRouter();
-  const [step, setStep] = useState(1);
   const [personId, setPersonId] = useState(
     initialPersonId && clients.some((c) => c.personId === initialPersonId)
       ? initialPersonId
@@ -124,9 +118,19 @@ export function TherapyPlanWizard({
     };
   }
 
+  const canSubmit = Boolean(
+    personId &&
+      diagnosis.trim() &&
+      responsibleTherapist.trim() &&
+      periodStart &&
+      periodEnd &&
+      filledGoals.length > 0 &&
+      sessionFrequency.trim()
+  );
+
   async function submit() {
-    if (!personId) {
-      setError("아동을 선택해주세요.");
+    if (!canSubmit) {
+      setError("아동·진단명·담당치료사·치료기간·목표 1개 이상·회기 빈도를 모두 입력해주세요.");
       return;
     }
     setBusy(true);
@@ -141,25 +145,6 @@ export function TherapyPlanWizard({
     router.refresh();
   }
 
-  function nextStep() {
-    setError(null);
-    setStep((s) => Math.min(5, s + 1));
-  }
-  function prevStep() {
-    setError(null);
-    if (step === 1) {
-      router.push("/home");
-      return;
-    }
-    setStep((s) => Math.max(1, s - 1));
-  }
-
-  const canNext =
-    (step === 1 && !!personId && !!diagnosis.trim() && !!responsibleTherapist.trim()) ||
-    step === 2 ||
-    (step === 3 && !!periodStart && !!periodEnd && filledGoals.length > 0) ||
-    (step === 4 && !!sessionFrequency.trim());
-
   if (clients.length === 0) {
     return (
       <div className="rounded-xl bg-white p-6 ring-1 ring-foreground/10">
@@ -173,7 +158,7 @@ export function TherapyPlanWizard({
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="mx-auto flex min-h-full max-w-2xl flex-1 flex-col">
       <h1 className="text-headline-2 font-extrabold text-foreground">치료계획서 작성</h1>
       <p className="mt-1 flex flex-wrap items-center gap-2 text-body text-muted-foreground">
         {client
@@ -186,10 +171,9 @@ export function TherapyPlanWizard({
         )}
       </p>
 
-      <WizardProgress current={step} total={5} label={STEP_LABELS[step - 1]} className="mt-5 mb-6" />
-
-      {step === 1 && (
-        <div className="flex flex-col gap-4">
+      <div className="mt-6 flex flex-col gap-8">
+        <fieldset className="flex flex-col gap-4">
+          <legend className="text-sm font-bold text-foreground">대상·기본정보</legend>
           <Field label="대상 아동" required>
             <select
               className={fieldClass}
@@ -234,14 +218,10 @@ export function TherapyPlanWizard({
               placeholder="예: 박서연 언어치료사"
             />
           </Field>
-        </div>
-      )}
+        </fieldset>
 
-      {step === 2 && (
-        <div className="flex flex-col gap-4">
-          <p className="text-body text-muted-foreground">
-            초기 평가 소견과 치료 시 주의사항을 기록합니다. (선택)
-          </p>
+        <fieldset className="flex flex-col gap-4">
+          <legend className="text-sm font-bold text-foreground">초기 평가 (선택)</legend>
           <Field label="초기 평가 소견·주의사항">
             <textarea
               className={`${fieldClass} min-h-40`}
@@ -251,11 +231,10 @@ export function TherapyPlanWizard({
               placeholder="표준화 검사 결과, 강점·약점, 발작·알레르기 등 치료 시 유의할 사항을 기록하세요"
             />
           </Field>
-        </div>
-      )}
+        </fieldset>
 
-      {step === 3 && (
-        <div className="flex flex-col gap-4">
+        <fieldset className="flex flex-col gap-4">
+          <legend className="text-sm font-bold text-foreground">치료 목표</legend>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="치료 시작일" required>
               <DateField className={fieldClass} value={periodStart} onChange={setPeriodStart} max={periodEnd || undefined} />
@@ -307,12 +286,10 @@ export function TherapyPlanWizard({
               </div>
             </div>
           ))}
-        </div>
-      )}
+        </fieldset>
 
-      {step === 4 && (
-        <div className="flex flex-col gap-4">
-          <p className="text-body text-muted-foreground">회기 운영 계획을 입력합니다.</p>
+        <fieldset className="flex flex-col gap-4">
+          <legend className="text-sm font-bold text-foreground">회기 계획</legend>
           <Field label="회기 빈도" required>
             <input
               className={fieldClass}
@@ -321,65 +298,36 @@ export function TherapyPlanWizard({
               placeholder="예: 주 2회 · 회기당 40분 (총 24회기)"
             />
           </Field>
-        </div>
-      )}
+        </fieldset>
 
-      {step === 5 && (
-        <div className="flex flex-col gap-4">
-          <div className="rounded-xl bg-domain-med-bg p-4 ring-1 ring-domain-med-accent/40">
-            <SummaryRow
-              k="대상 아동"
-              v={client ? `${client.fullName} (만 ${computeAge(client.birthDate)}세)` : "-"}
-            />
-            <SummaryRow
-              k="치료 유형 / 진단"
-              v={`${THERAPY_TYPES.find((t) => t.value === therapyType)?.label ?? "-"} / ${
-                diagnosis || "-"
-              }`}
-            />
-            <SummaryRow k="담당 치료사" v={responsibleTherapist || "-"} />
-            <SummaryRow
-              k="치료 기간"
-              v={periodStart && periodEnd ? `${periodStart} ~ ${periodEnd}` : "-"}
-            />
-            <SummaryRow k="회기 빈도" v={sessionFrequency || "-"} />
-            <SummaryRow k="치료 목표" v={`${filledGoals.length}개 영역`} last />
-          </div>
-          <div className="rounded-(--br-md) bg-primary-50 p-4 text-body text-primary-700">
-            ✅ 치료계획서는 공식 문서로 저장 시 확인(Confirmation) 절차가 시작됩니다. 저장 후 아동
-            타임라인과 계획서 상세에 기록됩니다.
-            <span className="mt-2 block font-bold">
-              📋 확인 요청 대상: {client && isSelfConfirmingStage(client.lifeStage) ? "본인" : "보호자"}
-            </span>
-          </div>
+        <div className="rounded-(--br-md) bg-primary-50 p-4 text-body text-primary-700">
+          ✅ 치료계획서는 공식 문서로 저장 시 확인(Confirmation) 절차가 시작됩니다. 저장 후 아동
+          타임라인과 계획서 상세에 기록됩니다.
+          <span className="mt-2 block font-bold">
+            📋 확인 요청 대상: {client && isSelfConfirmingStage(client.lifeStage) ? "본인" : "보호자"}
+          </span>
         </div>
-      )}
+      </div>
 
       {error && (
-        <p role="alert" className="mt-4 text-body font-semibold text-red-600">
+        <p role="alert" className="mt-6 text-body font-semibold text-red-600">
           {error}
         </p>
       )}
 
-      <div className="mt-auto flex flex-wrap items-center gap-2 pt-8">
-        <Button type="button" variant="outline" className="h-11" onClick={prevStep}>
-          ← {step === 1 ? "취소" : "이전"}
+      <div className="mt-8 flex items-center gap-2 border-t border-border pt-6">
+        <Button type="button" variant="outline" className="h-11" onClick={() => router.push("/home")}>
+          취소
         </Button>
         <div className="flex-1" />
-        {step < 5 ? (
-          <Button type="button" className="h-11" disabled={!canNext} onClick={nextStep}>
-            다음 →
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            className="h-11 bg-primary-600 font-bold"
-            disabled={busy}
-            onClick={submit}
-          >
-            {busy ? "저장 중..." : "치료계획서 저장"}
-          </Button>
-        )}
+        <Button
+          type="button"
+          className="h-11 bg-primary-600 font-bold"
+          disabled={busy || !canSubmit}
+          onClick={submit}
+        >
+          {busy ? "저장 중..." : "치료계획서 저장"}
+        </Button>
       </div>
     </div>
   );
@@ -401,18 +349,5 @@ function Field({
       </span>
       {children}
     </label>
-  );
-}
-
-function SummaryRow({ k, v, last }: { k: string; v: string; last?: boolean }) {
-  return (
-    <div
-      className={`flex justify-between gap-4 py-2 text-body ${
-        last ? "" : "border-b border-domain-med-accent/25"
-      }`}
-    >
-      <span className="shrink-0 font-semibold text-domain-med-text">{k}</span>
-      <span className="text-right text-foreground">{v}</span>
-    </div>
   );
 }
