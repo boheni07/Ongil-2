@@ -6,6 +6,7 @@ import type { BehaviorFunction, BipInput, FbaBasis } from "@ongil/validation";
 import { createBip, type BipClient } from "@/app/(app)/records/bip/actions";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
+import { DateField } from "@/components/form/DateField";
 import { isSelfConfirmingStage } from "@/lib/lifecycle";
 
 /**
@@ -229,12 +230,7 @@ export function BipForm({
         </Field>
 
         <Field label="재검토 예정일" required>
-          <input
-            type="date"
-            className={fieldClass}
-            value={reviewDate}
-            onChange={(e) => setReviewDate(e.target.value)}
-          />
+          <DateField className={fieldClass} value={reviewDate} onChange={setReviewDate} />
         </Field>
 
         <div className="rounded-(--br-md) bg-primary-50 p-4 text-body text-primary-700">

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { IepInput } from "@ongil/validation";
 import { createIep, type TeacherStudent } from "@/app/(app)/records/iep/actions";
 import { WizardProgress } from "@/components/form/WizardProgress";
+import { DateField } from "@/components/form/DateField";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
 import { isPreTransitionStage, isSelfConfirmingStage } from "@/lib/lifecycle";
@@ -273,12 +274,7 @@ export function IepWizard({
             </Field>
           </div>
           <Field label="IEP 회의 날짜" required>
-            <input
-              type="date"
-              className={fieldClass}
-              value={meetingDate}
-              onChange={(e) => setMeetingDate(e.target.value)}
-            />
+            <DateField className={fieldClass} value={meetingDate} onChange={setMeetingDate} />
           </Field>
           <Field label="참석자 (쉼표로 구분)">
             <input

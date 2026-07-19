@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { IspInput } from "@ongil/validation";
 import { createIsp, type SocialWorkerClient } from "@/app/(app)/records/isp/actions";
 import { WizardProgress } from "@/components/form/WizardProgress";
+import { DateField } from "@/components/form/DateField";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
 import { isSelfConfirmingStage } from "@/lib/lifecycle";
@@ -227,29 +228,14 @@ export function IspWizard({
           </Field>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="지원 시작일" required>
-              <input
-                type="date"
-                className={fieldClass}
-                value={periodStart}
-                onChange={(e) => setPeriodStart(e.target.value)}
-              />
+              <DateField className={fieldClass} value={periodStart} onChange={setPeriodStart} />
             </Field>
             <Field label="지원 종료일" required>
-              <input
-                type="date"
-                className={fieldClass}
-                value={periodEnd}
-                onChange={(e) => setPeriodEnd(e.target.value)}
-              />
+              <DateField className={fieldClass} value={periodEnd} onChange={setPeriodEnd} />
             </Field>
           </div>
           <Field label="재사정 예정일" required>
-            <input
-              type="date"
-              className={fieldClass}
-              value={reassessmentDate}
-              onChange={(e) => setReassessmentDate(e.target.value)}
-            />
+            <DateField className={fieldClass} value={reassessmentDate} onChange={setReassessmentDate} />
           </Field>
         </div>
       )}
@@ -357,11 +343,10 @@ export function IspWizard({
                   />
                 </Field>
                 <Field label="목표 기한">
-                  <input
-                    type="date"
+                  <DateField
                     className={fieldClass}
                     value={g.deadline}
-                    onChange={(e) => updateGoal(gi, { deadline: e.target.value })}
+                    onChange={(v) => updateGoal(gi, { deadline: v })}
                   />
                 </Field>
               </div>
@@ -418,13 +403,12 @@ export function IspWizard({
                 placeholder="주 2회"
                 aria-label={`서비스 ${i + 1} 빈도`}
               />
-              <input
-                type="date"
+              <DateField
                 className={fieldClass}
                 value={s.start}
-                onChange={(e) =>
+                onChange={(v) =>
                   setServices((prev) =>
-                    prev.map((x, idx) => (idx === i ? { ...x, start: e.target.value } : x))
+                    prev.map((x, idx) => (idx === i ? { ...x, start: v } : x))
                   )
                 }
                 aria-label={`서비스 ${i + 1} 개시일`}

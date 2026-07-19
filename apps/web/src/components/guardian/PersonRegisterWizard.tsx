@@ -6,6 +6,8 @@ import { X } from "lucide-react";
 import type { PersonRegisterInput } from "@ongil/validation";
 import { registerPerson, uploadPersonAvatar } from "@/app/(app)/dashboard/actions";
 import { Button } from "@/components/ui/button";
+import { DateField } from "@/components/form/DateField";
+import { PhoneField } from "@/components/form/PhoneField";
 
 /** persons.emergencyContactSchema에 대응하는 로컬 타입(스키마는 값만 export). */
 type EmergencyContactInput = { name: string; relation?: string; phone: string };
@@ -160,12 +162,7 @@ export function PersonRegisterWizard() {
               />
             </Field>
             <Field label="생년월일" required>
-              <input
-                type="date"
-                className={fieldClass}
-                value={birthDate}
-                onChange={(e) => setBirthDate(e.target.value)}
-              />
+              <DateField className={fieldClass} value={birthDate} onChange={setBirthDate} />
             </Field>
           </div>
           <Field label="성별 (선택)">
@@ -419,7 +416,7 @@ function ContactsField({
       {contacts.map((c, i) => (
         <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2">
           <input className={fieldClass} placeholder="이름" value={c.name} onChange={(e) => update(i, { name: e.target.value })} />
-          <input className={fieldClass} placeholder="전화번호" value={c.phone} onChange={(e) => update(i, { phone: e.target.value })} />
+          <PhoneField className={fieldClass} value={c.phone} onChange={(v) => update(i, { phone: v })} />
           <Button
             type="button"
             variant="outline"

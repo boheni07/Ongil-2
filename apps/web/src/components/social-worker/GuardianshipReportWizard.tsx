@@ -8,6 +8,7 @@ import {
   type LegClient,
 } from "@/app/(app)/records/leg/actions";
 import { WizardProgress } from "@/components/form/WizardProgress";
+import { DateField } from "@/components/form/DateField";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
 import { isSelfConfirmingStage } from "@/lib/lifecycle";
@@ -184,20 +185,10 @@ export function GuardianshipReportWizard({
             <>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="보고 시작일" required>
-                  <input
-                    type="date"
-                    className={fieldClass}
-                    value={periodStart}
-                    onChange={(e) => setPeriodStart(e.target.value)}
-                  />
+                  <DateField className={fieldClass} value={periodStart} onChange={setPeriodStart} />
                 </Field>
                 <Field label="보고 종료일" required>
-                  <input
-                    type="date"
-                    className={fieldClass}
-                    value={periodEnd}
-                    onChange={(e) => setPeriodEnd(e.target.value)}
-                  />
+                  <DateField className={fieldClass} value={periodEnd} onChange={setPeriodEnd} />
                 </Field>
               </div>
               <Field label="후견 유형" required>
@@ -265,12 +256,7 @@ export function GuardianshipReportWizard({
             />
           </Field>
           <Field label="다음 보고 예정일" required>
-            <input
-              type="date"
-              className={fieldClass}
-              value={nextReportDue}
-              onChange={(e) => setNextReportDue(e.target.value)}
-            />
+            <DateField className={fieldClass} value={nextReportDue} onChange={setNextReportDue} />
           </Field>
         </div>
       )}

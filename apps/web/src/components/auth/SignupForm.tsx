@@ -4,6 +4,7 @@ import { useActionState, useId, useState } from "react";
 import Link from "next/link";
 import { submitSignupForm, type AuthActionState } from "@/app/(auth)/actions";
 import { Button } from "@/components/ui/button";
+import { PhoneField } from "@/components/form/PhoneField";
 import { authButtonClass, authFieldClass } from "./AuthShell";
 import { cn } from "@/lib/utils";
 
@@ -67,6 +68,7 @@ export function SignupForm({ invite }: { invite: string | null }) {
   );
 
   const [role, setRole] = useState("");
+  const [phone, setPhone] = useState("");
   const [checked, setChecked] = useState<Record<ConsentKey, boolean>>({
     ageOver14: false,
     termsAgreed: false,
@@ -163,14 +165,13 @@ export function SignupForm({ invite }: { invite: string | null }) {
               </Field>
 
               <Field id={phoneId} label="휴대폰 번호">
-                <input
+                <PhoneField
                   id={phoneId}
                   name="phone"
-                  type="tel"
+                  value={phone}
+                  onChange={setPhone}
                   required
-                  aria-required="true"
                   autoComplete="tel"
-                  placeholder="010-0000-0000"
                   className={authFieldClass}
                 />
               </Field>

@@ -11,6 +11,7 @@ import {
   type GranteeSummary,
 } from "@/app/(app)/persons/[id]/permissions/actions";
 import { WizardProgress } from "@/components/form/WizardProgress";
+import { DateField } from "@/components/form/DateField";
 import { DomainChip } from "@/components/timeline/DomainChip";
 import { Button } from "@/components/ui/button";
 
@@ -366,12 +367,11 @@ export function PermissionGrantWizard({
           <div className="flex flex-col gap-2">
             <span className="text-label font-semibold text-accent-stone">유효 기간 (종료일)</span>
             <div className="flex flex-wrap items-center gap-3">
-              <input
-                type="date"
+              <DateField
                 className={`${fieldClass} w-auto`}
                 value={validUntil}
                 disabled={unlimited && !hasEdit}
-                onChange={(e) => setValidUntil(e.target.value)}
+                onChange={setValidUntil}
               />
               <label className="inline-flex items-center gap-1.5 text-body">
                 <input

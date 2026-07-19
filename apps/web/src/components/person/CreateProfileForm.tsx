@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { PersonProfileInput } from "@ongil/validation";
 import { ensurePersonProfile } from "@/app/(app)/home/actions";
+import { DateField } from "@/components/form/DateField";
 
 /**
  * P-01 최초 진입 시 persons 행이 없을 때 뜨는 "내 프로필 만들기" — 최소 정보만 받아
@@ -60,14 +61,12 @@ export function CreateProfileForm() {
 
         <label htmlFor={birthId} className="flex flex-col gap-2">
           <span className="text-person-base font-semibold text-accent-stone">생년월일</span>
-          <input
+          <DateField
             id={birthId}
-            type="date"
             value={birthDate}
-            onChange={(e) => setBirthDate(e.target.value)}
+            onChange={setBirthDate}
             required
-            aria-required="true"
-            className="min-h-[56px] rounded-(--br-md) border-2 border-border bg-white px-4 text-person-base outline-none focus-visible:border-primary-600"
+            className="min-h-[56px] w-full rounded-(--br-md) border-2 border-border bg-white px-4 text-person-base outline-none focus-visible:border-primary-600"
           />
         </label>
 

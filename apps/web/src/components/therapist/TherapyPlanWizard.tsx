@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { TherapyArea, TherapyPlanInput } from "@ongil/validation";
 import { createTherapyPlan, type TherapistClient } from "@/app/(app)/records/therapy/actions";
 import { WizardProgress } from "@/components/form/WizardProgress";
+import { DateField } from "@/components/form/DateField";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { computeAge, isSelfConfirmingStage } from "@/lib/lifecycle";
 import { Button } from "@/components/ui/button";
@@ -257,20 +258,10 @@ export function TherapyPlanWizard({
         <div className="flex flex-col gap-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="치료 시작일" required>
-              <input
-                type="date"
-                className={fieldClass}
-                value={periodStart}
-                onChange={(e) => setPeriodStart(e.target.value)}
-              />
+              <DateField className={fieldClass} value={periodStart} onChange={setPeriodStart} />
             </Field>
             <Field label="치료 종료일" required>
-              <input
-                type="date"
-                className={fieldClass}
-                value={periodEnd}
-                onChange={(e) => setPeriodEnd(e.target.value)}
-              />
+              <DateField className={fieldClass} value={periodEnd} onChange={setPeriodEnd} />
             </Field>
           </div>
           <p className="text-body text-muted-foreground">

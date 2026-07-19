@@ -10,6 +10,7 @@ import {
   type AccessLogRow,
 } from "@/app/(app)/persons/[id]/access-logs/actions";
 import { DomainChip } from "@/components/timeline/DomainChip";
+import { DateField } from "@/components/form/DateField";
 
 /**
  * G-40 접근 로그 뷰어 — 필터(역할·도메인·날짜) + keyset 커서 무한 스크롤.
@@ -183,24 +184,22 @@ export function AccessLogViewer({
         </FilterField>
 
         <FilterField id={fromFilterId} label="시작일">
-          <input
+          <DateField
             id={fromFilterId}
-            type="date"
             value={draftFrom}
             max={draftTo || undefined}
-            onChange={(e) => setDraftFrom(e.target.value)}
-            className="min-h-11 rounded-(--br-md) border border-border bg-white px-3 text-body text-foreground outline-none focus-visible:border-primary-600"
+            onChange={setDraftFrom}
+            className="min-h-11 w-full rounded-(--br-md) border border-border bg-white px-3 text-body text-foreground outline-none focus-visible:border-primary-600"
           />
         </FilterField>
 
         <FilterField id={toFilterId} label="종료일">
-          <input
+          <DateField
             id={toFilterId}
-            type="date"
             value={draftTo}
             min={draftFrom || undefined}
-            onChange={(e) => setDraftTo(e.target.value)}
-            className="min-h-11 rounded-(--br-md) border border-border bg-white px-3 text-body text-foreground outline-none focus-visible:border-primary-600"
+            onChange={setDraftTo}
+            className="min-h-11 w-full rounded-(--br-md) border border-border bg-white px-3 text-body text-foreground outline-none focus-visible:border-primary-600"
           />
         </FilterField>
 

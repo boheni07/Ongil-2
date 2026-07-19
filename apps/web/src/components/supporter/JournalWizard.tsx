@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { computeServiceHours, type SupportJournalInput } from "@ongil/validation";
 import { submitSupportJournal, getPreviousJournal } from "@/app/(app)/journal/actions";
 import { WizardProgress } from "@/components/form/WizardProgress";
+import { DateField } from "@/components/form/DateField";
 import { IconOption } from "@/components/person/IconOption";
 import { Button } from "@/components/ui/button";
 
@@ -192,7 +193,7 @@ export function JournalWizard({ persons }: { persons: JournalPersonOption[] }) {
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="서비스 날짜" required>
-              <input type="date" className={fieldClass} value={serviceDate} onChange={(e) => setServiceDate(e.target.value)} />
+              <DateField className={fieldClass} value={serviceDate} onChange={setServiceDate} />
             </Field>
             <Field label="시작 시간" required>
               <input type="time" className={fieldClass} value={startTime} onChange={(e) => setStartTime(e.target.value)} />

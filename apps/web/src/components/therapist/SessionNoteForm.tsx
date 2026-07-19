@@ -13,6 +13,7 @@ import {
   type SessionComposeContext,
 } from "@/app/(app)/records/therapy/actions";
 import { Button } from "@/components/ui/button";
+import { DateField } from "@/components/form/DateField";
 
 /**
  * TH-15 회기 일지 작성(프로토타입 web-therapist.html 293~348줄).
@@ -144,12 +145,7 @@ export function SessionNoteForm({
               <span className="text-label font-semibold text-accent-stone">
                 회기 일자 <span className="text-domain-med-text">*</span>
               </span>
-              <input
-                type="date"
-                className={`${fieldClass} w-48`}
-                value={sessionDate}
-                onChange={(e) => setSessionDate(e.target.value)}
-              />
+              <DateField className={`${fieldClass} w-48`} value={sessionDate} onChange={setSessionDate} />
             </label>
             <label className="flex flex-col gap-1.5">
               <span className="text-label font-semibold text-accent-stone">

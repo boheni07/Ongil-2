@@ -9,6 +9,7 @@ import {
 } from "@/app/(app)/records/transition/actions";
 import { getLatestItpSummary, type ItpReferenceSummary } from "@/app/(app)/records/itp/actions";
 import { WizardProgress } from "@/components/form/WizardProgress";
+import { DateField } from "@/components/form/DateField";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { ConfirmBadge } from "@/components/records/ConfirmBadge";
 import { RoadmapProgress } from "@/components/social-worker/RoadmapProgress";
@@ -301,20 +302,10 @@ export function TransitionPlanWizard({
               </Field>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="시작일">
-                  <input
-                    type="date"
-                    className={fieldClass}
-                    value={t.start}
-                    onChange={(e) => updateTraining(i, { start: e.target.value })}
-                  />
+                  <DateField className={fieldClass} value={t.start} onChange={(v) => updateTraining(i, { start: v })} />
                 </Field>
                 <Field label="종료일">
-                  <input
-                    type="date"
-                    className={fieldClass}
-                    value={t.end}
-                    onChange={(e) => updateTraining(i, { end: e.target.value })}
-                  />
+                  <DateField className={fieldClass} value={t.end} onChange={(v) => updateTraining(i, { end: v })} />
                 </Field>
               </div>
               <Field label="진행 상태">
@@ -364,12 +355,7 @@ export function TransitionPlanWizard({
             />
           </Field>
           <Field label="다음 검토일" required>
-            <input
-              type="date"
-              className={fieldClass}
-              value={nextReviewDate}
-              onChange={(e) => setNextReviewDate(e.target.value)}
-            />
+            <DateField className={fieldClass} value={nextReviewDate} onChange={setNextReviewDate} />
           </Field>
         </div>
       )}

@@ -15,6 +15,7 @@ import type { TherapistClient } from "@/app/(app)/records/therapy/actions";
 import { computeAge } from "@/lib/lifecycle";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
+import { DateField } from "@/components/form/DateField";
 import { EvalComparisonTable } from "./EvalComparisonTable";
 
 /**
@@ -269,12 +270,7 @@ export function EvalReportForm({
             <span className="text-label font-semibold text-accent-stone">
               평가 일자 <span className="text-domain-med-text">*</span>
             </span>
-            <input
-              type="date"
-              className={fieldClass}
-              value={evalDate}
-              onChange={(e) => setEvalDate(e.target.value)}
-            />
+            <DateField className={fieldClass} value={evalDate} onChange={setEvalDate} />
           </label>
 
           {/* 영역별 점수 */}

@@ -8,6 +8,7 @@ import { updateIspGoal, type IspDetail } from "@/app/(app)/records/isp/actions";
 import { DomainChip } from "@/components/timeline/DomainChip";
 import { ConfirmBadge } from "@/components/records/ConfirmBadge";
 import { Button } from "@/components/ui/button";
+import { DateField } from "@/components/form/DateField";
 
 /**
  * W-14 ISP 점검 Split Pane(프로토타입 web-social-worker.html 331~382줄).
@@ -270,12 +271,7 @@ function GoalEditor({
         </label>
         <label className="flex flex-col gap-1.5">
           <span className="text-label font-semibold text-accent-stone">목표 기한</span>
-          <input
-            type="date"
-            className={fieldClass}
-            value={deadline}
-            onChange={(e) => setDeadline(e.target.value)}
-          />
+          <DateField className={fieldClass} value={deadline} onChange={setDeadline} />
         </label>
       </div>
 

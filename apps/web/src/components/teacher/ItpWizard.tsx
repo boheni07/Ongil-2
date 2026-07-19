@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { ItpInput } from "@ongil/validation";
 import { createItp, type ItpClient } from "@/app/(app)/records/itp/actions";
 import { WizardProgress } from "@/components/form/WizardProgress";
+import { DateField } from "@/components/form/DateField";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { ConfirmBadge } from "@/components/records/ConfirmBadge";
 import { Button } from "@/components/ui/button";
@@ -231,20 +232,10 @@ export function ItpWizard({
               </Field>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="시작일">
-                  <input
-                    type="date"
-                    className={fieldClass}
-                    value={e.start}
-                    onChange={(ev) => updateExperience(i, { start: ev.target.value })}
-                  />
+                  <DateField className={fieldClass} value={e.start} onChange={(v) => updateExperience(i, { start: v })} />
                 </Field>
                 <Field label="종료일">
-                  <input
-                    type="date"
-                    className={fieldClass}
-                    value={e.end}
-                    onChange={(ev) => updateExperience(i, { end: ev.target.value })}
-                  />
+                  <DateField className={fieldClass} value={e.end} onChange={(v) => updateExperience(i, { end: v })} />
                 </Field>
               </div>
               <Field label="비고 (선택)">
@@ -279,12 +270,7 @@ export function ItpWizard({
             />
           </Field>
           <Field label="다음 검토일" required>
-            <input
-              type="date"
-              className={fieldClass}
-              value={nextReviewDate}
-              onChange={(e) => setNextReviewDate(e.target.value)}
-            />
+            <DateField className={fieldClass} value={nextReviewDate} onChange={setNextReviewDate} />
           </Field>
         </div>
       )}
