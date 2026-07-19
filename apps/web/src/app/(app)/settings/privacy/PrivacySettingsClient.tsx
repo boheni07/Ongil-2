@@ -251,6 +251,28 @@ export function PrivacySettingsClient({
         </Button>
       </section>
 
+      {/* 정정·삭제 요청(프로토타입 web-guardian.html G-65, "✏️ 정정·삭제 요청") — 별도 요청
+          접수·처리 워크플로우 자체가 아직 설계되지 않아(담당 조직 없음, RBAC에 운영자 역할도
+          없음), 이미 legal/privacy 페이지에 명시된 개인정보보호책임자 연락처로 안내한다.
+          내용을 미리 채운 mailto 링크라 클릭 한 번으로 문의 메일 작성까지 이어진다. */}
+      <section className="mt-8 rounded-(--br-md) bg-white p-5 ring-1 ring-foreground/10">
+        <h2 className="text-body font-bold text-foreground">개인정보 정정·삭제 요청</h2>
+        <p className="mt-1 text-caption leading-relaxed text-muted-foreground">
+          위 목록에 없는 개인정보(이름·연락처 등)의 정정이나 삭제가 필요하면 개인정보보호책임자에게
+          요청할 수 있습니다. 요청 접수 후 지체 없이 처리 결과를 안내드립니다.
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          render={
+            <a href="mailto:privacy@ongil.example?subject=%5B%EC%98%A8%EA%B8%B8%5D%20%EA%B0%9C%EC%9D%B8%EC%A0%95%EB%B3%B4%20%EC%A0%95%EC%A0%95%C2%B7%EC%82%AD%EC%A0%9C%20%EC%9A%94%EC%B2%AD" />
+          }
+          className="mt-3 h-11 px-5 font-semibold"
+        >
+          ✏️ 정정·삭제 요청
+        </Button>
+      </section>
+
       {/* 위험 액션 — 동의 전체철회 및 계정 비활성화 */}
       <section className="mt-8 rounded-(--br-md) bg-red-50 p-5 ring-1 ring-red-200">
         <h2 className="text-body font-bold text-red-700">동의 전체철회 및 계정 비활성화</h2>
