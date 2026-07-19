@@ -128,6 +128,7 @@ export function IspReviewPane({ detail }: { detail: IspDetail }) {
               key={selected}
               recordId={detail.recordId}
               goalIndex={selected}
+              personId={detail.personId}
               initialArea={current.area ?? ""}
               initialLongTerm={current.long_term ?? ""}
               initialShortTerm={current.short_term ?? ""}
@@ -148,6 +149,7 @@ export function IspReviewPane({ detail }: { detail: IspDetail }) {
 function GoalEditor({
   recordId,
   goalIndex,
+  personId,
   initialArea,
   initialLongTerm,
   initialShortTerm,
@@ -158,6 +160,7 @@ function GoalEditor({
 }: {
   recordId: string;
   goalIndex: number;
+  personId: string;
   initialArea: string;
   initialLongTerm: string;
   initialShortTerm: string;
@@ -286,14 +289,27 @@ function GoalEditor({
         </p>
       )}
 
-      <Button
-        type="button"
-        className="h-11 self-start bg-domain-wel-accent font-bold text-domain-wel-text"
-        disabled={busy}
-        onClick={save}
-      >
-        {busy ? "저장 중..." : "변경 저장"}
-      </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          className="h-11 bg-domain-wel-accent font-bold text-domain-wel-text"
+          disabled={busy}
+          onClick={save}
+        >
+          {busy ? "저장 중..." : "점검 기록 추가"}
+        </Button>
+        {/* 프로토타입 W-14의 "재사정 시작"(amber) — 이 당사자의 새 ISP(재사정 버전)를
+            작성하는 화면으로 보낸다. 별도 재사정 워크플로우 상태 없이, 새 ISP 제출 자체가
+            재사정 사이클의 시작이다(기존 W-13 작성 화면 재사용, 신규 로직 불필요). */}
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 border-accent-amber font-bold text-[#B56F10] hover:bg-accent-amber/10"
+          render={<Link href={`/records/isp/new?personId=${personId}`} />}
+        >
+          🔄 재사정 시작
+        </Button>
+      </div>
     </div>
   );
 }
