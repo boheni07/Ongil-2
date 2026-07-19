@@ -1,7 +1,14 @@
 "use server";
 
 import { headers } from "next/headers";
-import { personRegisterSchema, personUpdateSchema, type PersonRegisterInput, type PersonUpdateInput } from "@ongil/validation";
+import {
+  personRegisterSchema,
+  personUpdateSchema,
+  recordDisplayTitle,
+  RECORD_TYPE_LABEL,
+  type PersonRegisterInput,
+  type PersonUpdateInput,
+} from "@ongil/validation";
 import type { Role } from "@ongil/validation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -42,17 +49,62 @@ export interface GuardianPerson {
   isAdult: boolean;
 }
 
-/** G-01 요약 카드 데이터 */
+/** 역할 → 한글 라벨(권한 현황 카드용). 다른 화면(PermissionGrantWizard 등)의 동일 상수와 값이 같다. */
+const ROLE_LABEL: Record<string, string> = {
+  guardian: "보호자",
+  person: "당사자",
+  supporter: "활동지원사",
+  teacher: "특수교사",
+  social_worker: "사회복지사",
+  therapist: "치료사",
+};
+
+/** access_level 우선순위(높을수록 강한 권한) — 그란티가 도메인별로 여러 건 보유해도 카드엔 1행만. */
+const ACCESS_LEVEL_RANK: Record<string, number> = { read: 1, write: 2, edit: 3 };
+
+/** G-01 "최근 기록" 카드 한 행 — 기록명(recordDisplayTitle)·작성자까지 포함(2026-07-19, docs/12 Wave A). */
+export interface RecentRecordItem {
+  id: string;
+  domain: string;
+  recordType: string;
+  title: string;
+  authorName: string | null;
+  recordDate: string;
+}
+
+/** G-01 "권한 현황" 카드 한 행 — 그란티 1명당 1행(다중 도메인 보유 시 가장 강한 access_level만). */
+export interface PermissionSummaryItem {
+  granteeId: string;
+  granteeName: string | null;
+  granteeRole: string | null;
+  accessLevel: string;
+}
+
+/** G-01 "확인 대기 기록" 카드 한 행. */
+export interface PendingConfirmationItem {
+  id: string;
+  domain: string;
+  title: string;
+  authorName: string | null;
+  recordDate: string;
+}
+
+/** G-01 요약 카드 데이터(2026-07-19, docs/12 Wave A — count만 반환하던 것을 실제 목록으로 확장). */
 export interface PersonSummaryCards {
   personId: string;
-  recentRecords: {
-    id: string;
-    domain: string;
-    recordType: string;
-    recordDate: string;
-  }[];
+  recentRecords: RecentRecordItem[];
+  permissions: PermissionSummaryItem[];
   permissionCount: number;
+  pendingConfirmations: PendingConfirmationItem[];
   pendingConfirmationCount: number;
+}
+
+/** G-01 "알림" 카드 한 행. */
+export interface RecentNotificationItem {
+  id: string;
+  title: string;
+  body: string | null;
+  sentAt: string;
 }
 
 function firstIssue(error: { issues: { message: string }[] }): string {
@@ -312,11 +364,25 @@ export async function removeGuardianPerson(personId: string): Promise<ActionResu
  * G-01 요약 카드 — 특정 당사자의 최근 기록 5건 + 활성 권한 개수.
  * RLS로 접근 가능한 데이터만 반환된다.
  */
+function pickName(rel: unknown): string | null {
+  const r = rel as { full_name?: string } | { full_name?: string }[] | null;
+  if (Array.isArray(r)) return r[0]?.full_name ?? null;
+  return r?.full_name ?? null;
+}
+
+function pickRole(rel: unknown): string | null {
+  const r = rel as { role?: string } | { role?: string }[] | null;
+  if (Array.isArray(r)) return r[0]?.role ?? null;
+  return r?.role ?? null;
+}
+
 export async function getPersonSummaryCards(personId: string): Promise<PersonSummaryCards> {
   const empty: PersonSummaryCards = {
     personId,
     recentRecords: [],
+    permissions: [],
     permissionCount: 0,
+    pendingConfirmations: [],
     pendingConfirmationCount: 0,
   };
   if (!UUID_RE.test(personId)) return empty;
@@ -330,35 +396,188 @@ export async function getPersonSummaryCards(personId: string): Promise<PersonSum
   const [recordsRes, permsRes, pendingRes] = await Promise.all([
     supabase
       .from("records")
-      .select("id, domain, record_type, record_date")
+      .select("id, domain, record_type, content, record_date, author:users!author_id(full_name)")
       .eq("person_id", personId)
       .eq("is_draft", false)
       .order("record_date", { ascending: false })
       .limit(5),
     supabase
       .from("permissions")
-      .select("id", { count: "exact", head: true })
+      .select("grantee_id, access_level, grantee:users!grantee_id(full_name, role)")
       .eq("person_id", personId)
       .eq("is_active", true),
     supabase
       .from("records")
-      .select("id", { count: "exact", head: true })
+      .select("id, domain, record_type, content, author:users!author_id(full_name), record_date")
       .eq("person_id", personId)
       .eq("requires_confirmation", true)
-      .is("confirmed_at", null),
+      .is("confirmed_at", null)
+      .order("record_date", { ascending: false })
+      .limit(5),
   ]);
 
-  const recentRecords = (recordsRes.data ?? []).map((row) => ({
+  const recentRecords: RecentRecordItem[] = (recordsRes.data ?? []).map((row) => ({
     id: row.id as string,
     domain: row.domain as string,
     recordType: row.record_type as string,
+    title: recordDisplayTitle(row.record_type as string, row.content),
+    authorName: pickName(row.author),
+    recordDate: row.record_date as string,
+  }));
+
+  // 그란티 1명이 도메인별로 여러 permissions 행을 가질 수 있다 — 카드엔 1행만 보여주므로
+  // 가장 강한 access_level(edit > write > read)로 병합한다.
+  const permMap = new Map<string, PermissionSummaryItem>();
+  for (const row of permsRes.data ?? []) {
+    const granteeId = row.grantee_id as string;
+    const level = row.access_level as string;
+    const existing = permMap.get(granteeId);
+    if (!existing || (ACCESS_LEVEL_RANK[level] ?? 0) > (ACCESS_LEVEL_RANK[existing.accessLevel] ?? 0)) {
+      permMap.set(granteeId, {
+        granteeId,
+        granteeName: pickName(row.grantee),
+        granteeRole: pickRole(row.grantee),
+        accessLevel: level,
+      });
+    }
+  }
+  const permissions = [...permMap.values()];
+
+  const pendingConfirmations: PendingConfirmationItem[] = (pendingRes.data ?? []).map((row) => ({
+    id: row.id as string,
+    domain: row.domain as string,
+    title: recordDisplayTitle(row.record_type as string, row.content),
+    authorName: pickName(row.author),
     recordDate: row.record_date as string,
   }));
 
   return {
     personId,
     recentRecords,
-    permissionCount: permsRes.count ?? 0,
-    pendingConfirmationCount: pendingRes.count ?? 0,
+    permissions,
+    permissionCount: permissions.length,
+    pendingConfirmations,
+    pendingConfirmationCount: pendingConfirmations.length,
   };
+}
+
+/** G-01 "알림" 카드 — 로그인 계정(recipient_id) 기준 최근 알림(당사자 무관, 2026-07-19 docs/12 Wave A). */
+export async function getRecentNotifications(limit = 3): Promise<RecentNotificationItem[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("notifications")
+    .select("id, title, body, sent_at")
+    .eq("recipient_id", user.id)
+    .order("sent_at", { ascending: false })
+    .limit(limit);
+
+  if (error || !data) return [];
+  return data.map((row) => ({
+    id: row.id as string,
+    title: row.title as string,
+    body: (row.body as string | null) ?? null,
+    sentAt: row.sent_at as string,
+  }));
+}
+
+/** G-01 당사자 카드 상단 통계 3종(이번주 기록 수·권한 부여 건수·다음 공식문서 점검 D-day). */
+export interface PersonCardStats {
+  weeklyRecordCount: number;
+  permissionCount: number;
+  nextReview: { label: string; dday: number } | null;
+}
+
+/** 다음 검토일 필드를 가진 공식 문서 record_type — 값 도달 시 해당 문서명으로 D-day 라벨을 만든다. */
+const REVIEW_DATE_RECORD_TYPES: { recordType: string; field: string }[] = [
+  { recordType: "WEL-004", field: "reassessment_date" }, // ISP
+  { recordType: "TRA-001", field: "next_review_date" }, // 전환계획
+  { recordType: "EDU-005", field: "next_review_date" }, // ITP
+  { recordType: "EDU-003", field: "review_date" }, // BIP
+];
+
+/**
+ * 여러 당사자의 카드 상단 통계를 한 번에 계산한다(대시보드 슬라이더용, N+1 방지 위해 배치 조회).
+ * "다음 공식문서 점검 D-day"는 도메인마다 필드가 달라(ISP=reassessment_date, 전환계획/ITP=
+ * next_review_date, BIP=review_date) 이 당사자에게 존재하는 문서 중 아직 지나지 않은 날짜가
+ * 가장 임박한 것을 자동 선택한다(2026-07-19, docs/12 Wave A — 사용자 확인 후 채택한 방식).
+ */
+export async function getPersonCardStats(personIds: string[]): Promise<Record<string, PersonCardStats>> {
+  const result: Record<string, PersonCardStats> = {};
+  if (personIds.length === 0) return result;
+
+  const supabase = await createClient();
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+
+  const [weeklyRes, permsRes, reviewRes] = await Promise.all([
+    supabase
+      .from("records")
+      .select("person_id")
+      .in("person_id", personIds)
+      .eq("is_draft", false)
+      .gte("record_date", weekStart.toISOString()),
+    supabase
+      .from("permissions")
+      .select("person_id, grantee_id")
+      .in("person_id", personIds)
+      .eq("is_active", true),
+    supabase
+      .from("records")
+      .select("person_id, record_type, content")
+      .in("person_id", personIds)
+      .in(
+        "record_type",
+        REVIEW_DATE_RECORD_TYPES.map((r) => r.recordType)
+      )
+      .eq("is_draft", false),
+  ]);
+
+  const weeklyCount = new Map<string, number>();
+  for (const row of weeklyRes.data ?? []) {
+    const pid = row.person_id as string;
+    weeklyCount.set(pid, (weeklyCount.get(pid) ?? 0) + 1);
+  }
+
+  const permCount = new Map<string, Set<string>>();
+  for (const row of permsRes.data ?? []) {
+    const pid = row.person_id as string;
+    if (!permCount.has(pid)) permCount.set(pid, new Set());
+    permCount.get(pid)!.add(row.grantee_id as string);
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const nextReview = new Map<string, { label: string; dday: number }>();
+  for (const row of reviewRes.data ?? []) {
+    const pid = row.person_id as string;
+    const recordType = row.record_type as string;
+    const spec = REVIEW_DATE_RECORD_TYPES.find((r) => r.recordType === recordType);
+    if (!spec) continue;
+    const content = row.content as Record<string, unknown> | null;
+    const dateStr = content?.[spec.field];
+    if (typeof dateStr !== "string") continue;
+    const due = new Date(dateStr);
+    if (Number.isNaN(due.getTime())) continue;
+    const dday = Math.round((due.getTime() - today.getTime()) / 86400000);
+    if (dday < 0) continue;
+    const existing = nextReview.get(pid);
+    if (!existing || dday < existing.dday) {
+      nextReview.set(pid, { label: `${RECORD_TYPE_LABEL[recordType] ?? recordType} 점검`, dday });
+    }
+  }
+
+  for (const pid of personIds) {
+    result[pid] = {
+      weeklyRecordCount: weeklyCount.get(pid) ?? 0,
+      permissionCount: permCount.get(pid)?.size ?? 0,
+      nextReview: nextReview.get(pid) ?? null,
+    };
+  }
+  return result;
 }

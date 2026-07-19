@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { getGuardianPersons } from "./actions";
+import { getGuardianPersons, getPersonCardStats } from "./actions";
 import { PersonSlider } from "@/components/guardian/PersonSlider";
 import { Button } from "@/components/ui/button";
 
 /** G-01 보호자 대시보드 — 당사자 슬라이더 + 요약 카드 + 당사자 추가. */
 export default async function DashboardPage() {
   const persons = await getGuardianPersons();
+  const personStats = await getPersonCardStats(persons.map((p) => p.id));
 
   return (
     <div>
@@ -40,7 +41,7 @@ export default async function DashboardPage() {
             </Button>
           </div>
         ) : (
-          <PersonSlider persons={persons} />
+          <PersonSlider persons={persons} personStats={personStats} />
         )}
       </div>
     </div>
