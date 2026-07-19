@@ -1,13 +1,18 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-/** 인증 플로우 공용 카드. 폭은 화면별로 지정(기본 narrow). */
+/**
+ * 인증 플로우 공용 카드. 폭은 화면별로 지정(기본 narrow).
+ * xwide는 역할선택+기본정보+동의를 한 화면에 담는 통합 회원가입 전용 — 데스크톱에서
+ * 2단 레이아웃을 펼칠 수 있는 폭을 준다(2026-07-19, "회원가입이 모바일 폭 그대로"라는
+ * 피드백 반영).
+ */
 export function AuthCard({
   width = "narrow",
   className,
   children,
 }: {
-  width?: "narrow" | "wide";
+  width?: "narrow" | "wide" | "xwide";
   className?: string;
   children: React.ReactNode;
 }) {
@@ -15,7 +20,7 @@ export function AuthCard({
     <div
       className={cn(
         "w-full rounded-2xl bg-card p-8 shadow-sm ring-1 ring-foreground/10 sm:p-10",
-        width === "wide" ? "max-w-xl" : "max-w-md",
+        width === "xwide" ? "max-w-4xl" : width === "wide" ? "max-w-xl" : "max-w-md",
         className
       )}
     >

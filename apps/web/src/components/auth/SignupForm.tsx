@@ -56,6 +56,9 @@ const CONSENT_ITEMS: ConsentItem[] = [
  * 기존 4단계 위저드 RoleSelectGrid/ProfileForm/ConsentForm을 병합해 대체).
  * 제출 성공 시 서버 액션이 /signup/verify(이메일 OTP)로 리다이렉트한다 — 이 단계만은
  * Supabase 이메일 확인의 비동기 특성상 한 화면에 합칠 수 없어 별도로 남는다.
+ *
+ * 데스크톱(lg+)에서는 역할 선택(좌) / 기본정보+동의(우) 2단 레이아웃으로 넓은 화면을
+ * 활용한다 — 기존엔 좁은 폭(모바일 기준) 그대로 늘어져 있었다(2026-07-19 피드백 반영).
  */
 export function SignupForm({ invite }: { invite: string | null }) {
   const [state, formAction, pending] = useActionState<AuthActionState | undefined, FormData>(
@@ -102,135 +105,150 @@ export function SignupForm({ invite }: { invite: string | null }) {
       <input type="hidden" name="role" value={role} />
       {invite && <input type="hidden" name="invite" value={invite} />}
 
-      <fieldset className="flex flex-col gap-3">
-        <legend className="text-sm font-bold text-foreground">어떤 역할로 시작하시나요?</legend>
-        <div role="radiogroup" aria-label="역할 선택" className="grid grid-cols-2 gap-3">
-          {ROLE_OPTIONS.map((r) => {
-            const active = role === r.value;
-            return (
-              <button
-                key={r.value}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                onClick={() => setRole(r.value)}
-                className={cn(
-                  "relative flex min-h-[100px] flex-col items-start gap-1 rounded-[14px] border-2 p-4 text-left transition-colors",
-                  active ? "border-primary-600 bg-primary-50" : "border-border bg-background hover:border-primary-400"
-                )}
-              >
-                {active && (
-                  <span
-                    aria-hidden="true"
-                    className="absolute top-3 right-3 flex h-5 w-5 items-center justify-center rounded-full bg-primary-600 text-xs text-white"
-                  >
-                    ✓
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-10">
+        <fieldset className="flex flex-col gap-3 lg:w-[300px] lg:shrink-0">
+          <legend className="text-sm font-bold text-foreground">어떤 역할로 시작하시나요?</legend>
+          <div role="radiogroup" aria-label="역할 선택" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-1">
+            {ROLE_OPTIONS.map((r) => {
+              const active = role === r.value;
+              return (
+                <button
+                  key={r.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setRole(r.value)}
+                  className={cn(
+                    "relative flex min-h-[100px] flex-col items-start gap-1 rounded-[14px] border-2 p-4 text-left transition-colors lg:min-h-0 lg:flex-row lg:items-center lg:gap-3",
+                    active ? "border-primary-600 bg-primary-50" : "border-border bg-background hover:border-primary-400"
+                  )}
+                >
+                  {active && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute top-3 right-3 flex h-5 w-5 items-center justify-center rounded-full bg-primary-600 text-xs text-white lg:static lg:ml-auto"
+                    >
+                      ✓
+                    </span>
+                  )}
+                  <span aria-hidden="true" className="text-2xl">
+                    {r.emoji}
                   </span>
-                )}
-                <span aria-hidden="true" className="text-2xl">
-                  {r.emoji}
-                </span>
-                <span className="text-[15px] font-bold text-foreground">{r.label}</span>
-                <span className="text-xs text-muted-foreground">{r.desc}</span>
-              </button>
-            );
-          })}
+                  <span className="flex flex-col">
+                    <span className="text-[15px] font-bold text-foreground">{r.label}</span>
+                    <span className="text-xs text-muted-foreground">{r.desc}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        <div className="flex flex-1 flex-col gap-6">
+          <fieldset className="flex flex-col gap-4">
+            <legend className="text-sm font-bold text-foreground">기본 정보</legend>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field id={nameId} label="이름">
+                <input
+                  id={nameId}
+                  name="fullName"
+                  type="text"
+                  required
+                  aria-required="true"
+                  autoComplete="name"
+                  placeholder="실명을 입력하세요"
+                  className={authFieldClass}
+                />
+              </Field>
+
+              <Field id={phoneId} label="휴대폰 번호">
+                <input
+                  id={phoneId}
+                  name="phone"
+                  type="tel"
+                  required
+                  aria-required="true"
+                  autoComplete="tel"
+                  placeholder="010-0000-0000"
+                  className={authFieldClass}
+                />
+              </Field>
+            </div>
+
+            <Field id={emailId} label="이메일" hint="이 이메일로 인증 메일이 발송됩니다.">
+              <input
+                id={emailId}
+                name="email"
+                type="email"
+                required
+                aria-required="true"
+                autoComplete="email"
+                placeholder="name@example.com"
+                className={authFieldClass}
+              />
+            </Field>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Field id={pwId} label="비밀번호">
+                <input
+                  id={pwId}
+                  name="password"
+                  type="password"
+                  required
+                  aria-required="true"
+                  minLength={8}
+                  autoComplete="new-password"
+                  placeholder="8자 이상"
+                  className={authFieldClass}
+                />
+              </Field>
+              <Field id={pw2Id} label="비밀번호 확인">
+                <input
+                  id={pw2Id}
+                  name="passwordConfirm"
+                  type="password"
+                  required
+                  aria-required="true"
+                  minLength={8}
+                  autoComplete="new-password"
+                  placeholder="다시 입력"
+                  className={authFieldClass}
+                />
+              </Field>
+            </div>
+          </fieldset>
+
+          <fieldset className="flex flex-col gap-3">
+            <legend className="text-sm font-bold text-foreground">약관 및 개인정보 동의</legend>
+
+            <label
+              htmlFor={allId}
+              className="flex min-h-[52px] cursor-pointer items-center gap-3 rounded-[10px] bg-primary-50 px-4 font-bold text-foreground"
+            >
+              <input
+                id={allId}
+                type="checkbox"
+                checked={allChecked}
+                onChange={(e) => toggleAll(e.target.checked)}
+                className="h-5 w-5 accent-primary-600"
+              />
+              전체 동의합니다 (선택 항목 포함)
+            </label>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              {CONSENT_ITEMS.map((item) => (
+                <ConsentRow
+                  key={item.key}
+                  item={item}
+                  checked={checked[item.key]}
+                  onToggle={(v) => toggle(item.key, v)}
+                />
+              ))}
+            </div>
+          </fieldset>
         </div>
-      </fieldset>
-
-      <fieldset className="flex flex-col gap-4">
-        <legend className="text-sm font-bold text-foreground">기본 정보</legend>
-
-        <Field id={nameId} label="이름">
-          <input
-            id={nameId}
-            name="fullName"
-            type="text"
-            required
-            aria-required="true"
-            autoComplete="name"
-            placeholder="실명을 입력하세요"
-            className={authFieldClass}
-          />
-        </Field>
-
-        <Field id={emailId} label="이메일" hint="이 이메일로 인증 메일이 발송됩니다.">
-          <input
-            id={emailId}
-            name="email"
-            type="email"
-            required
-            aria-required="true"
-            autoComplete="email"
-            placeholder="name@example.com"
-            className={authFieldClass}
-          />
-        </Field>
-
-        <div className="grid grid-cols-2 gap-3">
-          <Field id={pwId} label="비밀번호">
-            <input
-              id={pwId}
-              name="password"
-              type="password"
-              required
-              aria-required="true"
-              minLength={8}
-              autoComplete="new-password"
-              placeholder="8자 이상"
-              className={authFieldClass}
-            />
-          </Field>
-          <Field id={pw2Id} label="비밀번호 확인">
-            <input
-              id={pw2Id}
-              name="passwordConfirm"
-              type="password"
-              required
-              aria-required="true"
-              minLength={8}
-              autoComplete="new-password"
-              placeholder="다시 입력"
-              className={authFieldClass}
-            />
-          </Field>
-        </div>
-
-        <Field id={phoneId} label="휴대폰 번호">
-          <input
-            id={phoneId}
-            name="phone"
-            type="tel"
-            required
-            aria-required="true"
-            autoComplete="tel"
-            placeholder="010-0000-0000"
-            className={authFieldClass}
-          />
-        </Field>
-      </fieldset>
-
-      <fieldset className="flex flex-col gap-3">
-        <legend className="text-sm font-bold text-foreground">약관 및 개인정보 동의</legend>
-
-        <label
-          htmlFor={allId}
-          className="flex min-h-[52px] cursor-pointer items-center gap-3 rounded-[10px] bg-primary-50 px-4 font-bold text-foreground"
-        >
-          <input
-            id={allId}
-            type="checkbox"
-            checked={allChecked}
-            onChange={(e) => toggleAll(e.target.checked)}
-            className="h-5 w-5 accent-primary-600"
-          />
-          전체 동의합니다 (선택 항목 포함)
-        </label>
-
-        {CONSENT_ITEMS.map((item) => (
-          <ConsentRow key={item.key} item={item} checked={checked[item.key]} onToggle={(v) => toggle(item.key, v)} />
-        ))}
-      </fieldset>
+      </div>
 
       {state?.error && (
         <p role="alert" className="text-sm text-red-600">

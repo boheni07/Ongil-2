@@ -12,7 +12,7 @@ export default async function SignupPage({
   const { invite } = await searchParams;
 
   return (
-    <AuthCard width="wide">
+    <AuthCard width="xwide">
       <AuthLogo />
       <StepBar current={1} />
       <AuthTitle>온길 시작하기</AuthTitle>
