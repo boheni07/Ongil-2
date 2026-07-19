@@ -4,7 +4,6 @@ import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { EmergencyInfoInput } from "@ongil/validation";
-import { supabase } from "../lib/supabase";
 import {
   getGuardianPersons,
   getPersonSummaryCards,
@@ -14,6 +13,7 @@ import {
 import { koreanAge, relativeDay } from "../lib/date";
 import { DomainChip } from "../components/DomainChip";
 import { PendingConfirmCard } from "../components/dashboard/PendingConfirmCard";
+import { NotificationBell } from "../components/NotificationBell";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { GuardianStackParamList } from "../navigation/types";
 
@@ -70,22 +70,7 @@ export function GuardianDashboardScreen({ navigation }: Props) {
           <Text style={styles.subtle}>피보호자 현황을 한눈에 확인하세요.</Text>
         </View>
         <View style={styles.topActions}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="개인정보·동의 관리"
-            onPress={() => navigation.navigate("PrivacySettings")}
-            hitSlop={8}
-          >
-            <Text style={styles.settingsLink}>⚙️ 설정</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="로그아웃"
-            onPress={() => supabase.auth.signOut()}
-            hitSlop={8}
-          >
-            <Text style={styles.logout}>로그아웃</Text>
-          </Pressable>
+          <NotificationBell onPress={() => navigation.navigate("Notifications")} />
         </View>
       </View>
 

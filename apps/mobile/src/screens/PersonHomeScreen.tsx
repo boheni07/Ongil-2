@@ -19,13 +19,14 @@ import {
   getRecentSelfExpressions,
   type SelfExpressionDay,
 } from "../lib/person";
+import { getUnreadNotificationCount } from "../lib/notifications";
 import { computeLifeStage } from "../lib/iep";
 import { MOOD_CHOICES } from "../lib/content";
 import { formatKoreanDate, formatShortDate } from "../lib/date";
 import { useAsyncAction } from "../hooks/useAsyncAction";
 import { ErrorBanner } from "../components/ui";
 import { StageBadge } from "../components/lifecycle/StageBadge";
-import { NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
+import { ACCENT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { PersonStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<PersonStackParamList, "PersonHome">;
@@ -42,11 +43,13 @@ export function PersonHomeScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<{ fullName: string; birthDate: string } | null>(null);
   const [recent, setRecent] = useState<SelfExpressionDay[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const load = useCallback(async () => {
     const p = await getMyPersonProfile();
     setProfile(p);
     if (p) setRecent(await getRecentSelfExpressions());
+    setUnreadCount(await getUnreadNotificationCount());
     setLoading(false);
   }, []);
 
@@ -75,6 +78,7 @@ export function PersonHomeScreen({ navigation }: Props) {
           name={profile.fullName}
           birthDate={profile.birthDate}
           recent={recent}
+          unreadCount={unreadCount}
         />
       ) : (
         <ProfileForm onDone={load} />
@@ -88,11 +92,13 @@ function HomeBody({
   name,
   birthDate,
   recent,
+  unreadCount,
 }: {
   navigation: Props["navigation"];
   name: string;
   birthDate: string;
   recent: SelfExpressionDay[];
+  unreadCount: number;
 }) {
   const moodEmoji = (m: SelfExpressionDay["mood"]) =>
     m ? (MOOD_CHOICES.find((c) => c.value === m)?.emoji ?? "•") : "·";
@@ -142,6 +148,17 @@ function HomeBody({
         style={({ pressed }) => [styles.secondaryCta, pressed && styles.pressed]}
       >
         <Text style={styles.secondaryCtaText}>⚙️ 개인정보·동의 관리</Text>
+      </Pressable>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={unreadCount > 0 ? `알림. 안 읽은 알림 ${unreadCount}건` : "알림"}
+        onPress={() => navigation.navigate("Notifications")}
+        style={({ pressed }) => [styles.secondaryCta, pressed && styles.pressed]}
+      >
+        <Text style={styles.secondaryCtaText}>
+          🔔 알림{unreadCount > 0 ? ` (${unreadCount})` : ""}
+        </Text>
       </Pressable>
 
       <Text style={styles.sectionTitle}>최근 7일</Text>
@@ -261,15 +278,17 @@ const styles = StyleSheet.create({
   cta: {
     marginTop: SPACING.xl,
     borderRadius: RADIUS.xl,
-    backgroundColor: PRIMARY[900],
+    // 웹 P-01 히어로 CTA(bg-accent-amber, 프로토타입 원문)와 동일하게 맞춘다 —
+    // 이전엔 모바일만 primary-900이라 플랫폼 간 색상이 어긋나 있었다(2026-07-19).
+    backgroundColor: ACCENT.amber,
     alignItems: "center",
     paddingVertical: 32,
     paddingHorizontal: SPACING.lg,
     gap: SPACING.sm,
   },
   ctaEmoji: { fontSize: 56 },
-  ctaTitle: { fontSize: 26, fontWeight: "800", color: "#fff" },
-  ctaSub: { fontSize: 18, color: "#D9F2E7", textAlign: "center" },
+  ctaTitle: { fontSize: 26, fontWeight: "800", color: ACCENT.stone },
+  ctaSub: { fontSize: 18, color: ACCENT.stone, opacity: 0.8, textAlign: "center" },
   secondaryCta: {
     marginTop: SPACING.md,
     minHeight: 56,

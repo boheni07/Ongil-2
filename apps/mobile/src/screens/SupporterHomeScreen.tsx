@@ -12,6 +12,7 @@ import {
 import { flushQueue, getQueue } from "../lib/offline-queue";
 import { useNetworkSync } from "../hooks/useNetworkSync";
 import { formatKoreanDate, relativeDay } from "../lib/date";
+import { NotificationBell } from "../components/NotificationBell";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { SupporterStackParamList } from "../navigation/types";
 
@@ -69,14 +70,9 @@ export function SupporterHomeScreen({ navigation }: Props) {
     >
       <View style={styles.topRow}>
         <Text style={styles.title}>안녕하세요{name ? `, ${name} 님` : ""} 👋</Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="로그아웃"
-          onPress={() => supabase.auth.signOut()}
-          hitSlop={8}
-        >
-          <Text style={styles.logout}>로그아웃</Text>
-        </Pressable>
+        <View style={styles.topRowActions}>
+          <NotificationBell onPress={() => navigation.navigate("Notifications")} />
+        </View>
       </View>
       <Text style={styles.subtle}>{formatKoreanDate()}</Text>
 
@@ -163,6 +159,7 @@ const styles = StyleSheet.create({
   content: { padding: SPACING.xl },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: NEUTRAL.bg },
   topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  topRowActions: { flexDirection: "row", alignItems: "center", gap: SPACING.sm },
   title: { fontSize: FONT.h2, fontWeight: "800", color: NEUTRAL.text, flex: 1 },
   logout: { fontSize: 14, fontWeight: "600", color: PRIMARY[600] },
   subtle: { fontSize: FONT.body, color: NEUTRAL.textMuted, marginTop: 4 },

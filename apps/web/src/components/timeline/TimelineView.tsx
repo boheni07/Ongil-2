@@ -12,7 +12,7 @@ import { computeLifeStage } from "@/lib/lifecycle";
 /**
  * 생애주기 타임라인 최상위 뷰(구 EduTimeline). T-20/W-20/TH-20/G-10 공용.
  * 스트림 뷰(날짜 내림차순) ↔ 레인 뷰(도메인별 컬럼) 토글 + 도메인 필터.
- * emergencyInfo가 주어질 때만 스트림 상단에 PinnedCard가 노출된다(G-10 전용).
+ * emergencyInfo가 주어질 때만 스트림 상단에 PinnedCard가 노출된다(전 역할 호출부 공통 지원).
  * docs/03-uiux.md §6-2·§8.
  */
 

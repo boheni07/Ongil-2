@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { EmergencyInfoInput } from "@ongil/validation";
 import { getTeacherStudents, getTimeline } from "@/app/(app)/records/iep/actions";
 import { getSocialWorkerClients } from "@/app/(app)/records/isp/actions";
 import { getTherapistClients } from "@/app/(app)/records/therapy/actions";
@@ -9,6 +10,11 @@ import { createClient } from "@/lib/supabase/server";
  * T-20/W-20/TH-20 공용 타임라인. searchParams.personId 없으면 담당 대상자 선택 유도 화면을 보여준다.
  * role별로 담당 대상자 목록 조회 함수와 문구("학생"/"당사자"/"아동")만 다르고, 나머지는 동일하다
  * (getTimeline/TimelineView는 role 무관 범용이라 그대로 재사용).
+ *
+ * 응급 대응 정보(PinnedCard)는 원래 보호자 전용(G-10)으로 한정돼 있었으나, 프로토타입
+ * 대조 결과 특수교사·사회복지사·치료사 화면에도 상단 고정 카드가 있어야 함을 확인해 확장했다
+ * (2026-07-19). persons_select RLS는 permissions 보유자에게 이미 열려 있어(2026-07-17
+ * p3_persons_select_permission_holders) 추가 정책 변경 없이 조회만 하면 된다.
  */
 export default async function TimelinePage({
   searchParams,
@@ -80,16 +86,20 @@ export default async function TimelinePage({
     );
   }
 
-  const [items, client] = [
+  const [items, client, emergencyRow] = [
     await getTimeline(personId),
     clients.find((c) => c.personId === personId) ?? null,
+    (await supabase.from("persons").select("emergency_info").eq("id", personId).maybeSingle())
+      .data,
   ];
+  const emergencyInfo = (emergencyRow?.emergency_info ?? null) as EmergencyInfoInput | null;
 
   return (
     <TimelineView
       items={items}
       personName={client?.fullName ?? personLabel}
       birthDate={client?.birthDate}
+      emergencyInfo={emergencyInfo}
     />
   );
 }

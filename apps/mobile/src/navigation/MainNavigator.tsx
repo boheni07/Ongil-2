@@ -44,6 +44,14 @@ import { EvalReportScreen } from "../screens/EvalReportScreen";
 import { MedTimelineScreen } from "../screens/MedTimelineScreen";
 import { GenericHomeScreen } from "../screens/GenericHomeScreen";
 import { PrivacySettingsScreen } from "../screens/PrivacySettingsScreen";
+import { NotificationListScreen } from "../screens/NotificationListScreen";
+import {
+  TeacherTabNavigator,
+  SocialWorkerTabNavigator,
+  TherapistTabNavigator,
+  GuardianTabNavigator,
+  SupporterTabNavigator,
+} from "./RoleTabNavigators";
 import type {
   PersonStackParamList,
   SupporterStackParamList,
@@ -102,17 +110,28 @@ export function MainNavigator({ session }: { session: Session }) {
           component={PrivacySettingsScreen}
           options={{ title: "개인정보·동의 관리" }}
         />
+        <PersonStack.Screen name="Notifications" component={NotificationListScreen} options={{ title: "알림" }} />
       </PersonStack.Navigator>
     );
   }
 
   if (role === "supporter") {
     return (
-      <SupporterStack.Navigator initialRouteName="SupporterHome" screenOptions={screenOptions}>
+      <SupporterStack.Navigator initialRouteName="SupporterTabs" screenOptions={screenOptions}>
+        <SupporterStack.Screen
+          name="SupporterTabs"
+          component={SupporterTabNavigator}
+          options={{ headerShown: false }}
+        />
         <SupporterStack.Screen
           name="SupporterHome"
           component={SupporterHomeScreen}
           options={{ headerShown: false }}
+        />
+        <SupporterStack.Screen
+          name="PrivacySettings"
+          component={PrivacySettingsScreen}
+          options={{ title: "개인정보·동의 관리" }}
         />
         <SupporterStack.Screen
           name="JournalCompose"
@@ -134,13 +153,19 @@ export function MainNavigator({ session }: { session: Session }) {
           component={HandoverComposeScreen}
           options={{ title: "인수인계 작성" }}
         />
+        <SupporterStack.Screen name="Notifications" component={NotificationListScreen} options={{ title: "알림" }} />
       </SupporterStack.Navigator>
     );
   }
 
   if (role === "guardian") {
     return (
-      <GuardianStack.Navigator initialRouteName="GuardianDashboard" screenOptions={screenOptions}>
+      <GuardianStack.Navigator initialRouteName="GuardianTabs" screenOptions={screenOptions}>
+        <GuardianStack.Screen
+          name="GuardianTabs"
+          component={GuardianTabNavigator}
+          options={{ headerShown: false }}
+        />
         <GuardianStack.Screen
           name="GuardianDashboard"
           component={GuardianDashboardScreen}
@@ -191,17 +216,28 @@ export function MainNavigator({ session }: { session: Session }) {
           component={PrivacySettingsScreen}
           options={{ title: "개인정보·동의 관리" }}
         />
+        <GuardianStack.Screen name="Notifications" component={NotificationListScreen} options={{ title: "알림" }} />
       </GuardianStack.Navigator>
     );
   }
 
   if (role === "teacher") {
     return (
-      <TeacherStack.Navigator initialRouteName="TeacherHome" screenOptions={screenOptions}>
+      <TeacherStack.Navigator initialRouteName="TeacherTabs" screenOptions={screenOptions}>
+        <TeacherStack.Screen
+          name="TeacherTabs"
+          component={TeacherTabNavigator}
+          options={{ headerShown: false }}
+        />
         <TeacherStack.Screen
           name="TeacherHome"
           component={TeacherHomeScreen}
           options={{ headerShown: false }}
+        />
+        <TeacherStack.Screen
+          name="PrivacySettings"
+          component={PrivacySettingsScreen}
+          options={{ title: "개인정보·동의 관리" }}
         />
         <TeacherStack.Screen
           name="IepWizard"
@@ -233,17 +269,28 @@ export function MainNavigator({ session }: { session: Session }) {
           component={EduTimelineScreen}
           options={{ title: "교육 타임라인" }}
         />
+        <TeacherStack.Screen name="Notifications" component={NotificationListScreen} options={{ title: "알림" }} />
       </TeacherStack.Navigator>
     );
   }
 
   if (role === "social_worker") {
     return (
-      <SocialWorkerStack.Navigator initialRouteName="SocialWorkerHome" screenOptions={screenOptions}>
+      <SocialWorkerStack.Navigator initialRouteName="SocialWorkerTabs" screenOptions={screenOptions}>
+        <SocialWorkerStack.Screen
+          name="SocialWorkerTabs"
+          component={SocialWorkerTabNavigator}
+          options={{ headerShown: false }}
+        />
         <SocialWorkerStack.Screen
           name="SocialWorkerHome"
           component={SocialWorkerHomeScreen}
           options={{ headerShown: false }}
+        />
+        <SocialWorkerStack.Screen
+          name="PrivacySettings"
+          component={PrivacySettingsScreen}
+          options={{ title: "개인정보·동의 관리" }}
         />
         <SocialWorkerStack.Screen
           name="IspWizard"
@@ -290,17 +337,28 @@ export function MainNavigator({ session }: { session: Session }) {
           component={AdvocacyConsultationFormScreen}
           options={{ title: "권익옹호 상담기록 작성" }}
         />
+        <SocialWorkerStack.Screen name="Notifications" component={NotificationListScreen} options={{ title: "알림" }} />
       </SocialWorkerStack.Navigator>
     );
   }
 
   if (role === "therapist") {
     return (
-      <TherapistStack.Navigator initialRouteName="TherapistHome" screenOptions={screenOptions}>
+      <TherapistStack.Navigator initialRouteName="TherapistTabs" screenOptions={screenOptions}>
+        <TherapistStack.Screen
+          name="TherapistTabs"
+          component={TherapistTabNavigator}
+          options={{ headerShown: false }}
+        />
         <TherapistStack.Screen
           name="TherapistHome"
           component={TherapistHomeScreen}
           options={{ headerShown: false }}
+        />
+        <TherapistStack.Screen
+          name="PrivacySettings"
+          component={PrivacySettingsScreen}
+          options={{ title: "개인정보·동의 관리" }}
         />
         <TherapistStack.Screen
           name="TherapyPlanWizard"
@@ -327,6 +385,7 @@ export function MainNavigator({ session }: { session: Session }) {
           component={MedTimelineScreen}
           options={{ title: "치료 타임라인" }}
         />
+        <TherapistStack.Screen name="Notifications" component={NotificationListScreen} options={{ title: "알림" }} />
       </TherapistStack.Navigator>
     );
   }
@@ -337,6 +396,7 @@ export function MainNavigator({ session }: { session: Session }) {
       <GenericStack.Screen name="GenericHome" options={{ headerShown: false }}>
         {() => <GenericHomeScreen roleLabel={role ? ROLE_LABEL[role] : "알 수 없는 역할"} />}
       </GenericStack.Screen>
+      <GenericStack.Screen name="Notifications" component={NotificationListScreen} options={{ title: "알림" }} />
     </GenericStack.Navigator>
   );
 }

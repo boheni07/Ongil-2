@@ -8,6 +8,7 @@ import {
   type IepGoalPatch,
   type ObservationInput,
   type DomainKey,
+  type EmergencyInfoInput,
 } from "@ongil/validation";
 import { supabase } from "./supabase";
 import { koreanAge } from "./date";
@@ -86,6 +87,21 @@ export async function getPersonBirthDate(personId: string): Promise<string | nul
     .eq("id", personId)
     .maybeSingle();
   return (data?.birth_date as string | undefined) ?? null;
+}
+
+/**
+ * 응급 대응 정보 조회 — 원래 보호자(GuardianTimelineScreen)만 사용했으나 프로토타입 대조 결과
+ * 특수교사·사회복지사·치료사 타임라인에도 상단 고정 카드가 있어야 함을 확인해 공용화했다
+ * (2026-07-19). persons_select RLS는 permissions 보유자에게 이미 열려 있다.
+ */
+export async function getPersonEmergencyInfo(personId: string): Promise<EmergencyInfoInput | null> {
+  if (!UUID_RE.test(personId)) return null;
+  const { data } = await supabase
+    .from("persons")
+    .select("emergency_info")
+    .eq("id", personId)
+    .maybeSingle();
+  return (data?.emergency_info as EmergencyInfoInput | undefined) ?? null;
 }
 
 /** birthDate + years년이 되는 날(만 N세 도달일)의 ISO. 타임라인 14/18세 구분선 위치 계산용. */

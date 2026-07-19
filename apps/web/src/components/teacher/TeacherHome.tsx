@@ -127,6 +127,11 @@ export async function TeacherHome({ userName }: { userName: string | null }) {
                     ⚠ 전환계획 수립 대상 (만 13세+)
                   </p>
                 )}
+                {isItpActiveStage(s.lifeStage) && (
+                  <p className="rounded-(--br-sm) bg-domain-edu-bg px-2.5 py-1.5 text-caption font-semibold text-domain-edu-text">
+                    🎓 ITP(개별화전환계획) 대상
+                  </p>
+                )}
                 {!s.latestIepRecordId && (
                   <p className="rounded-(--br-sm) bg-accent-amber/20 px-2.5 py-1.5 text-caption font-semibold text-[#B56F10]">
                     ＋ IEP 미작성 — 눌러서 작성하기

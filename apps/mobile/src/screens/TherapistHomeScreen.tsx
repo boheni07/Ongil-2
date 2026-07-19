@@ -7,6 +7,7 @@ import { supabase } from "../lib/supabase";
 import { getTherapistClients, type TherapistClient } from "../lib/therapy";
 import { koreanAge } from "../lib/date";
 import { StageBadge } from "../components/lifecycle/StageBadge";
+import { NotificationBell } from "../components/NotificationBell";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { TherapistStackParamList } from "../navigation/types";
 
@@ -64,14 +65,9 @@ export function TherapistHomeScreen({ navigation }: Props) {
           <Text style={styles.title}>안녕하세요{name ? `, ${name} 선생님` : ""}</Text>
           <Text style={styles.subtle}>담당 아동의 치료 현황을 확인하세요.</Text>
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="로그아웃"
-          onPress={() => supabase.auth.signOut()}
-          hitSlop={8}
-        >
-          <Text style={styles.logout}>로그아웃</Text>
-        </Pressable>
+        <View style={styles.topActions}>
+          <NotificationBell onPress={() => navigation.navigate("Notifications")} />
+        </View>
       </View>
 
       <View style={styles.statsRow}>
@@ -171,6 +167,7 @@ const styles = StyleSheet.create({
   content: { padding: SPACING.xl },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: NEUTRAL.bg },
   topRow: { flexDirection: "row", alignItems: "flex-start" },
+  topActions: { flexDirection: "row", alignItems: "center", gap: SPACING.sm },
   title: { fontSize: FONT.h2, fontWeight: "800", color: NEUTRAL.text },
   subtle: { fontSize: FONT.body, color: NEUTRAL.textMuted, marginTop: 2 },
   logout: { fontSize: 14, fontWeight: "600", color: PRIMARY[600] },

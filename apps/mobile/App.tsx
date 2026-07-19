@@ -1,16 +1,19 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import {
   NavigationContainer,
   createNavigationContainerRef,
 } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Sentry from "@sentry/react-native";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./src/lib/supabase";
 import { AuthNavigator } from "./src/navigation/AuthNavigator";
 import { MainNavigator } from "./src/navigation/MainNavigator";
+import { SplashScreen } from "./src/screens/SplashScreen";
+import { ONBOARDING_SEEN_KEY, OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "./src/theme/colors";
 
 const navigationIntegration = Sentry.reactNavigationIntegration({
@@ -48,17 +51,27 @@ async function reactivateIfNeeded(session: Session | null) {
 
 /**
  * 세션 유무로 Auth Stack(미로그인)과 MainNavigator(로그인, role별 분기)를 나눈다.
+ * 최초 실행(미로그인 + 온보딩 미확인)에는 스플래시 후 온보딩을 먼저 보여준다
+ * (app-common.html SPLASH/ONBOARD) — 재방문·로그인된 사용자는 지연 없이 바로 진입한다.
  */
 function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
+  const [onboardingSeen, setOnboardingSeen] = useState<boolean | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setReady(true);
-      void reactivateIfNeeded(data.session);
-    });
+    const start = Date.now();
+    Promise.all([supabase.auth.getSession(), AsyncStorage.getItem(ONBOARDING_SEEN_KEY)]).then(
+      ([{ data }, seen]) => {
+        setSession(data.session);
+        setOnboardingSeen(seen === "1");
+        void reactivateIfNeeded(data.session);
+        // 프로토타입의 스플래시 노출 시간(2.2초)은 최초 실행(온보딩 진입 예정)에만 적용한다.
+        const needsSplashDelay = !data.session && seen !== "1";
+        const wait = needsSplashDelay ? Math.max(0, 2200 - (Date.now() - start)) : 0;
+        setTimeout(() => setReady(true), wait);
+      }
+    );
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
       setSession(next);
       void reactivateIfNeeded(next);
@@ -66,14 +79,16 @@ function App() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  const showOnboarding = ready && onboardingSeen === false && !session;
+
   return (
     <Sentry.ErrorBoundary fallback={ErrorFallback}>
       <SafeAreaProvider>
-        <StatusBar style="dark" />
+        <StatusBar style={showOnboarding || !ready ? "light" : "dark"} />
         {!ready ? (
-          <View style={styles.center}>
-            <ActivityIndicator color={PRIMARY[600]} />
-          </View>
+          <SplashScreen />
+        ) : showOnboarding ? (
+          <OnboardingScreen onDone={() => setOnboardingSeen(true)} />
         ) : (
           <NavigationContainer
             ref={navigationRef}
@@ -104,12 +119,6 @@ function ErrorFallback({ resetError }: { resetError: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    backgroundColor: NEUTRAL.bg,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   fallback: {
     flex: 1,
     backgroundColor: NEUTRAL.surface,

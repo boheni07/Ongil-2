@@ -12,7 +12,8 @@ import {
 } from "../lib/iep";
 import { koreanAge } from "../lib/date";
 import { StageBadge } from "../components/lifecycle/StageBadge";
-import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
+import { NotificationBell } from "../components/NotificationBell";
+import { DOMAIN_COLORS, FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { TeacherStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<TeacherStackParamList, "TeacherHome">;
@@ -70,14 +71,9 @@ export function TeacherHomeScreen({ navigation }: Props) {
           <Text style={styles.title}>안녕하세요{name ? `, ${name} 선생님` : ""}</Text>
           <Text style={styles.subtle}>담당 학생 현황을 확인하세요.</Text>
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="로그아웃"
-          onPress={() => supabase.auth.signOut()}
-          hitSlop={8}
-        >
-          <Text style={styles.logout}>로그아웃</Text>
-        </Pressable>
+        <View style={styles.topActions}>
+          <NotificationBell onPress={() => navigation.navigate("Notifications")} />
+        </View>
       </View>
 
       <View style={styles.statsRow}>
@@ -138,9 +134,12 @@ export function TeacherHomeScreen({ navigation }: Props) {
                     {age != null ? <Text style={styles.stuMeta}>만 {age}세</Text> : null}
                   </View>
                 </View>
-                {!isPreTransitionStage(s.lifeStage) ? (
-                  <Text style={styles.transTag}>전환</Text>
-                ) : null}
+                <View style={{ alignItems: "flex-end", gap: 4 }}>
+                  {!isPreTransitionStage(s.lifeStage) ? (
+                    <Text style={styles.transTag}>전환</Text>
+                  ) : null}
+                  {isItpActiveStage(s.lifeStage) ? <Text style={styles.itpTag}>🎓 ITP</Text> : null}
+                </View>
               </View>
 
               {hasIep ? (
@@ -184,6 +183,7 @@ const styles = StyleSheet.create({
   content: { padding: SPACING.xl },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: NEUTRAL.bg },
   topRow: { flexDirection: "row", alignItems: "flex-start" },
+  topActions: { flexDirection: "row", alignItems: "center", gap: SPACING.sm },
   title: { fontSize: FONT.h2, fontWeight: "800", color: NEUTRAL.text },
   subtle: { fontSize: FONT.body, color: NEUTRAL.textMuted, marginTop: 2 },
   logout: { fontSize: 14, fontWeight: "600", color: PRIMARY[600] },
@@ -241,6 +241,16 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: PRIMARY[700],
     backgroundColor: PRIMARY[100],
+    borderRadius: RADIUS.sm,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    overflow: "hidden",
+  },
+  itpTag: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: DOMAIN_COLORS.EDU.text,
+    backgroundColor: DOMAIN_COLORS.EDU.bg,
     borderRadius: RADIUS.sm,
     paddingHorizontal: 8,
     paddingVertical: 3,

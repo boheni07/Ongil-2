@@ -5,6 +5,8 @@ import { headers } from "next/headers";
 import {
   loginSchema,
   signupFormSchema,
+  roleSelectSchema,
+  consentSchema,
   otpVerifySchema,
   resetRequestSchema,
   resetConfirmSchema,
@@ -261,6 +263,99 @@ export async function confirmPasswordReset(
   }
 
   redirect("/login");
+}
+
+// ─────────────────────────────────────────────────────────
+// Flow-0-S 소셜(카카오/네이버) 온보딩 완료 (F-AUTH-02, docs/01-prd.md §5-1-1)
+// ─────────────────────────────────────────────────────────
+
+/**
+ * A-11 무화면 콜백(apps/web/src/lib/oauth-bridge.ts)이 신규 계정에 세션만 성립시키고
+ * role 없이 보내는 지점 — 이 액션이 A-03(역할 선택)+A-08(동의)을 한 번에 받아 마무리한다.
+ *
+ * public.users row가 아직 없다(handle_new_user 트리거가 role 없는 메타데이터는 건너뛰도록
+ * 설계돼 있음, 20260709042335_p0_5_auth_trigger). users_insert RLS 정책 자체가 없어
+ * authenticated로는 INSERT가 항상 막히므로(§users 테이블 설계), 이 최초 1회의 INSERT만
+ * 서비스 롤로 수행한다 — 이후 그 행에 대한 모든 접근은 다시 RLS(본인 SELECT, deactivated_at만
+ * 본인 UPDATE)로 정상 통제된다.
+ *
+ * PIPA 동의 INSERT는 이메일 위저드의 verifyEmailOtp와 동일하게 "세션 확보 후" 시점에 수행한다
+ * (consents_insert RLS가 auth.uid()를 요구하기 때문 — OAuth는 이미 세션이 있으므로 이 액션
+ * 안에서 바로 처리 가능하고, 이메일 위저드처럼 뒤로 미룰 필요가 없다).
+ */
+export async function completeOAuthSignup(
+  _prevState: AuthActionState | undefined,
+  formData: FormData
+): Promise<AuthActionState> {
+  const roleParsed = roleSelectSchema.safeParse({ role: formData.get("role") });
+  if (!roleParsed.success) {
+    return { error: "역할을 선택해주세요." };
+  }
+  const consentParsed = consentSchema.safeParse({
+    ageOver14: formData.get("ageOver14") === "on",
+    termsAgreed: formData.get("termsAgreed") === "on",
+    privacyAgreed: formData.get("privacyAgreed") === "on",
+    sensitiveAgreed: formData.get("sensitiveAgreed") === "on",
+    marketingAgreed: formData.get("marketingAgreed") === "on",
+  });
+  if (!consentParsed.success) {
+    return { error: "필수 항목(만 14세 이상·약관·개인정보·민감정보)에 모두 동의해야 합니다." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "로그인이 필요합니다. 처음부터 다시 진행해주세요." };
+
+  const admin = createServiceRoleClient();
+
+  const { data: already } = await admin
+    .from("users")
+    .select("id, role")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (already) {
+    // 이미 완료된 계정이 이 화면에 재진입한 경우(뒤로가기 등) — 새로 만들지 않고 그냥 보낸다.
+    redirect(ROLE_HOME[already.role as Role] ?? "/home");
+  }
+
+  const meta = user.user_metadata as {
+    auth_provider?: "kakao" | "naver";
+    oauth_subject?: string;
+    email_verified?: boolean;
+    oauth_full_name?: string;
+  };
+
+  const { error: insertErr } = await admin.from("users").insert({
+    id: user.id,
+    email: user.email,
+    role: roleParsed.data.role,
+    full_name: meta.oauth_full_name?.trim() || "온길 사용자",
+    auth_provider: meta.auth_provider ?? "email",
+    oauth_subject: meta.oauth_subject ?? null,
+    email_verified: meta.email_verified ?? true,
+  });
+  if (insertErr) {
+    return { error: `계정 생성에 실패했습니다: ${insertErr.message}` };
+  }
+
+  const consentResult = await insertSignupConsents(
+    supabase,
+    user.id,
+    consentParsed.data.marketingAgreed
+  );
+  if (consentResult.error) {
+    return { error: consentResult.error };
+  }
+
+  const invite = (formData.get("invite") as string | null) || null;
+  if (invite) {
+    await supabase.rpc("accept_invitation", { p_token: invite });
+    // 초대 전개 실패는 온보딩을 막지 않는다(이메일 위저드와 동일한 처리).
+  }
+
+  redirect(ROLE_HOME[roleParsed.data.role] ?? "/home");
 }
 
 // ─────────────────────────────────────────────────────────

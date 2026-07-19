@@ -6,12 +6,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
 import { getMyPersonProfile } from "../lib/person";
 import { confirmRecord, getPersonRecords, type RecordListItem } from "../lib/records";
-import { computeLifeStage, isSelfConfirmingStage } from "../lib/iep";
+import { computeLifeStage, isSelfConfirmingStage, type LifeStage } from "../lib/iep";
 import { DomainChip } from "../components/DomainChip";
 import { ConfirmBadge } from "../components/records/ConfirmBadge";
 import { ConfirmCTA } from "../components/records/ConfirmCTA";
 import { ErrorBanner } from "../components/ui";
-import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
+import { DOMAIN_COLORS, FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { PersonStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<PersonStackParamList, "MyRecords">;
@@ -27,6 +27,7 @@ export function MyRecordsScreen(_props: Props) {
   const [items, setItems] = useState<RecordListItem[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [isAdult, setIsAdult] = useState(false);
+  const [lifeStage, setLifeStage] = useState<LifeStage | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,6 +41,7 @@ export function MyRecordsScreen(_props: Props) {
     }
     setUserId(user.id);
     const profile = await getMyPersonProfile();
+    setLifeStage(profile ? computeLifeStage(profile.birthDate) : null);
     setIsAdult(profile ? isSelfConfirmingStage(computeLifeStage(profile.birthDate)) : false);
     setItems(await getPersonRecords(user.id));
     setLoading(false);
@@ -73,6 +75,11 @@ export function MyRecordsScreen(_props: Props) {
     );
   }
 
+  // Wave M-2(docs/11-livinglab-mega-workshop.md) — ITP(EDU-005)는 RLS상 이미 본인이 볼 수
+  // 있지만(person 셀프 분기는 domain/record_type 무관), 다른 EDU 기록들 사이에 묻혀 청소년
+  // 전환기 당사자가 놓치기 쉽다는 리빙랩 관찰에 따른 안내 배너(RLS/기능 변경 없음).
+  const hasItp = lifeStage === "youth_transition" && items.some((i) => i.recordType === "EDU-005");
+
   return (
     <View style={[styles.flex, { paddingBottom: insets.bottom }]}>
       <View style={styles.header}>
@@ -87,6 +94,16 @@ export function MyRecordsScreen(_props: Props) {
         data={items}
         keyExtractor={(r) => r.id}
         contentContainerStyle={styles.listContent}
+        ListHeaderComponent={
+          hasItp ? (
+            <View style={styles.itpBanner}>
+              <Text style={styles.itpBannerIcon}>🎓</Text>
+              <Text style={styles.itpBannerText}>
+                학교에서 준비한 개별화전환계획(ITP)이 있어요. 아래 목록에서 확인해 보세요.
+              </Text>
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
           <View style={styles.emptyBox}>
             <Text style={styles.emptyText}>아직 기록이 없어요.</Text>
@@ -148,4 +165,15 @@ const styles = StyleSheet.create({
   rowTitle: { flex: 1, fontSize: 18, fontWeight: "700", color: NEUTRAL.text },
   rowMeta: { fontSize: 14, color: NEUTRAL.textMuted },
   badgeRow: { marginTop: 2 },
+  itpBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.sm,
+    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
+    backgroundColor: DOMAIN_COLORS.TRA.bg,
+    marginBottom: SPACING.md,
+  },
+  itpBannerIcon: { fontSize: 28 },
+  itpBannerText: { flex: 1, fontSize: 16, fontWeight: "700", color: DOMAIN_COLORS.TRA.text },
 });

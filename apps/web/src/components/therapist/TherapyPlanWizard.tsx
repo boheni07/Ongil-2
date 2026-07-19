@@ -283,6 +283,7 @@ export function TherapyPlanWizard({
             >
               <span className="text-label font-bold text-domain-med-text">
                 <span aria-hidden="true">{icon}</span> {label}
+                {key === "language" ? "  · 핵심" : ""}
               </span>
               <Field label="장기 목표">
                 <textarea

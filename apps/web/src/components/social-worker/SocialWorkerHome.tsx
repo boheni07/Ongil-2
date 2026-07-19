@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getSocialWorkerClients } from "@/app/(app)/records/isp/actions";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
+import { CaseManagementMenu } from "@/components/social-worker/CaseManagementMenu";
 
 /**
  * W-01 사회복지사 홈 — 담당 당사자 카드 목록(프로토타입 web-social-worker.html 212~279줄).
@@ -36,26 +37,13 @@ export async function SocialWorkerHome({ userName }: { userName: string | null }
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            render={<Link href="/records/leg" />}
-            className="h-11 px-5 font-bold"
-          >
-            ⚖️ 법률·권리 기록
-          </Button>
+          <CaseManagementMenu />
           <Button
             variant="outline"
             render={<Link href="/records/transition/new" />}
             className="h-11 px-5 font-bold"
           >
             🧭 전환계획 작성
-          </Button>
-          <Button
-            variant="outline"
-            render={<Link href="/records/case-notes" />}
-            className="h-11 px-5 font-bold"
-          >
-            📝 사례회의록
           </Button>
           <Button
             render={<Link href="/records/isp/new" />}

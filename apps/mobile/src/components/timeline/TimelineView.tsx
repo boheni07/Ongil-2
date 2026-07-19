@@ -22,7 +22,7 @@ import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../../theme/colors";
  *
  * 필터·데이터 조회는 화면(부모)이 소유한다(controlled): 필터 변경 시 부모가 getTimeline을
  * 도메인 인자와 함께 재조회한다(기존 3개 화면의 서버측 필터 동작을 그대로 보존). 뷰 토글만
- * 내부 상태로 관리한다. emergencyInfo가 주어질 때만 PinnedCard를 최상단에 노출한다(G-10 전용).
+ * 내부 상태로 관리한다. emergencyInfo가 주어질 때만 PinnedCard를 최상단에 노출한다(전 역할 호출부 공통 지원).
  */
 
 const DOMAIN_FILTERS: { key: DomainKey | "ALL"; label: string }[] = [

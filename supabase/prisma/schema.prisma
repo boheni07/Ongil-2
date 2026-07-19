@@ -114,6 +114,13 @@ enum InvitationStatus {
   expired
 }
 
+// F-AUTH-02(카카오/네이버 OAuth) — users.auth_provider 전용
+enum AuthProvider {
+  email
+  kakao
+  naver
+}
+
 // ─────────────────────────────────────────────────────────
 // Models
 // ─────────────────────────────────────────────────────────
@@ -127,6 +134,11 @@ model User {
   fcmToken  String?  @map("fcm_token")
   // 계정 비활성화(동의 전체철회 + 탈퇴) 시각. NULL이면 활성. 행 삭제 대신 이 값으로 표현한다.
   deactivatedAt DateTime? @map("deactivated_at") @db.Timestamptz
+  // F-AUTH-02(카카오/네이버 OAuth) — 계정 동일성 신뢰 소스는 email이 아니라
+  // (authProvider, oauthSubject)다. email 가입은 oauthSubject=NULL.
+  authProvider  AuthProvider @default(email) @map("auth_provider")
+  oauthSubject  String?      @map("oauth_subject")
+  emailVerified Boolean      @default(true) @map("email_verified")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -147,6 +159,7 @@ model User {
   invitationsSent          Invitation[]         @relation("Inviter")
   invitationsAccepted      Invitation[]         @relation("InvitationAcceptedBy")
 
+  @@unique([authProvider, oauthSubject])
   @@map("users")
 }
 

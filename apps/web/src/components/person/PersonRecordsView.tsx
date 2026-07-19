@@ -28,6 +28,12 @@ export function PersonRecordsView({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [errorId, setErrorId] = useState<{ id: string; message: string } | null>(null);
 
+  // Wave M-2(docs/11-livinglab-mega-workshop.md) — ITP(EDU-005)는 RLS상 이미 본인이 볼 수
+  // 있지만(person 셀프 분기는 domain/record_type 무관), 다른 EDU 기록들 사이에 묻혀 청소년
+  // 전환기 당사자가 "학교가 내 진로를 준비하고 있다"는 사실 자체를 놓치기 쉽다는 리빙랩 관찰에
+  // 따라 눈에 띄는 안내 배너를 추가한다(RLS/기능 변경 없음 — 순수 발견성 개선).
+  const hasItp = lifeStage === "youth_transition" && records.some((r) => r.recordType === "EDU-005");
+
   async function handleConfirm(id: string) {
     setBusyId(id);
     setErrorId(null);
@@ -53,6 +59,16 @@ export function PersonRecordsView({
 
   return (
     <ul className="flex flex-col gap-3">
+      {hasItp && (
+        <li className="flex items-center gap-3 rounded-2xl bg-domain-tra-bg p-5 ring-1 ring-domain-tra-accent/40">
+          <span aria-hidden="true" className="text-3xl">
+            🎓
+          </span>
+          <p className="text-person-base font-semibold text-domain-tra-text">
+            학교에서 준비한 개별화전환계획(ITP)이 있어요. 아래 목록에서 확인해 보세요.
+          </p>
+        </li>
+      )}
       {records.map((r) => {
         const isPending = r.requiresConfirmation && !r.confirmedAt;
         const canConfirm = isSelfConfirmingStage(lifeStage) && r.confirmerId === userId && isPending;

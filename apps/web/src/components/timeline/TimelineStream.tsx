@@ -7,7 +7,8 @@ import { PinnedCard } from "@/components/timeline/PinnedCard";
 /**
  * docs/03-uiux.md §6-2·§8 스트림 뷰 — 날짜 내림차순 카드 리스트.
  * 순서: PinnedCard(응급정보) → isPinned 레코드 → 나머지(밀스톤은 MilestoneCard).
- * emergencyInfo가 주어질 때만 PinnedCard를 렌더한다(G-10 전용; 다른 역할은 넘기지 않음).
+ * emergencyInfo가 주어질 때만 PinnedCard를 렌더한다 — 호출부가 넘기지 않으면(undefined) 카드 자체가 숨는다.
+ * 보호자(G-10) 외에 특수교사·사회복지사·치료사(T-20/W-20/TH-20)도 넘긴다(2026-07-19 확장).
  */
 export function TimelineStream({
   items,

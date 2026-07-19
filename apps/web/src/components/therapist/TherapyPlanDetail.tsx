@@ -101,6 +101,9 @@ export function TherapyPlanDetail({ detail }: { detail: Detail }) {
                 const meta = AREA_META[g.area];
                 const score = scores ? scores[g.area] : null;
                 const on = i === selected;
+                // 목표 대비 60% 미만 달성 시 저달성 경고(모바일 TherapyPlanDetailScreen과 동일 기준,
+                // 웹엔 이 스타일이 없었다 — 2026-07-19 프로토타입 대조로 동기화).
+                const alert = score != null && g.target_score != null && score < g.target_score * 0.6;
                 return (
                   <li key={i}>
                     <button
@@ -124,13 +127,16 @@ export function TherapyPlanDetail({ detail }: { detail: Detail }) {
                       </span>
                       <span className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
                         <span
-                          className="block h-full rounded-full bg-domain-med-accent"
+                          className={`block h-full rounded-full ${alert ? "bg-[#D9822B]" : "bg-domain-med-accent"}`}
                           style={{ width: `${score ?? 0}%` }}
                         />
                       </span>
                       <span className="text-caption text-muted-foreground">
                         목표 점수 {g.target_score != null ? `${g.target_score}%` : "-"} · 현재{" "}
                         {score != null ? `${score}%` : "미평가"}
+                        {alert ? (
+                          <span className="font-bold text-[#D9822B]"> · ⚠️ 집중 필요</span>
+                        ) : null}
                       </span>
                     </button>
                   </li>

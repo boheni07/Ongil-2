@@ -32,6 +32,9 @@ export function PersonSlider({ persons }: { persons: GuardianPerson[] }) {
   const [index, setIndex] = useState(0);
   const [summary, setSummary] = useState<PersonSummaryCards | null>(null);
   const [loading, setLoading] = useState(true);
+  // Wave M-3(docs/11-livinglab-mega-workshop.md) — 다자녀 보호자가 슬라이더 화살표를 계속
+  // 눌러야 전체를 못 본다는 리빙랩 관찰에 따라, 3명 이상일 때만 그리드 보기 토글을 노출한다.
+  const [viewMode, setViewMode] = useState<"slider" | "grid">("slider");
 
   const selected = persons[index];
 
@@ -58,54 +61,47 @@ export function PersonSlider({ persons }: { persons: GuardianPerson[] }) {
     contacts: Array.isArray(rawEmergency.contacts) ? rawEmergency.contacts : [],
   };
 
+  const showGridToggle = persons.length > 2;
+
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-2">
-        <SliderButton dir="prev" disabled={index === 0} onClick={() => setIndex((i) => Math.max(0, i - 1))} />
-        <ul className="flex flex-1 gap-3 overflow-x-auto pb-1">
+      {showGridToggle && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setViewMode((m) => (m === "slider" ? "grid" : "slider"))}
+            className="rounded-(--br-md) border border-border bg-white px-3 py-1.5 text-caption font-semibold text-accent-stone shadow-sm hover:border-primary-400"
+          >
+            {viewMode === "slider" ? "⊞ 그리드로 보기" : "⟷ 슬라이더로 보기"}
+          </button>
+        </div>
+      )}
+
+      {viewMode === "slider" || !showGridToggle ? (
+        <div className="flex items-center gap-2">
+          <SliderButton dir="prev" disabled={index === 0} onClick={() => setIndex((i) => Math.max(0, i - 1))} />
+          <ul className="flex flex-1 gap-3 overflow-x-auto pb-1">
+            {persons.map((p, i) => (
+              <li key={p.id} className="w-64 shrink-0">
+                <PersonCard person={p} selected={i === index} onSelect={() => setIndex(i)} />
+              </li>
+            ))}
+          </ul>
+          <SliderButton
+            dir="next"
+            disabled={index >= persons.length - 1}
+            onClick={() => setIndex((i) => Math.min(persons.length - 1, i + 1))}
+          />
+        </div>
+      ) : (
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {persons.map((p, i) => (
-            <li key={p.id} className="shrink-0">
-              <button
-                type="button"
-                aria-pressed={i === index}
-                onClick={() => setIndex(i)}
-                className={`w-64 rounded-xl border-2 bg-white p-4 text-left shadow-md transition-colors ${
-                  i === index ? "border-primary-600 ring-2 ring-primary-100" : "border-border hover:border-primary-400"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <Avatar size="lg" className="bg-primary-50">
-                    {p.avatarUrl ? <AvatarImage src={p.avatarUrl} alt="" /> : null}
-                    <AvatarFallback aria-hidden="true" className="bg-primary-50 text-2xl">
-                      {p.isAdult ? "🧑" : "🧒"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0">
-                    <h3 className="truncate text-body font-bold text-foreground">{p.fullName}</h3>
-                    <p className="text-caption text-muted-foreground">
-                      {p.birthDate} · 만 {computeAge(p.birthDate)}세
-                      {GENDER_LABEL[p.gender ?? ""] ? ` · ${GENDER_LABEL[p.gender ?? ""]}` : ""}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <StageBadge lifeStage={computeLifeStage(p.birthDate)} interactive={false} />
-                  {p.disabilityTypes.slice(0, 2).map((t) => (
-                    <span key={t} className="rounded-(--br-sm) bg-muted px-2 py-0.5 text-caption text-accent-stone">
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              </button>
+            <li key={p.id}>
+              <PersonCard person={p} selected={i === index} onSelect={() => setIndex(i)} />
             </li>
           ))}
         </ul>
-        <SliderButton
-          dir="next"
-          disabled={index >= persons.length - 1}
-          onClick={() => setIndex((i) => Math.min(persons.length - 1, i + 1))}
-        />
-      </div>
+      )}
 
       <section className="rounded-xl bg-domain-med-bg p-5 shadow-md ring-1 ring-domain-med-accent/40" aria-label="응급 정보">
         <h3 className="text-headline-3 font-bold text-domain-med-text">🚨 응급 대응 정보 — {selected.fullName}</h3>
@@ -188,6 +184,51 @@ export function PersonSlider({ persons }: { persons: GuardianPerson[] }) {
         )}
       </section>
     </div>
+  );
+}
+
+function PersonCard({
+  person: p,
+  selected,
+  onSelect,
+}: {
+  person: GuardianPerson;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onSelect}
+      className={`w-full rounded-xl border-2 bg-white p-4 text-left shadow-md transition-colors ${
+        selected ? "border-primary-600 ring-2 ring-primary-100" : "border-border hover:border-primary-400"
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <Avatar size="lg" className="bg-primary-50">
+          {p.avatarUrl ? <AvatarImage src={p.avatarUrl} alt="" /> : null}
+          <AvatarFallback aria-hidden="true" className="bg-primary-50 text-2xl">
+            {p.isAdult ? "🧑" : "🧒"}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0">
+          <h3 className="truncate text-body font-bold text-foreground">{p.fullName}</h3>
+          <p className="text-caption text-muted-foreground">
+            {p.birthDate} · 만 {computeAge(p.birthDate)}세
+            {GENDER_LABEL[p.gender ?? ""] ? ` · ${GENDER_LABEL[p.gender ?? ""]}` : ""}
+          </p>
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <StageBadge lifeStage={computeLifeStage(p.birthDate)} interactive={false} />
+        {p.disabilityTypes.slice(0, 2).map((t) => (
+          <span key={t} className="rounded-(--br-sm) bg-muted px-2 py-0.5 text-caption text-accent-stone">
+            {t}
+          </span>
+        ))}
+      </div>
+    </button>
   );
 }
 
