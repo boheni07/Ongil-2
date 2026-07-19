@@ -196,6 +196,53 @@ export async function getSocialWorkerClients(): Promise<SocialWorkerClient[]> {
 }
 
 /**
+ * W-01 홈 KPI "전환계획 진행중"·"이번 주 서비스" — 프로토타입 web-social-worker.html
+ * 218~220줄(2026-07-19, docs/12 Wave C). 이전엔 두 KPI 자체가 없었다(3개 카드만 존재).
+ * "진행중"은 로드맵 마지막 단계(employment)에 아직 도달하지 않은 TRA-001 최신본 기준,
+ * "이번 주 서비스"는 이 사회복지사의 담당 당사자 전원에 대해 이번 주 작성된 기록 수(도메인
+ * 무관 — W-01 KPI 자체가 서비스 전반을 다루므로 WEL 도메인만으로 좁히지 않는다).
+ */
+export async function getSocialWorkerWeeklyStats(
+  personIds: string[]
+): Promise<{ transitionInProgress: number; weeklyRecordCount: number }> {
+  if (personIds.length === 0) return { transitionInProgress: 0, weeklyRecordCount: 0 };
+
+  const supabase = await createClient();
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+
+  const [traRes, weeklyRes] = await Promise.all([
+    supabase
+      .from("records")
+      .select("person_id, content, record_date")
+      .in("person_id", personIds)
+      .eq("record_type", "TRA-001")
+      .eq("is_draft", false)
+      .order("record_date", { ascending: false }),
+    supabase
+      .from("records")
+      .select("id", { count: "exact", head: true })
+      .in("person_id", personIds)
+      .eq("is_draft", false)
+      .gte("record_date", weekStart.toISOString()),
+  ]);
+
+  const latestStageByPerson = new Map<string, string | null>();
+  for (const row of traRes.data ?? []) {
+    const pid = row.person_id as string;
+    if (latestStageByPerson.has(pid)) continue; // 이미 최신본(내림차순 정렬) 처리됨
+    const content = row.content as { roadmap_stage?: string } | null;
+    latestStageByPerson.set(pid, content?.roadmap_stage ?? null);
+  }
+  const transitionInProgress = [...latestStageByPerson.values()].filter(
+    (stage) => stage && stage !== "employment"
+  ).length;
+
+  return { transitionInProgress, weeklyRecordCount: weeklyRes.count ?? 0 };
+}
+
+/**
  * W-13 ISP 작성 — records INSERT(domain='WEL', record_type='WEL-004').
  * ISP는 IEP와 동급의 공식 문서라 requires_confirmation=true(§4-6 표) — 제출(is_draft=false) 시
  * trg_assign_confirmer가 확인 주체(성년=본인, 미성년=주보호자)를 자동 지정한다.

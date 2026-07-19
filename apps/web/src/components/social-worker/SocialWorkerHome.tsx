@@ -1,5 +1,9 @@
 import Link from "next/link";
-import { getSocialWorkerClients, type SocialWorkerClient } from "@/app/(app)/records/isp/actions";
+import {
+  getSocialWorkerClients,
+  getSocialWorkerWeeklyStats,
+  type SocialWorkerClient,
+} from "@/app/(app)/records/isp/actions";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
 import { CaseManagementMenu } from "@/components/social-worker/CaseManagementMenu";
@@ -7,8 +11,8 @@ import { CaseManagementMenu } from "@/components/social-worker/CaseManagementMen
 /**
  * W-01 사회복지사 홈 — 담당 당사자 카드 목록(프로토타입 web-social-worker.html 212~279줄).
  * 담당 당사자·요약 카드는 getSocialWorkerClients()에서 파생 가능한 값만 계산한다.
- * "이번 주 서비스"는 이 조회로 정확히 산출할 수 없어 "-"로 표시한다(과잉 구현 금지).
- * "전환계획 진행중"(TRA)은 이번 라운드 범위 밖이라 KPI에서 제외한다.
+ * "이번 주 서비스"·"전환계획 진행중"은 2026-07-19(docs/12 Wave C)에 getSocialWorkerWeeklyStats로
+ * 추가했다 — 이전엔 산출 불가/범위 밖으로 두 KPI 다 빠져 있었다.
  * 재사정 D-30 경고 배지는 reassessmentDday(0~30)에서 노출한다(음수면 기한 초과 톤).
  */
 export async function SocialWorkerHome({ userName }: { userName: string | null }) {
@@ -16,10 +20,12 @@ export async function SocialWorkerHome({ userName }: { userName: string | null }
   const name = userName ?? "선생님";
 
   const total = clients.length;
-  const ispMissing = clients.filter((c) => !c.latestIspRecordId).length;
   const reassessSoon = clients.filter(
     (c) => c.reassessmentDday != null && c.reassessmentDday <= 30
   ).length;
+  const { transitionInProgress, weeklyRecordCount } = await getSocialWorkerWeeklyStats(
+    clients.map((c) => c.personId)
+  );
 
   // docs/02-ia.md §3-9: adult 대상은 '성인 서비스 전환 필요'가 우선이라 목록 맨 위로 정렬한다.
   // Array.prototype.sort는 안정 정렬이라 adult 아닌 대상은 기존 순서를 유지한다.
@@ -54,10 +60,11 @@ export async function SocialWorkerHome({ userName }: { userName: string | null }
         </div>
       </div>
 
-      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat n={String(total)} label="담당 당사자" />
         <Stat n={String(reassessSoon)} label="ISP 재사정 임박" />
-        <Stat n={String(ispMissing)} label="ISP 미작성" />
+        <Stat n={String(transitionInProgress)} label="전환계획 진행중" />
+        <Stat n={String(weeklyRecordCount)} label="이번 주 서비스" />
       </div>
 
       <TodayTasks

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTeacherStudents } from "@/app/(app)/records/iep/actions";
+import { getTeacherStudents, getWeeklyObservationCount } from "@/app/(app)/records/iep/actions";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
 import { isItpActiveStage, isPreTransitionStage } from "@/lib/lifecycle";
@@ -17,6 +17,7 @@ export async function TeacherHome({ userName }: { userName: string | null }) {
   const iepMissing = students.filter((s) => !s.latestIepRecordId).length;
   const transitionTargets = students.filter((s) => !isPreTransitionStage(s.lifeStage)).length;
   const itpTargets = students.filter((s) => isItpActiveStage(s.lifeStage)).length;
+  const weeklyObservations = await getWeeklyObservationCount(students.map((s) => s.personId));
 
   return (
     <div className="flex flex-1 flex-col">
@@ -73,7 +74,7 @@ export async function TeacherHome({ userName }: { userName: string | null }) {
       <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat n={String(total)} label="담당 학생" />
         <Stat n={String(iepMissing)} label="IEP 미작성" />
-        <Stat n="-" label="이번 주 관찰기록" />
+        <Stat n={String(weeklyObservations)} label="이번 주 관찰기록" />
         <Stat n={String(transitionTargets)} label="전환계획 대상" />
       </div>
 

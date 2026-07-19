@@ -175,6 +175,28 @@ export async function getTeacherStudents(): Promise<TeacherStudent[]> {
 }
 
 /**
+ * T-01 홈 KPI "이번 주 관찰기록" — 프로토타입 web-teacher.html 253줄(2026-07-19, docs/12
+ * Wave C). 이전엔 getTeacherStudents 하나로 정확히 산출할 수 없어 "-"로 뒀는데, 담당 학생
+ * person_id 목록에 대해 EDU-002를 이번 주 범위로 세는 별도 쿼리 하나만 추가하면 된다.
+ */
+export async function getWeeklyObservationCount(personIds: string[]): Promise<number> {
+  if (personIds.length === 0) return 0;
+  const supabase = await createClient();
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+
+  const { count } = await supabase
+    .from("records")
+    .select("id", { count: "exact", head: true })
+    .in("person_id", personIds)
+    .eq("record_type", "EDU-002")
+    .gte("record_date", weekStart.toISOString());
+
+  return count ?? 0;
+}
+
+/**
  * T-13 IEP 작성 — records INSERT(domain='EDU', record_type='EDU-001').
  * IEP는 공식 문서라 requires_confirmation=true(§4-6 표) — 제출(is_draft=false) 시
  * trg_assign_confirmer가 확인 주체(성인기·노년기=본인, 그 이전=주보호자)를 자동 지정한다.
