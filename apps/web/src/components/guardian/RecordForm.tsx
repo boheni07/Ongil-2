@@ -83,7 +83,7 @@ export function RecordForm({
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-1 flex-col">
+    <div className="mx-auto flex max-w-5xl flex-1 flex-col">
       <h1 className="text-headline-1 font-extrabold text-foreground">
         {isEdit ? "기록 수정" : "새 기록 작성"}
       </h1>
@@ -94,109 +94,128 @@ export function RecordForm({
         있습니다(권한 매트릭스의 read/write/edit 부여와 무관).
       </div>
 
-      {isStructuredEdit && existing && (
-        <div className="mt-4 rounded-(--br-md) border border-border p-4">
-          <p className="mb-2 text-label font-semibold text-accent-stone">
-            원본 기록 내용(읽기 전용 · {existing.authorName ?? "전문가"} 작성)
-          </p>
-          <RecordContentView
-            content={(() => {
-              const rest = { ...((existing.content as Record<string, unknown>) ?? {}) };
-              delete rest.guardianNote;
-              return rest;
-            })()}
-          />
-        </div>
-      )}
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
+        <div className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
+          {!isStructuredEdit && (
+            <div>
+              <span id="domain-label" className="text-label font-semibold text-accent-stone">
+                도메인 선택
+              </span>
+              <div
+                role="radiogroup"
+                aria-labelledby="domain-label"
+                className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-6"
+              >
+                {DOMAINS.map((d) => (
+                  <button
+                    key={d.key}
+                    type="button"
+                    role="radio"
+                    aria-checked={domain === d.key}
+                    disabled={isEdit}
+                    onClick={() => setDomain(d.key)}
+                    className={`flex min-h-11 items-center justify-center rounded-(--br-md) border-2 px-3 transition-colors disabled:opacity-60 ${
+                      domain === d.key
+                        ? "border-primary-600 bg-primary-50"
+                        : "border-border hover:border-primary-400"
+                    }`}
+                  >
+                    <DomainChip domain={d.key} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
-      <div className="mt-5 flex flex-col gap-4">
-        {!isStructuredEdit && (
-          <div>
-            <span id="domain-label" className="text-label font-semibold text-accent-stone">
-              도메인 선택
+          <label className="flex flex-col gap-1.5">
+            <span className="text-label font-semibold text-accent-stone">
+              {isStructuredEdit ? "보호자 메모 제목" : "제목"}
             </span>
-            <div
-              role="radiogroup"
-              aria-labelledby="domain-label"
-              className="mt-2 grid grid-cols-3 gap-2"
-            >
-              {DOMAINS.map((d) => (
-                <button
-                  key={d.key}
-                  type="button"
-                  role="radio"
-                  aria-checked={domain === d.key}
-                  disabled={isEdit}
-                  onClick={() => setDomain(d.key)}
-                  className={`flex min-h-11 items-center justify-center rounded-(--br-md) border-2 px-3 transition-colors disabled:opacity-60 ${
-                    domain === d.key
-                      ? "border-primary-600 bg-primary-50"
-                      : "border-border hover:border-primary-400"
-                  }`}
-                >
-                  <DomainChip domain={d.key} />
-                </button>
-              ))}
+            <input
+              type="text"
+              className={fieldClass}
+              value={title}
+              maxLength={200}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </label>
+
+          <label className="flex flex-col gap-1.5">
+            <span className="text-label font-semibold text-accent-stone">
+              {isStructuredEdit ? "보호자 메모 내용" : "내용"}
+            </span>
+            <textarea
+              className={`${fieldClass} min-h-48 py-2`}
+              value={body}
+              maxLength={5000}
+              placeholder="기록 내용을 입력하세요"
+              onChange={(e) => setBody(e.target.value)}
+            />
+          </label>
+
+          <div>
+            <span className="text-label font-semibold text-accent-stone">첨부파일</span>
+            <div className="mt-2">
+              <Button type="button" variant="outline" disabled className="h-10">
+                📎 파일 첨부 (준비 중)
+              </Button>
             </div>
           </div>
-        )}
+        </div>
 
-        <label className="flex flex-col gap-1.5">
-          <span className="text-label font-semibold text-accent-stone">
-            {isStructuredEdit ? "보호자 메모 제목" : "제목"}
-          </span>
-          <input
-            type="text"
-            className={fieldClass}
-            value={title}
-            maxLength={200}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-        </label>
+        {/* 오른쪽 사이드바(lg:sticky) — 구조화 기록 수정 시엔 원본 내용을, 자유 기록일 땐 저장될
+            내용 미리보기를 보여주고, 액션 버튼을 스크롤 중에도 계속 접근 가능하게 둔다
+            (2026-07-20, JournalWizard와 동일한 와이드 레이아웃 원칙). */}
+        <div className="flex flex-col gap-4 lg:sticky lg:top-6">
+          {isStructuredEdit && existing ? (
+            <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
+              <p className="mb-2 text-label font-semibold text-accent-stone">
+                원본 기록 내용(읽기 전용 · {existing.authorName ?? "전문가"} 작성)
+              </p>
+              <div className="max-h-[60vh] overflow-y-auto">
+                <RecordContentView
+                  content={(() => {
+                    const rest = { ...((existing.content as Record<string, unknown>) ?? {}) };
+                    delete rest.guardianNote;
+                    return rest;
+                  })()}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-primary-100 bg-primary-50/60 p-5">
+              <h3 className="text-label font-bold text-primary-800">미리보기</h3>
+              <div className="mt-2">
+                <DomainChip domain={domain} />
+              </div>
+              <p className="mt-2 truncate text-body font-bold text-foreground">{title || "제목 없음"}</p>
+              <p className="mt-1 line-clamp-4 text-caption whitespace-pre-wrap text-muted-foreground">
+                {body || "내용을 입력하면 여기에 보여요."}
+              </p>
+            </div>
+          )}
 
-        <label className="flex flex-col gap-1.5">
-          <span className="text-label font-semibold text-accent-stone">
-            {isStructuredEdit ? "보호자 메모 내용" : "내용"}
-          </span>
-          <textarea
-            className={`${fieldClass} min-h-32 py-2`}
-            value={body}
-            maxLength={5000}
-            placeholder="기록 내용을 입력하세요"
-            onChange={(e) => setBody(e.target.value)}
-          />
-        </label>
+          {error && (
+            <p role="alert" className="text-body font-semibold text-red-600">
+              {error}
+            </p>
+          )}
 
-        <div>
-          <span className="text-label font-semibold text-accent-stone">첨부파일</span>
-          <div className="mt-2">
-            <Button type="button" variant="outline" disabled className="h-10">
-              📎 파일 첨부 (준비 중)
+          <div className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm ring-1 ring-foreground/10">
+            <Button type="button" className="h-11 font-bold" disabled={!valid || busy} onClick={() => void submit()}>
+              {busy ? "저장 중..." : "저장"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11"
+              disabled={busy}
+              onClick={() => router.push(`/persons/${personId}/records`)}
+            >
+              취소
             </Button>
           </div>
         </div>
-      </div>
-
-      {error && (
-        <p role="alert" className="mt-4 text-body font-semibold text-red-600">
-          {error}
-        </p>
-      )}
-
-      <div className="mt-8 flex items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          className="h-11"
-          disabled={busy}
-          onClick={() => router.push(`/persons/${personId}/records`)}
-        >
-          취소
-        </Button>
-        <div className="flex-1" />
-        <Button type="button" className="h-11 font-bold" disabled={!valid || busy} onClick={() => void submit()}>
-          {busy ? "저장 중..." : "저장"}
-        </Button>
       </div>
     </div>
   );

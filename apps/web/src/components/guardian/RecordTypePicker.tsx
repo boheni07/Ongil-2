@@ -62,7 +62,7 @@ export function RecordTypePicker({
         <button
           type="button"
           onClick={() => setMode("picker")}
-          className="mx-auto mb-[-0.5rem] w-full max-w-2xl text-left text-caption font-semibold text-muted-foreground hover:text-foreground"
+          className="mx-auto mb-[-0.5rem] w-full max-w-5xl text-left text-caption font-semibold text-muted-foreground hover:text-foreground"
         >
           ← 서식 종류 다시 선택
         </button>
@@ -78,7 +78,7 @@ export function RecordTypePicker({
   }, {});
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-1 flex-col">
+    <div className="mx-auto flex max-w-4xl flex-1 flex-col">
       <Link
         href={`/persons/${personId}/records`}
         className="mb-2 inline-flex w-fit items-center gap-1 text-caption font-semibold text-muted-foreground hover:text-foreground"
@@ -99,7 +99,7 @@ export function RecordTypePicker({
             <div className="mb-2 flex items-center gap-2">
               <DomainChip domain={domain as DomainKey} />
             </div>
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {items.map((o) => (
                 <Link
                   key={o.recordType}

@@ -225,12 +225,13 @@ export function PermissionGrantWizard({
   }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-2xl flex-1 flex-col">
+    <div className="mx-auto flex min-h-full max-w-6xl flex-1 flex-col">
       <h1 className="text-headline-1 font-extrabold text-foreground">권한 부여</h1>
       <p className="mt-1 text-body text-muted-foreground">{personName}에 대한 접근 권한을 부여합니다.</p>
 
-      <div className="mt-6 flex flex-col gap-8">
-        <section className="flex flex-col gap-4">
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
+      <div className="flex flex-col gap-6">
+        <section className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
           <h2 className="text-headline-3 font-bold text-accent-stone">누구에게 권한을 부여하나요?</h2>
           <label className="flex flex-col gap-1.5">
             <span className="text-label font-semibold text-accent-stone">대상자 이메일</span>
@@ -305,7 +306,9 @@ export function PermissionGrantWizard({
           )}
         </section>
 
-        <section className={`flex flex-col gap-4 ${targetValid ? "" : "opacity-50"}`}>
+        <section
+          className={`flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10 ${targetValid ? "" : "opacity-50"}`}
+        >
           <h2 className="text-headline-3 font-bold text-accent-stone">
             어떤 도메인에 접근하나요? <span className="text-body font-normal text-muted-foreground">(복수 선택)</span>
           </h2>
@@ -338,7 +341,9 @@ export function PermissionGrantWizard({
           </div>
         </section>
 
-        <section className={`flex flex-col gap-5 ${domainsValid ? "" : "opacity-50"}`}>
+        <section
+          className={`flex flex-col gap-5 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10 ${domainsValid ? "" : "opacity-50"}`}
+        >
           <h2 className="text-headline-3 font-bold text-accent-stone">권한 수준과 유효 기간</h2>
 
           {domainsValid ? (
@@ -410,20 +415,54 @@ export function PermissionGrantWizard({
         </section>
       </div>
 
-      {error && (
-        <p role="alert" className="mt-6 text-body font-semibold text-red-600">
-          {error}
-        </p>
-      )}
+      {/* 오른쪽 사이드바(lg:sticky) — 대상자·도메인 선택 요약과 액션 버튼을 스크롤 중에도
+          계속 접근 가능하게 둔다(2026-07-20, JournalWizard와 동일한 와이드 레이아웃 원칙). */}
+      <div className="flex flex-col gap-4 lg:sticky lg:top-6">
+        <div className="rounded-xl border border-primary-100 bg-primary-50/60 p-5">
+          <h3 className="text-label font-bold text-primary-800">요약</h3>
+          <dl className="mt-2 flex flex-col gap-1.5 text-caption">
+            <div className="flex justify-between gap-2">
+              <dt className="text-muted-foreground">대상자</dt>
+              <dd className="text-right font-semibold text-foreground">
+                {mode === "existing" && grantee
+                  ? `${grantee.fullName} (${ROLE_LABEL[grantee.role] ?? grantee.role})`
+                  : mode === "invite" && inviteRole
+                    ? `${email.trim()} (초대·${INVITE_ROLES.find((r) => r.value === inviteRole)?.label})`
+                    : "-"}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt className="text-muted-foreground">도메인</dt>
+              <dd className="text-right font-semibold text-foreground">
+                {orderedSelected.length > 0
+                  ? orderedSelected.map((d) => DOMAINS.find((x) => x.key === d)!.label).join(", ")
+                  : "-"}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt className="text-muted-foreground">유효 기간</dt>
+              <dd className="font-semibold text-foreground">
+                {unlimited && !hasEdit ? "무기한" : validUntil || "-"}
+              </dd>
+            </div>
+          </dl>
+        </div>
 
-      <div className="mt-8 flex items-center gap-2 border-t border-border pt-6">
-        <Button type="button" variant="outline" className="h-11" disabled={submitBusy} onClick={() => router.push(`/persons/${personId}/permissions`)}>
-          취소
-        </Button>
-        <div className="flex-1" />
-        <Button type="button" className="h-11 font-bold" disabled={submitBusy || !canSubmit} onClick={() => void submit()}>
-          {submitBusy ? "부여 중..." : "권한 부여"}
-        </Button>
+        {error && (
+          <p role="alert" className="text-body font-semibold text-red-600">
+            {error}
+          </p>
+        )}
+
+        <div className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm ring-1 ring-foreground/10">
+          <Button type="button" className="h-11 font-bold" disabled={submitBusy || !canSubmit} onClick={() => void submit()}>
+            {submitBusy ? "부여 중..." : "권한 부여"}
+          </Button>
+          <Button type="button" variant="outline" className="h-11" disabled={submitBusy} onClick={() => router.push(`/persons/${personId}/permissions`)}>
+            취소
+          </Button>
+        </div>
+      </div>
       </div>
     </div>
   );
