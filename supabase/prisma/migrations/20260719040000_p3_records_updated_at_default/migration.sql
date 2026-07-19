@@ -1,0 +1,29 @@
+-- P3: records.updated_at DEFAULT now() 추가 — 기록 생성(INSERT) 전면 결함 핫픽스
+--
+-- 발견 경위: "보호자 계정으로 IEP 작성까지 실제 테스트해달라"는 요청에 따라 브라우저 대신
+-- guardian1 세션을 SET LOCAL role/jwt.claims로 시뮬레이션해 createIep()가 실제로 실행하는
+-- INSERT를 그대로 재현했더니 다음 오류로 실패했다:
+--   ERROR: null value in column "updated_at" of relation "records" violates not-null constraint
+--
+-- 원인: records.updated_at은 Prisma @updatedAt(초기 마이그레이션부터 NOT NULL, DB DEFAULT
+-- 없음 — Prisma는 이 어노테이션을 Prisma Client 경유 쓰기에서만 자동 채운다). 이 프로젝트는
+-- 전부 supabase-js로 직접 쓰기 때문에 Prisma의 자동 채움이 전혀 적용되지 않는다.
+-- grep으로 전수 조사한 결과 records INSERT를 수행하는 13개 actions.ts 파일(createIep/
+-- createBip/createItp/createTherapyPlan/createSessionNote/createEvalReport/createIsp/
+-- createTransitionPlan/createCaseConferenceNote/createGuardianshipReport/
+-- createAdvocacyConsultation/createObservation/submitSelfExpression/
+-- createSelfExpressionForPerson/createGuardianRecord/createJournal 등) 단 하나도
+-- updated_at을 명시하지 않는다 — 즉 이 앱의 실제 실행 경로로는 어떤 역할이든 어떤
+-- record_type이든 기록을 새로 작성하는 순간 전부 이 오류로 실패해 왔다.
+-- (UPDATE 쪽 4곳은 이미 updated_at: new Date().toISOString()을 명시해 정상.)
+--
+-- 이 결함이 이제껏 발견되지 않은 이유: 이 프로젝트의 검증은 거의 항상 typecheck/build
+-- (컴파일 단계) 또는 pgTAP(테스트 SQL이 updated_at을 직접 채워 INSERT하므로 무관) 또는
+-- seed.sql(마찬가지로 명시적으로 채움)까지만 이뤄졌고, 실제 Next.js 서버를 통해 브라우저로
+-- "새 기록 작성"을 눌러본 적이 없었다(CLAUDE.md 변경 이력 다수 항목에 "브라우저 스팟체크
+-- 미수행/에뮬레이터 없어 미검증"으로 반복 기록됨).
+--
+-- 수정: users/persons/permissions는 이미 앱이 updated_at을 직접 채우고(각각 트리거,
+-- registerPerson, permissions actions.ts 4곳) 있어 안전함을 개별 확인했다 — records만
+-- DEFAULT를 추가한다(다른 4개 테이블까지 일괄 적용하는 과잉 수정 지양).
+ALTER TABLE public.records ALTER COLUMN updated_at SET DEFAULT now();

@@ -261,7 +261,10 @@ model Record {
   confirmerId          String?   @map("confirmer_id") @db.Uuid
   confirmedAt          DateTime? @map("confirmed_at") @db.Timestamptz
   createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  // @default(now())를 @updatedAt과 함께 둔다 — 이 앱은 Prisma Client가 아니라 supabase-js로
+  // 직접 쓰기 때문에 @updatedAt 단독으로는 INSERT 시 자동으로 채워지지 않는다(2026-07-19
+  // 발견 — records INSERT 전면 NOT NULL 결함, 마이그레이션 p3_records_updated_at_default).
+  updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   person      Person             @relation(fields: [personId], references: [id], onDelete: Cascade)
   author      User?              @relation("Author", fields: [authorId], references: [id])
