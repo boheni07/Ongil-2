@@ -21,6 +21,17 @@
  *     "표" 관행과 비슷하게) — 긴 서술형 텍스트만 전체 폭으로 펼친다.
  * FIELD_ORDER의 우선순위 그룹을 그대로 섹션 경계로 재사용한다(그룹 1·2=개요, 3=세부내용,
  * 4=측정·평가, 5=기타, 6=일정, 7=담당자, 8=메모).
+ *
+ * 2026-07-19 3차: "세로 목록 나열만 하지 말고 항목 성격에 맞춰 가로 표·그래프로도 보여달라"는
+ * 피드백에 따라 배열 필드를 값의 모양에 따라 3갈래로 분기한다.
+ *   - {start,end} 쌍(기간)은 어디서 나오든 "YYYY-MM-DD ~ YYYY-MM-DD" 한 줄로 압축(compactText).
+ *   - 목표 배열(annual_goals/goals — IEP·ISP·치료계획서 공통)은 영역 배지+진행률 막대가 붙은
+ *     목표 카드(GoalCards)로 — 서술형 본문과 달성률을 함께 보여줘야 해서 표보다 카드가 낫다.
+ *   - 그 외 필드가 균일하고 짧은(≤6열, 각 칸 60자 이내) 객체 배열(지원서비스·훈련이력·현장실습
+ *     이력 등)은 표(ObjectTable)로 — 이런 데이터는 행×열로 비교하는 게 자연스럽다.
+ *   - domain_scores처럼 값이 전부 숫자인 고정 객체({physical,...})도 배열로 변환해 기존
+ *     ScoreCards(막대 그래프)를 그대로 재사용한다(회기 일지는 배열이 아니라 고정 객체라 이전엔
+ *     이 그래프 처리를 못 받았다).
  */
 
 const FIELD_LABEL: Record<string, string> = {
@@ -194,6 +205,12 @@ const ENUM_LABEL: Record<string, Record<string, string>> = {
     abuse_suspected: "학대의심",
     other: "기타",
   },
+  // 치료계획서 goals[].area(TherapyArea) — IEP/ISP의 자유문자열 area("국어" 등)와 같은 필드
+  // 키를 쓰지만 값이 겹치지 않아 안전하게 합칠 수 있다(2026-07-19, "language" 등 영어 원문이
+  // 그대로 노출되던 결함 수정). domain_scores는 보통 ScoreCards로 렌더되지만 혹시 그 경로를
+  // 타지 않는 경우를 대비해 domain 키도 함께 매핑해둔다.
+  area: { physical: "신체", language: "언어", cognitive: "인지", social: "사회성" },
+  domain: { physical: "신체", language: "언어", cognitive: "인지", social: "사회성" },
 };
 
 /**
@@ -363,17 +380,68 @@ function formatPrimitive(key: string, v: unknown): string {
   return String(v);
 }
 
+/** {start, end} 꼭 두 키만 가진 객체 — 기간을 나타내는 관용 형태(plan_period·period 등). */
+function isRangeObject(v: unknown): v is { start: unknown; end: unknown } {
+  return isPlainObject(v) && Object.keys(v).length === 2 && "start" in v && "end" in v;
+}
+
+/** 값 하나를 "표/압축 칸"에 들어갈 한 줄 텍스트로 — 기간 객체는 물결표로, 배열은 콤마로. */
+function compactText(fieldKey: string, value: unknown): string {
+  if (value === null || value === undefined || value === "") return "-";
+  if (isRangeObject(value)) {
+    return `${formatPrimitive(fieldKey, value.start)} ~ ${formatPrimitive(fieldKey, value.end)}`;
+  }
+  if (Array.isArray(value)) {
+    return value.map((v) => formatPrimitive(fieldKey, v)).join(", ");
+  }
+  return formatPrimitive(fieldKey, value);
+}
+
 /** 짧은 값(이름·날짜·상태 등)인지 판단 — 짧으면 2열 표 형태로, 길면 전체 폭으로 펼친다. */
 function isCompactValue(fieldKey: string, value: unknown): boolean {
   if (value === null || value === undefined || value === "") return true;
+  if (isRangeObject(value)) return true;
   if (Array.isArray(value)) {
     if (value.length === 0) return true;
     const primitiveArray = value.every((v) => !isPlainObject(v) && !Array.isArray(v));
     if (!primitiveArray) return false;
-    return value.map((v) => formatPrimitive(fieldKey, v)).join(", ").length <= 40;
+    return compactText(fieldKey, value).length <= 40;
   }
   if (isPlainObject(value)) return false;
-  return formatPrimitive(fieldKey, value).length <= 40;
+  return compactText(fieldKey, value).length <= 40;
+}
+
+/** 목표 배열(영역+서술형 목표+선택적 달성률) — IEP annual_goals, ISP·치료계획서 goals 공통. */
+const GOAL_ARRAY_KEYS = new Set(["annual_goals", "goals"]);
+
+function isGoalArray(fieldKey: string, value: unknown[]): value is Record<string, unknown>[] {
+  return GOAL_ARRAY_KEYS.has(fieldKey) && value.length > 0 && value.every(isPlainObject);
+}
+
+/** 값이 전부 숫자인 고정 객체(회기 일지 domain_scores 등) — 배열로 바꿔 ScoreCards로 그린다. */
+function isNumericScoreObject(v: Record<string, unknown>): boolean {
+  const vals = Object.values(v);
+  return vals.length > 0 && vals.every((x) => typeof x === "number");
+}
+
+/** 표 한 칸에 담기 적당한 값인지 — 중첩 객체 배열·과도하게 긴 텍스트는 표를 지저분하게 만든다. */
+function isTableCell(fieldKey: string, value: unknown): boolean {
+  if (value === null || value === undefined || value === "") return true;
+  if (isRangeObject(value)) return true;
+  if (Array.isArray(value)) {
+    if (!value.every((v) => !isPlainObject(v) && !Array.isArray(v))) return false;
+    return compactText(fieldKey, value).length <= 60;
+  }
+  if (isPlainObject(value)) return false;
+  return compactText(fieldKey, value).length <= 60;
+}
+
+/** 균일하고 짧은 객체 배열(지원서비스·훈련이력·현장실습 이력 등) — 행×열 표로 그리기 적합한지. */
+function isTableArray(value: unknown[]): value is Record<string, unknown>[] {
+  if (value.length < 2 || !value.every(isPlainObject)) return false;
+  const keys = new Set(value.flatMap((it) => Object.keys(it)));
+  if (keys.size === 0 || keys.size > 6) return false;
+  return value.every((item) => Object.entries(item).every(([k, v]) => isTableCell(k, v)));
 }
 
 /** 값 하나를 렌더 — 배열/객체는 재귀, 원시값은 라벨 매핑 후 텍스트로. */
@@ -387,6 +455,14 @@ function RenderValue({ fieldKey, value, depth }: { fieldKey: string; value: unkn
 
     if (fieldKey === "domain_scores" && isScoreArray(value)) {
       return <ScoreCards items={value} />;
+    }
+
+    if (isGoalArray(fieldKey, value)) {
+      return <GoalCards items={value} />;
+    }
+
+    if (isTableArray(value)) {
+      return <ObjectTable items={value} />;
     }
 
     const primitiveArray = value.every((v) => !isPlainObject(v) && !Array.isArray(v));
@@ -409,6 +485,12 @@ function RenderValue({ fieldKey, value, depth }: { fieldKey: string; value: unkn
   }
 
   if (isPlainObject(value)) {
+    if (isRangeObject(value)) {
+      return <span>{compactText(fieldKey, value)}</span>;
+    }
+    if (fieldKey === "domain_scores" && isNumericScoreObject(value)) {
+      return <ScoreCards items={Object.entries(value).map(([k, v]) => ({ domain: k, score: v }))} />;
+    }
     return <ObjectFields obj={value} depth={depth + 1} />;
   }
 
@@ -472,6 +554,156 @@ function ScoreCards({ items }: { items: Record<string, unknown>[] }) {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+/** 목표 배열 카드에서 주요 필드(영역/목표문/진행률)를 뺀 나머지를 압축 나열한다. */
+function GoalMetaFields({ item, exclude }: { item: Record<string, unknown>; exclude: string[] }) {
+  const rest = sortEntries(
+    Object.entries(item).filter(
+      ([k, v]) => !exclude.includes(k) && v !== undefined && v !== null && v !== ""
+    )
+  );
+  if (rest.length === 0) return null;
+  return (
+    <dl className="mt-3 flex flex-col gap-2 border-t border-border/60 pt-3">
+      {rest.map(([k, v]) => (
+        <div key={k} className="flex flex-wrap items-baseline gap-1.5">
+          <dt className="text-[11px] font-bold tracking-wide text-muted-foreground/80 uppercase">
+            {fieldLabel(k)}
+          </dt>
+          <dd className="text-[13px] font-semibold text-foreground">
+            <RenderValue fieldKey={k} value={v} depth={1} />
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/** 목표 배열(annual_goals/goals) — 영역 배지 + 목표 서술 + (있으면) 달성률 진행 막대 카드.
+ * 표로는 서술형 본문과 진행률을 함께 보여주기 어려워 ScoreCards 대신 별도 카드를 쓴다
+ * (2026-07-19 피드백 — "관련 항목 성격에 맞춰 표/그래프를 섞어 쓰라"). */
+function GoalCards({ items }: { items: Record<string, unknown>[] }) {
+  return (
+    <div className="flex flex-col gap-3">
+      {items.map((item, i) => {
+        const area = typeof item.area === "string" ? item.area : undefined;
+        const goalText =
+          (typeof item.goal === "string" && item.goal) ||
+          (typeof item.long_term === "string" && item.long_term) ||
+          undefined;
+        const shortTermText = typeof item.short_term === "string" ? item.short_term : undefined;
+        const rate =
+          typeof item.achievement_rate === "number"
+            ? item.achievement_rate
+            : typeof item.target_score === "number"
+              ? item.target_score
+              : undefined;
+        return (
+          <div key={i} className="rounded-(--br-md) border border-border bg-white p-4 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                {area && (
+                  <p className="text-[11px] font-bold tracking-wide text-primary-700 uppercase">
+                    {formatPrimitive("area", area)}
+                  </p>
+                )}
+                {goalText && (
+                  <p className="mt-1 text-[15px] font-semibold text-foreground">{goalText}</p>
+                )}
+              </div>
+              {rate !== undefined && (
+                <div className="shrink-0 text-right">
+                  <p className="text-xl font-extrabold text-primary-700">
+                    {rate}
+                    <span className="text-xs font-semibold text-muted-foreground">%</span>
+                  </p>
+                </div>
+              )}
+            </div>
+            {rate !== undefined && (
+              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary-600"
+                  style={{ width: `${Math.min(100, Math.max(0, rate))}%` }}
+                />
+              </div>
+            )}
+            {shortTermText && (
+              <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+                단기목표: {shortTermText}
+              </p>
+            )}
+            <GoalMetaFields
+              item={item}
+              exclude={["area", "goal", "long_term", "short_term", "achievement_rate", "target_score"]}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** status 값의 시각적 강조 톤 — 진행중/이용중 계열은 초록, 예정/일시중지는 주황, 완료는 파랑,
+ * 종료는 중립. 알려지지 않은 값은 중립으로 안전하게 처리한다. */
+const STATUS_TONE: Record<string, string> = {
+  active: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+  ongoing: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+  planned: "bg-amber-50 text-amber-700 ring-amber-600/20",
+  paused: "bg-amber-50 text-amber-700 ring-amber-600/20",
+  completed: "bg-primary-50 text-primary-700 ring-primary-600/20",
+  ended: "bg-muted text-muted-foreground ring-border",
+};
+
+function StatusChip({ value }: { value: string }) {
+  const tone = STATUS_TONE[value] ?? "bg-muted text-muted-foreground ring-border";
+  return (
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold whitespace-nowrap ring-1 ${tone}`}>
+      {formatPrimitive("status", value)}
+    </span>
+  );
+}
+
+/** 균일하고 짧은 객체 배열(지원서비스·훈련이력·현장실습 이력 등) — 행×열 표로 비교하기 좋다
+ * (2026-07-19 피드백). 열 순서는 FIELD_ORDER를 재사용, status 칸만 색상 칩으로 강조한다. */
+function ObjectTable({ items }: { items: Record<string, unknown>[] }) {
+  const keys = sortEntries(
+    Array.from(new Set(items.flatMap((it) => Object.keys(it)))).map((k) => [k, undefined])
+  ).map(([k]) => k);
+  return (
+    <div className="overflow-x-auto rounded-(--br-md) border border-border">
+      <table className="w-full min-w-[480px] border-collapse text-[13px]">
+        <thead>
+          <tr className="border-b border-border bg-muted/50">
+            {keys.map((k) => (
+              <th
+                key={k}
+                className="px-3 py-2 text-left text-[11px] font-bold tracking-wide whitespace-nowrap text-muted-foreground/80 uppercase"
+              >
+                {fieldLabel(k)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item, i) => (
+            <tr key={i} className="border-b border-border/60 last:border-0 even:bg-muted/20">
+              {keys.map((k) => (
+                <td key={k} className="px-3 py-2 align-top font-semibold text-foreground">
+                  {k === "status" && typeof item[k] === "string" ? (
+                    <StatusChip value={item[k] as string} />
+                  ) : (
+                    compactText(k, item[k])
+                  )}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
