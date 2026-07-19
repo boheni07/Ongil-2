@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { AccessLevel, DomainKey, InviteRole, Role } from "@ongil/validation";
@@ -10,16 +10,16 @@ import {
   grantPermission,
   type GranteeSummary,
 } from "@/app/(app)/persons/[id]/permissions/actions";
-import { WizardProgress } from "@/components/form/WizardProgress";
 import { DateField } from "@/components/form/DateField";
 import { DomainChip } from "@/components/timeline/DomainChip";
 import { Button } from "@/components/ui/button";
 
 /**
- * G-32 권한 부여 4단계 위저드(대상자 → 도메인 → 수준·기간 → 확인).
- * 프로토타입 web-guardian.html 601~674줄을 확장: Step3은 프로토타입의 flat 단일 라디오 대신
- * "선택된 도메인마다 개별 수준 행"으로 렌더한다(도메인별 프리셋 access_level이 다르기 때문).
- * 유효기간은 전체 공통 1개(종료일 + 무기한)로 두되, edit가 하나라도 있으면 무기한을 막고 종료일을 강제한다.
+ * G-32 권한 부여 — 대상자·도메인·수준·기간을 한 화면에서 입력한다(2026-07-19,
+ * 기존 4단계 위저드를 병합해 대체 — 회원가입·당사자등록 폼과 동일한 방향).
+ * 대상자 조회 결과(역할)로 도메인 프리셋을 정하는 비동기 의존만 남아 있어, 이건
+ * "다음" 버튼 대신 조회 완료 시점에 자동으로 프리셋을 불러오는 방식(useEffect)으로
+ * 대체했다 — 나머지는 전부 화면에 항상 보이는 섹션이라 순서를 강제할 이유가 없다.
  */
 
 const DOMAINS: { key: DomainKey; label: string }[] = [
@@ -53,7 +53,6 @@ const ROLE_LABEL: Record<Role, string> = {
   therapist: "치료사",
 };
 
-const STEP_LABELS = ["대상자", "도메인", "수준·기간", "확인"];
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const fieldClass =
@@ -69,9 +68,8 @@ export function PermissionGrantWizard({
   personName: string;
 }) {
   const router = useRouter();
-  const [step, setStep] = useState(1);
 
-  // Step1 — 대상자
+  // 대상자
   const [email, setEmail] = useState("");
   const [lookupBusy, setLookupBusy] = useState(false);
   const [lookupDone, setLookupDone] = useState(false);
@@ -79,12 +77,12 @@ export function PermissionGrantWizard({
   const [mode, setMode] = useState<Mode | null>(null);
   const [inviteRole, setInviteRole] = useState<InviteRole | "">("");
 
-  // Step2/3 — 도메인·수준
+  // 도메인·수준
   const [selected, setSelected] = useState<DomainKey[]>([]);
   const [levelByDomain, setLevelByDomain] = useState<Partial<Record<DomainKey, AccessLevel>>>({});
-  const [presetByDomain, setPresetByDomain] = useState<Partial<Record<DomainKey, AccessLevel>>>({});
+  const [presetsLoaded, setPresetsLoaded] = useState(false);
 
-  // Step3 — 유효기간
+  // 유효기간
   const [unlimited, setUnlimited] = useState(false);
   const [validUntil, setValidUntil] = useState("");
 
@@ -95,18 +93,23 @@ export function PermissionGrantWizard({
   const emailValid = EMAIL_RE.test(email.trim());
   const orderedSelected = DOMAINS.filter((d) => selected.includes(d.key)).map((d) => d.key);
   const hasEdit = orderedSelected.some((d) => levelByDomain[d] === "edit");
+  const targetValid = (mode === "existing" && !!grantee) || (mode === "invite" && emailValid && inviteRole !== "");
 
   function resetLookup() {
     setLookupDone(false);
     setMode(null);
     setGrantee(null);
     setInviteRole("");
+    setPresetsLoaded(false);
+    setSelected([]);
+    setLevelByDomain({});
   }
 
   async function runLookup() {
     if (!emailValid || lookupBusy) return;
     setLookupBusy(true);
     setError(null);
+    setPresetsLoaded(false);
     const found = await findGranteeByEmail(email);
     if (found) {
       setGrantee(found);
@@ -119,22 +122,25 @@ export function PermissionGrantWizard({
     setLookupBusy(false);
   }
 
-  const step1Valid =
-    (mode === "existing" && !!grantee) || (mode === "invite" && emailValid && inviteRole !== "");
-
-  async function proceedFromStep1() {
-    if (!step1Valid) return;
+  // 대상자의 역할이 확정되는 즉시(기존 협력자 조회 성공, 또는 초대 역할 선택) 도메인
+  // 프리셋을 자동으로 불러온다 — 이전엔 "다음" 버튼을 눌러야만 진행됐다.
+  useEffect(() => {
+    if (!targetValid || presetsLoaded) return;
     const role: Role = mode === "existing" ? grantee!.role : (inviteRole as InviteRole);
-    const presets = await getPermissionPresets(role);
-
-    const presetMap: Partial<Record<DomainKey, AccessLevel>> = {};
-    for (const p of presets) presetMap[p.domain] = p.accessLevel;
-
-    setPresetByDomain(presetMap);
-    setSelected(presets.map((p) => p.domain));
-    setLevelByDomain({ ...presetMap });
-    setStep(2);
-  }
+    let cancelled = false;
+    void getPermissionPresets(role).then((presets) => {
+      if (cancelled) return;
+      const presetMap: Partial<Record<DomainKey, AccessLevel>> = {};
+      for (const p of presets) presetMap[p.domain] = p.accessLevel;
+      setSelected(presets.map((p) => p.domain));
+      setLevelByDomain(presetMap);
+      setPresetsLoaded(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- grantee/inviteRole 변화는 targetValid로 이미 반영됨
+  }, [targetValid, presetsLoaded]);
 
   function toggleDomain(d: DomainKey) {
     setSelected((prev) => {
@@ -143,7 +149,7 @@ export function PermissionGrantWizard({
     });
     setLevelByDomain((prev) => {
       if (prev[d]) return prev;
-      return { ...prev, [d]: presetByDomain[d] ?? "read" };
+      return { ...prev, [d]: "read" };
     });
   }
 
@@ -151,10 +157,15 @@ export function PermissionGrantWizard({
     setLevelByDomain((prev) => ({ ...prev, [d]: lvl }));
   }
 
-  const step2Valid = orderedSelected.length >= 1;
-  const step3Valid = hasEdit ? Boolean(validUntil) : unlimited || Boolean(validUntil);
+  const domainsValid = orderedSelected.length >= 1;
+  const periodValid = hasEdit ? Boolean(validUntil) : unlimited || Boolean(validUntil);
+  const canSubmit = targetValid && domainsValid && periodValid;
 
   async function submit() {
+    if (!canSubmit) {
+      setError("대상자·도메인·유효 기간을 모두 입력해주세요.");
+      return;
+    }
     setSubmitBusy(true);
     setError(null);
 
@@ -214,17 +225,12 @@ export function PermissionGrantWizard({
   }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-xl flex-1 flex-col">
+    <div className="mx-auto flex min-h-full max-w-2xl flex-1 flex-col">
       <h1 className="text-headline-1 font-extrabold text-foreground">권한 부여</h1>
-      <p className="mt-1 text-body text-muted-foreground">
-        {personName}에 대한 접근 권한을 4단계로 부여합니다.
-      </p>
+      <p className="mt-1 text-body text-muted-foreground">{personName}에 대한 접근 권한을 부여합니다.</p>
 
-      <Stepper current={step} className="mt-5 mb-2" />
-      <WizardProgress current={step} total={4} label={STEP_LABELS[step - 1]} className="mb-6" />
-
-      {step === 1 && (
-        <div className="flex flex-col gap-4">
+      <div className="mt-6 flex flex-col gap-8">
+        <section className="flex flex-col gap-4">
           <h2 className="text-headline-3 font-bold text-accent-stone">누구에게 권한을 부여하나요?</h2>
           <label className="flex flex-col gap-1.5">
             <span className="text-label font-semibold text-accent-stone">대상자 이메일</span>
@@ -279,7 +285,10 @@ export function PermissionGrantWizard({
                     <Chip
                       key={r.value}
                       on={inviteRole === r.value}
-                      onClick={() => setInviteRole(inviteRole === r.value ? "" : r.value)}
+                      onClick={() => {
+                        setInviteRole(inviteRole === r.value ? "" : r.value);
+                        setPresetsLoaded(false);
+                      }}
                     >
                       {r.label}
                     </Chip>
@@ -294,15 +303,17 @@ export function PermissionGrantWizard({
               이메일을 조회해 기존 협력자를 찾거나, 없으면 초대 링크로 새 이해관계자를 추가할 수 있습니다.
             </p>
           )}
-        </div>
-      )}
+        </section>
 
-      {step === 2 && (
-        <div className="flex flex-col gap-4">
+        <section className={`flex flex-col gap-4 ${targetValid ? "" : "opacity-50"}`}>
           <h2 className="text-headline-3 font-bold text-accent-stone">
             어떤 도메인에 접근하나요? <span className="text-body font-normal text-muted-foreground">(복수 선택)</span>
           </h2>
-          {presetByDomain && Object.keys(presetByDomain).length > 0 && (
+          {!targetValid ? (
+            <p className="text-caption text-muted-foreground">먼저 대상자를 확정해주세요.</p>
+          ) : !presetsLoaded ? (
+            <p className="text-caption text-muted-foreground">프리셋을 불러오는 중...</p>
+          ) : (
             <p className="text-caption text-muted-foreground">
               역할 기본 프리셋에 따라 일부 도메인이 자동 선택되었습니다. 필요에 맞게 조정하세요.
             </p>
@@ -313,8 +324,9 @@ export function PermissionGrantWizard({
                 key={d.key}
                 type="button"
                 aria-pressed={selected.includes(d.key)}
+                disabled={!targetValid}
                 onClick={() => toggleDomain(d.key)}
-                className={`flex min-h-11 items-center justify-center gap-2 rounded-(--br-md) border-2 px-3 transition-colors ${
+                className={`flex min-h-11 items-center justify-center gap-2 rounded-(--br-md) border-2 px-3 transition-colors disabled:cursor-not-allowed ${
                   selected.includes(d.key)
                     ? "border-primary-600 bg-primary-50"
                     : "border-border hover:border-primary-400"
@@ -324,45 +336,47 @@ export function PermissionGrantWizard({
               </button>
             ))}
           </div>
-        </div>
-      )}
+        </section>
 
-      {step === 3 && (
-        <div className="flex flex-col gap-5">
+        <section className={`flex flex-col gap-5 ${domainsValid ? "" : "opacity-50"}`}>
           <h2 className="text-headline-3 font-bold text-accent-stone">권한 수준과 유효 기간</h2>
 
-          <div className="flex flex-col gap-3">
-            <span className="text-label font-semibold text-accent-stone">도메인별 권한 수준</span>
-            {orderedSelected.map((d) => {
-              const label = DOMAINS.find((x) => x.key === d)!.label;
-              return (
-                <div
-                  key={d}
-                  className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-(--br-md) border border-border bg-white p-3"
-                >
-                  <div className="flex w-20 items-center gap-2">
-                    <DomainChip domain={d} />
+          {domainsValid ? (
+            <div className="flex flex-col gap-3">
+              <span className="text-label font-semibold text-accent-stone">도메인별 권한 수준</span>
+              {orderedSelected.map((d) => {
+                const label = DOMAINS.find((x) => x.key === d)!.label;
+                return (
+                  <div
+                    key={d}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-(--br-md) border border-border bg-white p-3"
+                  >
+                    <div className="flex w-20 items-center gap-2">
+                      <DomainChip domain={d} />
+                    </div>
+                    <fieldset className="flex flex-wrap gap-x-4 gap-y-1">
+                      <legend className="sr-only">{label} 권한 수준</legend>
+                      {LEVELS.map((lvl) => (
+                        <label key={lvl.value} className="inline-flex items-center gap-1.5 text-body">
+                          <input
+                            type="radio"
+                            name={`lvl-${d}`}
+                            value={lvl.value}
+                            checked={(levelByDomain[d] ?? "read") === lvl.value}
+                            onChange={() => setLevel(d, lvl.value)}
+                            className="size-4 accent-primary-600"
+                          />
+                          {lvl.label}
+                        </label>
+                      ))}
+                    </fieldset>
                   </div>
-                  <fieldset className="flex flex-wrap gap-x-4 gap-y-1">
-                    <legend className="sr-only">{label} 권한 수준</legend>
-                    {LEVELS.map((lvl) => (
-                      <label key={lvl.value} className="inline-flex items-center gap-1.5 text-body">
-                        <input
-                          type="radio"
-                          name={`lvl-${d}`}
-                          value={lvl.value}
-                          checked={(levelByDomain[d] ?? "read") === lvl.value}
-                          onChange={() => setLevel(d, lvl.value)}
-                          className="size-4 accent-primary-600"
-                        />
-                        {lvl.label}
-                      </label>
-                    ))}
-                  </fieldset>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-caption text-muted-foreground">먼저 도메인을 선택해주세요.</p>
+          )}
 
           <div className="flex flex-col gap-2">
             <span className="text-label font-semibold text-accent-stone">유효 기간 (종료일)</span>
@@ -370,14 +384,14 @@ export function PermissionGrantWizard({
               <DateField
                 className={`${fieldClass} w-auto`}
                 value={validUntil}
-                disabled={unlimited && !hasEdit}
+                disabled={(unlimited && !hasEdit) || !domainsValid}
                 onChange={setValidUntil}
               />
               <label className="inline-flex items-center gap-1.5 text-body">
                 <input
                   type="checkbox"
                   checked={unlimited && !hasEdit}
-                  disabled={hasEdit}
+                  disabled={hasEdit || !domainsValid}
                   onChange={(e) => {
                     setUnlimited(e.target.checked);
                     if (e.target.checked) setValidUntil("");
@@ -393,128 +407,25 @@ export function PermissionGrantWizard({
               </p>
             )}
           </div>
-        </div>
-      )}
-
-      {step === 4 && (
-        <div className="flex flex-col gap-4">
-          <h2 className="text-headline-3 font-bold text-accent-stone">부여 내용 확인</h2>
-          <ul className="flex flex-col gap-2 rounded-(--br-md) bg-white p-5 ring-1 ring-foreground/10">
-            <SummaryRow label="당사자">
-              <b className="text-foreground">{personName}</b>
-            </SummaryRow>
-            <SummaryRow label="대상자">
-              <b className="text-foreground">
-                {mode === "existing"
-                  ? `${grantee?.fullName} (${ROLE_LABEL[grantee!.role] ?? grantee!.role})`
-                  : `${email.trim()} · 초대 (${
-                      INVITE_ROLES.find((r) => r.value === inviteRole)?.label ?? inviteRole
-                    })`}
-              </b>
-            </SummaryRow>
-            <SummaryRow label="도메인·수준">
-              <div className="flex flex-col items-end gap-1">
-                {orderedSelected.map((d) => (
-                  <span key={d} className="inline-flex items-center gap-2">
-                    <DomainChip domain={d} />
-                    <b className="text-foreground">
-                      {LEVELS.find((l) => l.value === (levelByDomain[d] ?? "read"))?.label}
-                    </b>
-                  </span>
-                ))}
-              </div>
-            </SummaryRow>
-            <SummaryRow label="유효 기간">
-              <b className="text-foreground">
-                {unlimited && !hasEdit ? "무기한" : validUntil ? `~ ${validUntil}` : "-"}
-              </b>
-            </SummaryRow>
-          </ul>
-          <p className="text-caption text-muted-foreground">
-            부여 시 대상자에게 알림이 전송되며, 모든 접근은 접근 로그(G-40)에 기록됩니다.
-          </p>
-        </div>
-      )}
+        </section>
+      </div>
 
       {error && (
-        <p role="alert" className="mt-4 text-body font-semibold text-red-600">
+        <p role="alert" className="mt-6 text-body font-semibold text-red-600">
           {error}
         </p>
       )}
 
-      <div className="mt-auto flex items-center gap-2 pt-8">
-        <Button
-          type="button"
-          variant="outline"
-          className="h-11"
-          disabled={submitBusy}
-          render={step === 1 ? <Link href={`/persons/${personId}/permissions`} /> : undefined}
-          onClick={step === 1 ? undefined : () => setStep((s) => s - 1)}
-        >
-          ← {step === 1 ? "취소" : "이전"}
+      <div className="mt-8 flex items-center gap-2 border-t border-border pt-6">
+        <Button type="button" variant="outline" className="h-11" disabled={submitBusy} onClick={() => router.push(`/persons/${personId}/permissions`)}>
+          취소
         </Button>
         <div className="flex-1" />
-        {step < 4 ? (
-          <Button
-            type="button"
-            className="h-11"
-            disabled={
-              (step === 1 && !step1Valid) ||
-              (step === 2 && !step2Valid) ||
-              (step === 3 && !step3Valid)
-            }
-            onClick={() => {
-              if (step === 1) void proceedFromStep1();
-              else setStep((s) => s + 1);
-            }}
-          >
-            다음 →
-          </Button>
-        ) : (
-          <Button type="button" className="h-11 font-bold" disabled={submitBusy} onClick={() => void submit()}>
-            {submitBusy ? "부여 중..." : "권한 부여"}
-          </Button>
-        )}
+        <Button type="button" className="h-11 font-bold" disabled={submitBusy || !canSubmit} onClick={() => void submit()}>
+          {submitBusy ? "부여 중..." : "권한 부여"}
+        </Button>
       </div>
     </div>
-  );
-}
-
-function Stepper({ current, className }: { current: number; className?: string }) {
-  return (
-    <ol className={`flex items-center gap-2 ${className ?? ""}`}>
-      {STEP_LABELS.map((label, i) => {
-        const n = i + 1;
-        const active = n === current;
-        const doneStep = n < current;
-        return (
-          <li key={label} className="flex items-center gap-2" aria-current={active ? "step" : undefined}>
-            <span
-              className={`flex size-6 items-center justify-center rounded-full text-caption font-bold ${
-                active || doneStep ? "bg-primary-600 text-white" : "bg-muted text-muted-foreground"
-              }`}
-            >
-              {n}
-            </span>
-            <span
-              className={`text-caption font-semibold ${active ? "text-foreground" : "text-muted-foreground"}`}
-            >
-              {label}
-            </span>
-            {n < STEP_LABELS.length && <span aria-hidden="true" className="mx-1 h-px w-4 bg-border" />}
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
-function SummaryRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <li className="flex items-start justify-between gap-4 text-body">
-      <span className="text-muted-foreground">{label}</span>
-      {children}
-    </li>
   );
 }
 
