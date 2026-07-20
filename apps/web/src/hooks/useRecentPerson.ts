@@ -51,6 +51,16 @@ export function usePersonSelection<T extends { personId: string }>(
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 마운트 시 1회만 보정한다.
   }, []);
 
+  // 2026-07-20: 보호자 헤더 콤보박스(CurrentPersonProvider)가 `?personId=` 쿼리를
+  // 바꿔치기해 같은 화면을 유지한 채 대상자만 전환하는 경로가 생겼다 — 이 경우 페이지
+  // 컴포넌트는 리마운트되지 않고 initialPersonId prop만 바뀌므로 이 effect로 따라간다.
+  useEffect(() => {
+    if (initialPersonId && list.some((x) => x.personId === initialPersonId)) {
+      setPersonIdState((prev) => (prev === initialPersonId ? prev : initialPersonId));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initialPersonId 변경에만 반응한다.
+  }, [initialPersonId]);
+
   function setPersonId(id: string) {
     setPersonIdState(id);
     writeRecent(id);
