@@ -125,99 +125,109 @@ export function BipForm({
       </p>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
-      <div className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="대상 학생" required>
-            <select
-              className={fieldClass}
-              value={personId}
-              onChange={(e) => setPersonId(e.target.value)}
-            >
-              {students.map((s) => (
-                <option key={s.personId} value={s.personId}>
-                  {s.fullName}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="행동 기능 (FBA)" required>
-            <ChoiceGroup
-              ariaLabel="행동 기능"
-              value={behaviorFunction}
-              onChange={setBehaviorFunction}
-              options={BEHAVIOR_FUNCTIONS}
+      <div className="flex flex-col gap-6">
+        {/* 2026-07-20: 단일 카드에 전 필드를 몰아넣던 구조를 IEP·ISP처럼 여러 개의 fieldset
+            카드로 분리 — 사용자가 지적한 "IEP·ISP 스타일 그대로 활용" 요청 반영. */}
+        <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
+          <legend className="text-sm font-bold text-foreground">기본 정보</legend>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="대상 학생" required>
+              <select
+                className={fieldClass}
+                value={personId}
+                onChange={(e) => setPersonId(e.target.value)}
+              >
+                {students.map((s) => (
+                  <option key={s.personId} value={s.personId}>
+                    {s.fullName}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="행동 기능 (FBA)" required>
+              <ChoiceGroup
+                ariaLabel="행동 기능"
+                value={behaviorFunction}
+                onChange={setBehaviorFunction}
+                options={BEHAVIOR_FUNCTIONS}
+                columns={2}
+              />
+            </Field>
+          </div>
+          <p className="-mt-1 text-caption text-muted-foreground">
+            {BEHAVIOR_FUNCTIONS.find((f) => f.value === behaviorFunction)?.hint}
+          </p>
+
+          <Field label="기능평가 근거 (선택, 복수선택 가능)">
+            <ChoiceCheckGroup
+              ariaLabel="기능평가 근거"
+              value={fbaBasis}
+              onChange={setFbaBasis}
+              options={FBA_BASIS_OPTIONS}
               columns={2}
             />
           </Field>
-        </div>
-        <p className="-mt-1 text-caption text-muted-foreground">
-          {BEHAVIOR_FUNCTIONS.find((f) => f.value === behaviorFunction)?.hint}
-        </p>
+        </fieldset>
 
-        <Field label="기능평가 근거 (선택, 복수선택 가능)">
-          <ChoiceCheckGroup
-            ariaLabel="기능평가 근거"
-            value={fbaBasis}
-            onChange={setFbaBasis}
-            options={FBA_BASIS_OPTIONS}
-            columns={2}
-          />
-        </Field>
+        <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
+          <legend className="text-sm font-bold text-foreground">중재 계획</legend>
+          <Field label="중재 대상 행동" required>
+            <textarea
+              className={`${fieldClass} min-h-20`}
+              value={targetBehavior}
+              onChange={(e) => setTargetBehavior(e.target.value)}
+              maxLength={2000}
+              placeholder="중재가 필요한 문제 행동을 관찰 가능한 용어로 구체적으로 기술하세요."
+            />
+          </Field>
 
-        <Field label="중재 대상 행동" required>
-          <textarea
-            className={`${fieldClass} min-h-20`}
-            value={targetBehavior}
-            onChange={(e) => setTargetBehavior(e.target.value)}
-            maxLength={2000}
-            placeholder="중재가 필요한 문제 행동을 관찰 가능한 용어로 구체적으로 기술하세요."
-          />
-        </Field>
+          <Field label="선행사건 중재 전략" required>
+            <textarea
+              className={`${fieldClass} min-h-24`}
+              value={antecedentStrategies}
+              onChange={(e) => setAntecedentStrategies(e.target.value)}
+              maxLength={3000}
+              placeholder="문제 행동을 유발하는 선행사건을 조정·예방하기 위한 전략을 기록하세요."
+            />
+          </Field>
 
-        <Field label="선행사건 중재 전략" required>
-          <textarea
-            className={`${fieldClass} min-h-24`}
-            value={antecedentStrategies}
-            onChange={(e) => setAntecedentStrategies(e.target.value)}
-            maxLength={3000}
-            placeholder="문제 행동을 유발하는 선행사건을 조정·예방하기 위한 전략을 기록하세요."
-          />
-        </Field>
+          <Field label="대체행동" required>
+            <textarea
+              className={`${fieldClass} min-h-20`}
+              value={replacementBehavior}
+              onChange={(e) => setReplacementBehavior(e.target.value)}
+              maxLength={2000}
+              placeholder="같은 기능을 수행하되 사회적으로 수용 가능한 대체행동을 기록하세요."
+            />
+          </Field>
 
-        <Field label="대체행동" required>
-          <textarea
-            className={`${fieldClass} min-h-20`}
-            value={replacementBehavior}
-            onChange={(e) => setReplacementBehavior(e.target.value)}
-            maxLength={2000}
-            placeholder="같은 기능을 수행하되 사회적으로 수용 가능한 대체행동을 기록하세요."
-          />
-        </Field>
+          <Field label="강화 계획" required>
+            <textarea
+              className={`${fieldClass} min-h-24`}
+              value={reinforcementPlan}
+              onChange={(e) => setReinforcementPlan(e.target.value)}
+              maxLength={3000}
+              placeholder="대체행동을 촉진할 강화물·강화 일정·소거 절차 등을 기록하세요."
+            />
+          </Field>
+        </fieldset>
 
-        <Field label="강화 계획" required>
-          <textarea
-            className={`${fieldClass} min-h-24`}
-            value={reinforcementPlan}
-            onChange={(e) => setReinforcementPlan(e.target.value)}
-            maxLength={3000}
-            placeholder="대체행동을 촉진할 강화물·강화 일정·소거 절차 등을 기록하세요."
-          />
-        </Field>
+        <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
+          <legend className="text-sm font-bold text-foreground">위기대응·재검토</legend>
+          <Field label="위기대응 절차 (선택)">
+            <textarea
+              className={`${fieldClass} min-h-20`}
+              value={crisisProcedure}
+              onChange={(e) => setCrisisProcedure(e.target.value)}
+              maxLength={3000}
+              placeholder="심각한 위기 행동 발생 시 안전 확보 절차를 기록하세요. (경도 사례는 비워둘 수 있습니다)"
+            />
+          </Field>
 
-        <Field label="위기대응 절차 (선택)">
-          <textarea
-            className={`${fieldClass} min-h-20`}
-            value={crisisProcedure}
-            onChange={(e) => setCrisisProcedure(e.target.value)}
-            maxLength={3000}
-            placeholder="심각한 위기 행동 발생 시 안전 확보 절차를 기록하세요. (경도 사례는 비워둘 수 있습니다)"
-          />
-        </Field>
-
-        <Field label="재검토 예정일" required>
-          <DateField className={fieldClass} value={reviewDate} onChange={setReviewDate} />
-        </Field>
-
+          <Field label="재검토 예정일" required>
+            <DateField className={fieldClass} value={reviewDate} onChange={setReviewDate} />
+          </Field>
+        </fieldset>
       </div>
 
       {/* 오른쪽 사이드바(lg:sticky) — 확인 요청 대상 안내·액션 버튼을 스크롤 중에도 계속

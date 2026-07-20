@@ -109,6 +109,7 @@ export function CaseConferenceForm({
       {/* 2026-07-20: 기록 작성화면의 와이드 레이아웃 기준을 IEP(EDU-001)로 통일. */}
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
         <div className="flex flex-col gap-6">
+          {/* 2026-07-20: IEP·ISP처럼 회의 기본정보/내용을 카드 2개로 분리(사용자 요청 반영). */}
           <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
             <legend className="text-sm font-bold text-foreground">회의 정보</legend>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -143,7 +144,10 @@ export function CaseConferenceForm({
                 placeholder="예: 김사회복지사, 이보호자, 박특수교사"
               />
             </Field>
+          </fieldset>
 
+          <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
+            <legend className="text-sm font-bold text-foreground">논의 내용</legend>
             <Field label="논의 내용" required>
               <textarea
                 className={`${fieldClass} min-h-32`}
