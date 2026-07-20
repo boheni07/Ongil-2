@@ -22,7 +22,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  *
  * edit-레벨 유효기간 가드레일(PRD §3-3 "edit는 무기한 금지"):
  *  - grantPermission: permissionGrantSchema.refine가 제출 시점에 강제.
- *  - cyclePermissionCell: 위저드를 우회하는 빠른 순환에서도 edit 진입 시 valid_until을 자동 부여.
+ *  - updateGranteePermissions: 매트릭스 우측 "수정" 다이얼로그에서도 edit 진입 시 valid_until을 자동 부여.
  */
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -64,19 +64,8 @@ export interface PermissionMatrixRow {
   cells: Partial<Record<DomainKey, PermissionCell>>;
 }
 
-/** none을 포함한 셀 순환 단계 — 회색(없음)→read→write→edit→회색 (PRD §3-3 "수정"). */
+/** none을 포함한 셀 상태 — 회색(없음)·read·write·edit (PRD §3-3 "수정"). */
 export type CellLevel = "none" | AccessLevel;
-
-export interface CycleResult extends ActionResult {
-  newLevel: CellLevel;
-}
-
-const CYCLE_ORDER: CellLevel[] = ["none", "read", "write", "edit"];
-
-function nextLevel(current: CellLevel): CellLevel {
-  const i = CYCLE_ORDER.indexOf(current);
-  return CYCLE_ORDER[(i + 1) % CYCLE_ORDER.length];
-}
 
 /** YYYY-MM-DD 오늘+days */
 function dateFromNow(days: number): string {
@@ -195,83 +184,7 @@ export async function getPermissionMatrix(personId: string): Promise<PermissionM
   return [...rows.values()];
 }
 
-/**
- * G-30 셀 클릭 순환 — 회색→read→write→edit→회색 (PRD §3-3 "수정"·"즉시 회수").
- * 현재 상태를 조회해 다음 상태를 계산하고 permissions에 UPSERT하거나 is_active=false로 회수한다.
- * edit로 순환 진입 시 valid_until이 없으면 preset(role+domain) default_valid_days를,
- * 없으면 EDIT_FALLBACK_VALID_DAYS(90일)를 자동 적용해 "edit 무기한 금지" 가드레일을 지킨다.
- */
-export async function cyclePermissionCell(
-  personId: string,
-  granteeId: string,
-  domain: DomainKey
-): Promise<CycleResult> {
-  if (!UUID_RE.test(personId) || !UUID_RE.test(granteeId)) {
-    return { error: "대상 정보가 올바르지 않습니다.", newLevel: "none" };
-  }
-
-  const supabase = await createClient();
-  const guard = await requirePrimaryGuardian(supabase, personId);
-  if ("error" in guard) return { error: guard.error, newLevel: "none" };
-
-  // 현재 상태 조회 (비활성 행이 있으면 재활성화 대상)
-  const { data: existing } = await supabase
-    .from("permissions")
-    .select("access_level, is_active, valid_until")
-    .eq("person_id", personId)
-    .eq("grantee_id", granteeId)
-    .eq("domain", domain)
-    .maybeSingle();
-
-  const current: CellLevel =
-    existing && existing.is_active ? (existing.access_level as AccessLevel) : "none";
-  const target = nextLevel(current);
-
-  // edit→none: 즉시 회수
-  if (target === "none") {
-    const { error } = await supabase
-      .from("permissions")
-      .update({ is_active: false, updated_at: new Date().toISOString() })
-      .eq("person_id", personId)
-      .eq("grantee_id", granteeId)
-      .eq("domain", domain);
-    if (error) return { error: `회수에 실패했습니다: ${error.message}`, newLevel: current };
-    return { ok: true, newLevel: "none" };
-  }
-
-  // read/write/edit: UPSERT. edit 진입 시 valid_until 자동 부여(가드레일).
-  let validUntil: string | null =
-    (existing?.valid_until as string | null) ?? null;
-  if (target === "edit") {
-    const keepExisting =
-      validUntil !== null && validUntil >= new Date().toISOString().slice(0, 10);
-    if (!keepExisting) {
-      const granteeRole = await getGranteeRole(supabase, granteeId);
-      const days = granteeRole
-        ? await presetValidDays(supabase, granteeRole, domain)
-        : null;
-      validUntil = dateFromNow(days ?? EDIT_FALLBACK_VALID_DAYS);
-    }
-  }
-
-  const { error } = await supabase.from("permissions").upsert(
-    {
-      person_id: personId,
-      grantee_id: granteeId,
-      domain,
-      access_level: target,
-      is_active: true,
-      valid_until: validUntil,
-      granted_by: guard.userId,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "person_id,grantee_id,domain" }
-  );
-  if (error) return { error: `권한 변경에 실패했습니다: ${error.message}`, newLevel: current };
-  return { ok: true, newLevel: target };
-}
-
-/** edit 레벨 진입 시 valid_until 자동 부여(가드레일) — cyclePermissionCell과 동일 규칙. */
+/** edit 레벨 진입 시 valid_until 자동 부여(가드레일) — updateGranteePermissions가 사용. */
 async function resolveEditValidUntil(
   supabase: SupabaseClient,
   granteeId: string,
@@ -455,8 +368,8 @@ export async function grantPermission(
 }
 
 /**
- * 명시적 즉시 회수(§4-3, PRD §3-3 "즉시 회수") — 매트릭스의 별도 회수 버튼용.
- * cyclePermissionCell이 회색에 도달했을 때와 동일 효과(is_active=false)의 명시적 버전.
+ * 명시적 즉시 회수(§4-3, PRD §3-3 "즉시 회수") — 도메인 단위 회수(is_active=false).
+ * updateGranteePermissions·revokeAllPermissions와 별개로, 특정 도메인 하나만 회수할 때 쓴다.
  */
 export async function revokePermission(
   personId: string,

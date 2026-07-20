@@ -3,7 +3,6 @@
 import { useState } from "react";
 import type { AccessLevel, DomainKey, Role } from "@ongil/validation";
 import {
-  cyclePermissionCell,
   revokeAllPermissions,
   updateGranteePermissions,
   type CellLevel,
@@ -25,8 +24,11 @@ import {
 } from "@/components/ui/dialog";
 
 /**
- * G-30 매트릭스 셀 상호작용 — 서버 컴포넌트가 넘긴 활성 권한(initialRows)을 표로 렌더하고,
- * 셀 클릭 시 cyclePermissionCell로 회색→읽기→작성→편집을 순환한다(응답의 newLevel로 즉시 갱신).
+ * G-30 매트릭스 — 서버 컴포넌트가 넘긴 활성 권한(initialRows)을 표로 렌더한다. 셀 자체는
+ * 읽기 전용 배지이고, 실제 변경은 행 우측 "⋮ 관리" 메뉴의 "✏️ 수정"(다이얼로그에서 여러 도메인을
+ * 골라 "저장" 한 번에 반영) 또는 "🗑️ 전체 회수"로만 이루어진다(2026-07-20) — 이전엔 셀을 클릭하면
+ * 확인 없이 바로 저장돼(회색→읽기→작성→편집 순환) 실수로 권한이 바뀌기 쉽다는 피드백에 따라
+ * "클릭 즉시 저장"을 없애고 명시적 저장 단계가 있는 경로로만 변경할 수 있게 했다.
  * 셀 배경색은 프로토타입(web-guardian.html) 4색 상태색을 인라인 스타일로 그대로 쓴다.
  */
 
@@ -57,10 +59,6 @@ const ROLE_LABEL: Record<Role, string> = {
   therapist: "치료사",
 };
 
-function cellKey(granteeId: string, domain: DomainKey) {
-  return `${granteeId}:${domain}`;
-}
-
 export function PermissionMatrix({
   personId,
   initialRows,
@@ -69,7 +67,6 @@ export function PermissionMatrix({
   initialRows: PermissionMatrixRow[];
 }) {
   const [rows, setRows] = useState<PermissionMatrixRow[]>(initialRows);
-  const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [manageTarget, setManageTarget] = useState<PermissionMatrixRow | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
@@ -89,37 +86,6 @@ export function PermissionMatrix({
       return;
     }
     setRows((prev) => prev.map((r) => (r.granteeId === row.granteeId ? { ...r, cells: {} } : r)));
-  }
-
-  async function onCellClick(granteeId: string, domain: DomainKey) {
-    const key = cellKey(granteeId, domain);
-    if (pending) return;
-    setPending(key);
-    setError(null);
-
-    const res = await cyclePermissionCell(personId, granteeId, domain);
-    if (res.error) {
-      setError(res.error);
-      setPending(null);
-      return;
-    }
-
-    setRows((prev) =>
-      prev.map((r) => {
-        if (r.granteeId !== granteeId) return r;
-        const cells = { ...r.cells };
-        if (res.newLevel === "none") {
-          delete cells[domain];
-        } else {
-          cells[domain] = {
-            accessLevel: res.newLevel as AccessLevel,
-            validUntil: cells[domain]?.validUntil ?? null,
-          };
-        }
-        return { ...r, cells };
-      })
-    );
-    setPending(null);
   }
 
   if (rows.length === 0) {
@@ -174,25 +140,20 @@ export function PermissionMatrix({
                 {DOMAINS.map((d) => {
                   const level: CellLevel = row.cells[d.key]?.accessLevel ?? "none";
                   const meta = LEVEL[level];
-                  const key = cellKey(row.granteeId, d.key);
-                  const busy = pending === key;
                   return (
                     <td key={d.key} className="p-1 text-center">
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => onCellClick(row.granteeId, d.key)}
-                        aria-label={`${row.granteeName} · ${d.label} 현재 ${meta.label}. 클릭하여 변경`}
+                      <span
+                        aria-label={`${row.granteeName} · ${d.label} 현재 ${meta.label}`}
                         title={
                           row.cells[d.key]?.validUntil
                             ? `${meta.label} · ~${row.cells[d.key]?.validUntil}`
                             : meta.label
                         }
-                        className="inline-flex h-11 w-full min-w-11 items-center justify-center rounded-(--br-sm) text-caption font-bold transition-opacity outline-none focus-visible:ring-2 focus-visible:ring-primary-600 disabled:opacity-50"
+                        className="inline-flex h-11 w-full min-w-11 items-center justify-center rounded-(--br-sm) text-caption font-bold"
                         style={{ backgroundColor: meta.bg, color: meta.fg }}
                       >
-                        {busy ? "…" : meta.label}
-                      </button>
+                        {meta.label}
+                      </span>
                     </td>
                   );
                 })}
