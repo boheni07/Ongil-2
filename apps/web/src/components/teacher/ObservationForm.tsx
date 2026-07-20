@@ -116,7 +116,7 @@ export function ObservationForm({
   const student = students.find((s) => s.personId === personId) ?? null;
 
   return (
-    <div className="mx-auto flex min-h-full max-w-6xl flex-1 flex-col">
+    <div className="mx-auto flex w-full min-h-full max-w-6xl flex-1 flex-col">
       <h1 className="text-headline-2 font-extrabold text-foreground">관찰기록 작성</h1>
       <p className="mt-1 text-body text-muted-foreground">
         행동·언어·사회성·학습 태그를 복수 선택할 수 있습니다.

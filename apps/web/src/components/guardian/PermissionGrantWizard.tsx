@@ -225,7 +225,7 @@ export function PermissionGrantWizard({
   }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-6xl flex-1 flex-col">
+    <div className="mx-auto flex w-full min-h-full max-w-6xl flex-1 flex-col">
       <h1 className="text-headline-1 font-extrabold text-foreground">권한 부여</h1>
       <p className="mt-1 text-body text-muted-foreground">{personName}에 대한 접근 권한을 부여합니다.</p>
 

@@ -198,7 +198,7 @@ export function IepWizard({
   }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-6xl flex-1 flex-col">
+    <div className="mx-auto flex w-full min-h-full max-w-6xl flex-1 flex-col">
       <h1 className="text-headline-2 font-extrabold text-foreground">개별화교육계획 작성</h1>
       <p className="mt-1 flex flex-wrap items-center gap-2 text-body text-muted-foreground">
         {student ? `${student.fullName} 학생 · ${academicYear}학년도` : "학생을 선택하세요"}

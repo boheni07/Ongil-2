@@ -174,7 +174,7 @@ export function IspWizard({
   }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-6xl flex-1 flex-col">
+    <div className="mx-auto flex w-full min-h-full max-w-6xl flex-1 flex-col">
       <h1 className="text-headline-2 font-extrabold text-foreground">
         개인별지원계획 작성{" "}
         <span className="text-body font-medium text-muted-foreground">ISP</span>

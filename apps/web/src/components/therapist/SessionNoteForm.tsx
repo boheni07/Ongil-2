@@ -124,7 +124,7 @@ export function SessionNoteForm({
   const shortPlanId = `THP-${planId.slice(0, 8)}`;
 
   return (
-    <div className="mx-auto flex min-h-full max-w-6xl flex-1 flex-col">
+    <div className="mx-auto flex w-full min-h-full max-w-6xl flex-1 flex-col">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-headline-2 font-extrabold text-foreground">회기 일지 작성</h1>

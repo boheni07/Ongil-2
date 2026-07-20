@@ -164,7 +164,7 @@ function buildInput(): Omit<PersonRegisterInput, "sensitiveConsent"> {
   }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-6xl flex-1 flex-col">
+    <div className="mx-auto flex w-full min-h-full max-w-6xl flex-1 flex-col">
       <h1 className="text-headline-1 font-extrabold text-foreground">
         {isEdit ? "당사자 정보 수정" : "당사자 등록"}
       </h1>

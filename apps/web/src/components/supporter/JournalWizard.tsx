@@ -173,7 +173,7 @@ export function JournalWizard({ persons }: { persons: JournalPersonOption[] }) {
   }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-6xl flex-1 flex-col">
+    <div className="mx-auto flex w-full min-h-full max-w-6xl flex-1 flex-col">
       <h1 className="text-headline-2 font-extrabold text-foreground">활동일지 작성</h1>
       <p className="mt-1 text-body text-muted-foreground">
         {personName} 님 · {serviceDate}
