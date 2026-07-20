@@ -12,6 +12,7 @@ import { DomainChip } from "@/components/timeline/DomainChip";
 import { ConfirmBadge } from "@/components/records/ConfirmBadge";
 import { ConfirmCTA } from "@/components/records/ConfirmCTA";
 import { RecordContentView } from "@/components/records/RecordContentView";
+import { TherapyPlanReadView } from "@/components/records/TherapyPlanReadView";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -206,7 +207,11 @@ export function RecordManager({
               {detail.isGuardianRecord ? (
                 <GuardianBody content={detail.content} />
               ) : (
-                <StructuredBody content={detail.content} guardianNote={detail.guardianNote} />
+                <StructuredBody
+                  recordType={detail.recordType}
+                  content={detail.content}
+                  guardianNote={detail.guardianNote}
+                />
               )}
             </div>
           )}
@@ -229,9 +234,11 @@ function GuardianBody({ content }: { content: unknown }) {
 }
 
 function StructuredBody({
+  recordType,
   content,
   guardianNote,
 }: {
+  recordType: string;
   content: unknown;
   guardianNote: { title: string; body: string; editedAt: string } | null;
 }) {
@@ -239,12 +246,16 @@ function StructuredBody({
   delete rest.guardianNote;
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-(--br-lg) border border-border bg-white p-5 shadow-sm">
-        <p className="mb-4 text-[11px] font-bold tracking-wide text-muted-foreground/80 uppercase">
-          원본 기록 내용
-        </p>
-        <RecordContentView content={rest} />
-      </div>
+      {recordType === "MED-005" ? (
+        <TherapyPlanReadView content={rest} />
+      ) : (
+        <div className="rounded-(--br-lg) border border-border bg-white p-5 shadow-sm">
+          <p className="mb-4 text-[11px] font-bold tracking-wide text-muted-foreground/80 uppercase">
+            원본 기록 내용
+          </p>
+          <RecordContentView content={rest} />
+        </div>
+      )}
       {guardianNote && (
         <div className="rounded-(--br-lg) bg-primary-50 p-5 ring-1 ring-primary-100">
           <p className="text-[11px] font-bold tracking-wide text-primary-700/80 uppercase">보호자 메모</p>
