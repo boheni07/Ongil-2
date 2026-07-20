@@ -75,7 +75,6 @@ function sidebarItems(role: string | null): SidebarItem[] {
       { label: "일지 목록", href: "/journals", icon: <FileText /> },
       { label: "인수인계", href: "/handovers", icon: <ArrowLeftRight /> },
       { label: "인계 작성", href: "/handovers/new", icon: <Plus /> },
-      { label: "설정", href: "/settings", icon: <Settings /> },
     ];
   }
   return [
