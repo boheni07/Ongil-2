@@ -1,4 +1,5 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { Session } from "@supabase/supabase-js";
 import type { Role } from "@ongil/validation";
 import { NEUTRAL, PRIMARY } from "../theme/colors";
@@ -75,6 +76,11 @@ const SupporterStack = createNativeStackNavigator<SupporterStackParamList>();
 const GuardianStack = createNativeStackNavigator<GuardianStackParamList>();
 const TeacherStack = createNativeStackNavigator<TeacherStackParamList>();
 const SocialWorkerStack = createNativeStackNavigator<SocialWorkerStackParamList>();
+// HandoverList/ComposeScreen은 SupporterStackParamList로 타입돼 있어(원 소속 스택),
+// 다른 스택(SocialWorkerStack)에 그대로 재사용하려면 props를 캐스트해야 한다 — 이 파일의
+// TeacherHomeScreen 등 Home 화면 재사용과 동일한 패턴(docs/13 Wave Q-6).
+type SwHandoverListProps = NativeStackScreenProps<SupporterStackParamList, "HandoverList">;
+type SwHandoverComposeProps = NativeStackScreenProps<SupporterStackParamList, "HandoverCompose">;
 const TherapistStack = createNativeStackNavigator<TherapistStackParamList>();
 const GenericStack = createNativeStackNavigator<GenericStackParamList>();
 
@@ -337,6 +343,12 @@ export function MainNavigator({ session }: { session: Session }) {
           component={AdvocacyConsultationFormScreen}
           options={{ title: "권익옹호 상담기록 작성" }}
         />
+        <SocialWorkerStack.Screen name="HandoverList" options={{ title: "인수인계" }}>
+          {(props) => <HandoverListScreen {...(props as unknown as SwHandoverListProps)} />}
+        </SocialWorkerStack.Screen>
+        <SocialWorkerStack.Screen name="HandoverCompose" options={{ title: "인수인계 작성" }}>
+          {(props) => <HandoverComposeScreen {...(props as unknown as SwHandoverComposeProps)} />}
+        </SocialWorkerStack.Screen>
         <SocialWorkerStack.Screen name="Notifications" component={NotificationListScreen} options={{ title: "알림" }} />
       </SocialWorkerStack.Navigator>
     );
