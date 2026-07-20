@@ -1,13 +1,19 @@
 import Link from "next/link";
 import { getTeacherStudents, getWeeklyObservationCount } from "@/app/(app)/records/iep/actions";
+import { getBipClients } from "@/app/(app)/records/bip/actions";
+import { getItpClients } from "@/app/(app)/records/itp/actions";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
+import { WeeklyTaskCard } from "@/components/records/WeeklyTaskCard";
 import { isItpActiveStage, isPreTransitionStage } from "@/lib/lifecycle";
+import { ddayFrom, isWithinWeek, sortWeeklyTasks, type WeeklyTaskItem } from "@/lib/weekly-tasks";
 
 /**
  * T-01 특수교사 홈 — 담당 학생 카드 목록(프로토타입 web-teacher.html 245~285줄).
  * 담당 학생·요약 카드는 getTeacherStudents()에서 파생 가능한 값만 계산한다.
  * "이번 주 관찰기록"은 이 조회로 정확히 산출할 수 없어 "-"로 표시한다(과잉 구현 금지).
+ * "이번 주 처리할 일"(docs/14 Wave W-2)은 BIP·ITP의 재검토일(마감일 기반)에서 파생한다 —
+ * IEP는 재검토일 필드 자체가 스키마에 없어 이 카드 대상에서 제외한다(§1 조사 결론).
  */
 export async function TeacherHome({ userName }: { userName: string | null }) {
   const students = await getTeacherStudents();
@@ -17,7 +23,42 @@ export async function TeacherHome({ userName }: { userName: string | null }) {
   const iepMissing = students.filter((s) => !s.latestIepRecordId).length;
   const transitionTargets = students.filter((s) => !isPreTransitionStage(s.lifeStage)).length;
   const itpTargets = students.filter((s) => isItpActiveStage(s.lifeStage)).length;
-  const weeklyObservations = await getWeeklyObservationCount(students.map((s) => s.personId));
+  const [weeklyObservations, bipClients, itpClients] = await Promise.all([
+    getWeeklyObservationCount(students.map((s) => s.personId)),
+    getBipClients(),
+    getItpClients(),
+  ]);
+
+  const weeklyTasks = sortWeeklyTasks([
+    ...bipClients.flatMap((c): WeeklyTaskItem[] => {
+      const dday = ddayFrom(c.latestBip?.reviewDate);
+      if (dday == null || !isWithinWeek(dday)) return [];
+      return [
+        {
+          personId: c.personId,
+          personName: c.fullName,
+          recordType: "EDU-003",
+          label: "행동중재계획(BIP) 재검토",
+          dday,
+          href: `/records/bip/new?personId=${c.personId}`,
+        },
+      ];
+    }),
+    ...itpClients.flatMap((c): WeeklyTaskItem[] => {
+      const dday = ddayFrom(c.latestItp?.nextReviewDate);
+      if (dday == null || !isWithinWeek(dday)) return [];
+      return [
+        {
+          personId: c.personId,
+          personName: c.fullName,
+          recordType: "EDU-005",
+          label: "개별화전환계획(ITP) 재검토",
+          dday,
+          href: `/records/itp/new?personId=${c.personId}`,
+        },
+      ];
+    }),
+  ]);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -77,6 +118,8 @@ export async function TeacherHome({ userName }: { userName: string | null }) {
         <Stat n={String(weeklyObservations)} label="이번 주 관찰기록" />
         <Stat n={String(transitionTargets)} label="전환계획 대상" />
       </div>
+
+      <WeeklyTaskCard items={weeklyTasks} />
 
       <h2 className="mt-8 mb-3 text-headline-3 font-bold text-accent-stone">담당 학생</h2>
       {total === 0 ? (

@@ -2,11 +2,15 @@ import Link from "next/link";
 import {
   getSocialWorkerClients,
   getSocialWorkerWeeklyStats,
-  type SocialWorkerClient,
+  getServiceUsageNextReviewDates,
 } from "@/app/(app)/records/isp/actions";
+import { getTransitionPlanClients } from "@/app/(app)/records/transition/actions";
+import { getLegClients } from "@/app/(app)/records/leg/actions";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
 import { CaseManagementMenu } from "@/components/social-worker/CaseManagementMenu";
+import { WeeklyTaskCard } from "@/components/records/WeeklyTaskCard";
+import { ddayFrom, isWithinWeek, sortWeeklyTasks, type WeeklyTaskItem } from "@/lib/weekly-tasks";
 
 /**
  * W-01 사회복지사 홈 — 담당 당사자 카드 목록(프로토타입 web-social-worker.html 212~279줄).
@@ -14,6 +18,9 @@ import { CaseManagementMenu } from "@/components/social-worker/CaseManagementMen
  * "이번 주 서비스"·"전환계획 진행중"은 2026-07-19(docs/12 Wave C)에 getSocialWorkerWeeklyStats로
  * 추가했다 — 이전엔 산출 불가/범위 밖으로 두 KPI 다 빠져 있었다.
  * 재사정 D-30 경고 배지는 reassessmentDday(0~30)에서 노출한다(음수면 기한 초과 톤).
+ * "이번 주 처리할 일"(docs/14 Wave W-2)은 ISP 재사정·서비스이용현황(WEL-005) 재검토·전환계획
+ * (TRA-001) 재검토·후견감독보고서(LEG-001) 제출기한 4종을 통합한다 — 기존 TodayTasks(ISP만)를
+ * 이 카드로 흡수했다(§2 토론 결론, WEL-005·LEG-001 마감일은 이전까지 홈 어디서도 안 쓰였음).
  */
 export async function SocialWorkerHome({ userName }: { userName: string | null }) {
   const clients = await getSocialWorkerClients();
@@ -23,9 +30,71 @@ export async function SocialWorkerHome({ userName }: { userName: string | null }
   const reassessSoon = clients.filter(
     (c) => c.reassessmentDday != null && c.reassessmentDday <= 30
   ).length;
-  const { transitionInProgress, weeklyRecordCount } = await getSocialWorkerWeeklyStats(
-    clients.map((c) => c.personId)
-  );
+  const [{ transitionInProgress, weeklyRecordCount }, serviceUsageReviews, transitionClients, legClients] =
+    await Promise.all([
+      getSocialWorkerWeeklyStats(clients.map((c) => c.personId)),
+      getServiceUsageNextReviewDates(),
+      getTransitionPlanClients(),
+      getLegClients(),
+    ]);
+
+  const weeklyTasks = sortWeeklyTasks([
+    ...clients.flatMap((c): WeeklyTaskItem[] => {
+      if (c.reassessmentDday == null || !isWithinWeek(c.reassessmentDday)) return [];
+      return [
+        {
+          personId: c.personId,
+          personName: c.fullName,
+          recordType: "WEL-004",
+          label: "ISP 재사정",
+          dday: c.reassessmentDday,
+          href: `/records/isp/new?personId=${c.personId}`,
+        },
+      ];
+    }),
+    ...serviceUsageReviews.flatMap((r): WeeklyTaskItem[] => {
+      const dday = ddayFrom(r.nextReviewDate);
+      if (dday == null || !isWithinWeek(dday)) return [];
+      return [
+        {
+          personId: r.personId,
+          personName: r.personName,
+          recordType: "WEL-005",
+          label: "서비스 이용현황 재검토",
+          dday,
+          href: `/records/service-status?personId=${r.personId}`,
+        },
+      ];
+    }),
+    ...transitionClients.flatMap((c): WeeklyTaskItem[] => {
+      const dday = ddayFrom(c.latestPlan?.nextReviewDate);
+      if (dday == null || !isWithinWeek(dday)) return [];
+      return [
+        {
+          personId: c.personId,
+          personName: c.fullName,
+          recordType: "TRA-001",
+          label: "전환계획 재검토",
+          dday,
+          href: `/records/transition/new?personId=${c.personId}`,
+        },
+      ];
+    }),
+    ...legClients.flatMap((c): WeeklyTaskItem[] => {
+      const dday = ddayFrom(c.latestReportDue);
+      if (dday == null || !isWithinWeek(dday)) return [];
+      return [
+        {
+          personId: c.personId,
+          personName: c.fullName,
+          recordType: "LEG-001",
+          label: "후견감독보고서 제출기한",
+          dday,
+          href: `/records/leg/guardianship/new?personId=${c.personId}`,
+        },
+      ];
+    }),
+  ]);
 
   // docs/02-ia.md §3-9: adult 대상은 '성인 서비스 전환 필요'가 우선이라 목록 맨 위로 정렬한다.
   // Array.prototype.sort는 안정 정렬이라 adult 아닌 대상은 기존 순서를 유지한다.
@@ -67,9 +136,7 @@ export async function SocialWorkerHome({ userName }: { userName: string | null }
         <Stat n={String(weeklyRecordCount)} label="이번 주 서비스" />
       </div>
 
-      <TodayTasks
-        clients={sortedClients.filter((c) => c.reassessmentDday != null && c.reassessmentDday <= 30)}
-      />
+      <WeeklyTaskCard items={weeklyTasks} />
 
       <h2 className="mt-8 mb-3 text-headline-3 font-bold text-accent-stone">담당 당사자</h2>
       {total === 0 ? (
@@ -155,48 +222,6 @@ export async function SocialWorkerHome({ userName }: { userName: string | null }
         </div>
       )}
     </div>
-  );
-}
-
-/**
- * "오늘 할 일"(프로토타입 web-social-worker.html W-01, 271~275줄) — 프로토타입은 4종 예시를
- * 정적으로 나열하지만(재사정·전환계획 훈련기관 배정·서비스 이용 점검·인수인계 작성), 실제로
- * 산출 가능한 근거 데이터가 있는 건 ISP 재사정 임박/초과뿐이다(reassessmentDday, 이미
- * getSocialWorkerClients가 계산해 옴). 나머지 3종은 "훈련기관 미배정"·"서비스 점검 주기"를
- * 판정할 근거 필드 자체가 DB에 없어(별도 설계 필요), 가짜 목업 항목을 채워 넣는 대신 실제로
- * 근거 있는 항목만 보여준다 — 목록이 비면 섹션 자체를 숨긴다.
- */
-function TodayTasks({ clients }: { clients: SocialWorkerClient[] }) {
-  if (clients.length === 0) return null;
-  return (
-    <section className="mt-6 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
-      <h3 className="mb-2 text-body font-bold text-accent-stone">오늘 할 일</h3>
-      <ul className="flex flex-col">
-        {clients.map((c) => (
-          <li key={c.personId} className="border-b border-border/60 py-2.5 last:border-0">
-            <Link
-              href={
-                c.latestIspRecordId
-                  ? `/records/isp/${c.latestIspRecordId}/review`
-                  : `/records/isp/new?personId=${c.personId}`
-              }
-              className="flex items-center gap-2.5 text-caption text-foreground hover:text-primary-700"
-            >
-              <span
-                aria-hidden="true"
-                className={`size-2 shrink-0 rounded-full ${
-                  (c.reassessmentDday ?? 0) < 0 ? "bg-red-500" : "bg-domain-med-accent"
-                }`}
-              />
-              {c.fullName}{" "}
-              {(c.reassessmentDday ?? 0) < 0
-                ? `ISP 재사정 기한 초과 (${Math.abs(c.reassessmentDday ?? 0)}일 지남)`
-                : `ISP 재사정 D-${c.reassessmentDday}`}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </section>
   );
 }
 

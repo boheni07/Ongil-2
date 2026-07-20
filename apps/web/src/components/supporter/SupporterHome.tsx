@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getSupporterJournals } from "@/app/(app)/journal/actions";
 import { getReceivedHandovers } from "@/app/(app)/handovers/actions";
 import { Button } from "@/components/ui/button";
+import { BacklogTaskCard, type BacklogTaskItem } from "@/components/records/BacklogTaskCard";
 
 /** "2시간 전"/"어제"/"3일 전" — 프로토타입 S-01 최근 인수인계 상대시간 표기(web-supporter.html). */
 function formatRelativeTime(iso: string): string {
@@ -19,15 +20,24 @@ function formatRelativeTime(iso: string): string {
 /**
  * S-01 활동지원사 홈 — 통계(작성 일지/임시저장) + 최근 일지 목록 + 최근 인수인계 + 일지 작성 CTA.
  * 방문 일정 시스템은 아직 없어 통계는 기존 일지 데이터에서 파생한다.
+ * "처리 대기 중"(docs/14 Wave W-3)은 방문 일정이 없어 날짜 기반 카드 대신 "임시저장 일지"
+ * 백로그로 대체한다 — 기존 "임시저장" 통계가 이미 있던 걸 목록형으로 승격한 것뿐이다.
  */
 export async function SupporterHome({ userName }: { userName: string | null }) {
   const [journals, handovers] = await Promise.all([
     getSupporterJournals(20),
     getReceivedHandovers(5),
   ]);
-  const drafts = journals.filter((j) => j.isDraft).length;
+  const draftJournals = journals.filter((j) => j.isDraft);
+  const drafts = draftJournals.length;
   const submitted = journals.length - drafts;
   const name = userName ?? "지원사";
+  const backlogItems: BacklogTaskItem[] = draftJournals.map((j) => ({
+    personId: j.personId,
+    personName: j.personName ?? "이용자",
+    label: "일지 임시저장 — 마저 작성",
+    href: `/journals/${j.id}`,
+  }));
 
   return (
     <div className="flex flex-1 flex-col">
@@ -49,6 +59,12 @@ export async function SupporterHome({ userName }: { userName: string | null }) {
         <Stat n={submitted} label="제출 완료" />
         <Stat n={drafts} label="임시저장" />
       </div>
+
+      <BacklogTaskCard
+        title="📋 처리 대기 중"
+        emptyText="임시저장된 일지가 없습니다."
+        items={backlogItems}
+      />
 
       <h2 className="mt-8 mb-3 text-headline-3 font-bold text-accent-stone">최근 일지</h2>
       {journals.length === 0 ? (

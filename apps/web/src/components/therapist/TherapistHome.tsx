@@ -3,12 +3,15 @@ import { getTherapistClients } from "@/app/(app)/records/therapy/actions";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { computeAge } from "@/lib/lifecycle";
 import { Button } from "@/components/ui/button";
+import { BacklogTaskCard, type BacklogTaskItem } from "@/components/records/BacklogTaskCard";
 
 /**
  * TH-01 치료사 홈 — 담당 아동 카드 목록(프로토타입 web-therapist.html 203~223줄).
  * 프로토타입은 "오늘 회기 일정"이 중심이나 회기 스케줄 데이터가 없어(과잉 구현 금지)
  * getTherapistClients()에서 파생 가능한 값(담당 아동 수·계획서 미작성 수·총 회기 수)만 KPI로 낸다.
  * T-01/W-01과 동일 구조를 MED 도메인 색상으로 이식한 것이다.
+ * "처리 대기 중"(docs/14 Wave W-3)은 치료계획서 자체가 재검토일 필드를 스키마에 갖고 있지
+ * 않아(§1 조사) 날짜 기반 카드 대신 "계획서 미작성 대상자" 백로그로 대체한다.
  */
 export async function TherapistHome({ userName }: { userName: string | null }) {
   const clients = await getTherapistClients();
@@ -17,6 +20,14 @@ export async function TherapistHome({ userName }: { userName: string | null }) {
   const total = clients.length;
   const planMissing = clients.filter((c) => !c.latestPlanRecordId).length;
   const sessionTotal = clients.reduce((sum, c) => sum + c.sessionCount, 0);
+  const backlogItems: BacklogTaskItem[] = clients
+    .filter((c) => !c.latestPlanRecordId)
+    .map((c) => ({
+      personId: c.personId,
+      personName: c.fullName,
+      label: "치료계획서 미작성",
+      href: `/records/therapy-plan/new?personId=${c.personId}`,
+    }));
 
   return (
     <div className="flex flex-1 flex-col">
@@ -50,6 +61,12 @@ export async function TherapistHome({ userName }: { userName: string | null }) {
         <Stat n={String(sessionTotal)} label="누적 회기" />
         <Stat n="-" label="오늘 회기" />
       </div>
+
+      <BacklogTaskCard
+        title="📋 처리 대기 중"
+        emptyText="처리 대기 중인 항목이 없습니다."
+        items={backlogItems}
+      />
 
       <h2 className="mt-8 mb-3 text-headline-3 font-bold text-accent-stone">담당 아동</h2>
       {total === 0 ? (

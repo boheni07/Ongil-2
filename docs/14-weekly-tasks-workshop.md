@@ -73,9 +73,28 @@
 
 | Wave | 항목 | 대상 |
 |---|---|---|
-| **W-1** | 백엔드: 역할별 "이번 주 처리할 일" 조회 함수 신설 — 특수교사(BIP review_date + ITP next_review_date), 사회복지사(ISP reassessment_date + WEL-005 next_review_date + TRA-001 next_review_date + LEG-001 next_report_due) 통합 쿼리. "완료" 판정 로직(마감일 이후 같은 record_type 최신 기록 존재 여부) 포함 | teacher/social_worker actions.ts |
-| **W-2** | 프론트: 마감일 기반 카드 컴포넌트(공용) — record_type 라벨·대상자명·D-day·"기한 초과" 강조 톤. `TeacherHome`·`SocialWorkerHome`에 적용, `SocialWorkerHome`의 기존 `TodayTasks`는 이 카드로 대체 | 웹 우선, 이후 모바일 |
-| **W-3** | 백엔드+프론트: 백로그 기반 카드 — 치료사(계획서 미작성 대상자 목록, 이미 파생 가능한 데이터라 백엔드 작업 적음), 활동지원사(기존 "임시저장 N건" 통계를 목록형 카드로 승격, 각 항목에 "마저 작성" 링크) | therapist/supporter |
+| **W-1** ✅ 완료(2026-07-20, 웹만) | 백엔드: 역할별 "이번 주 처리할 일" 조회 함수 신설 — 특수교사(BIP review_date + ITP next_review_date), 사회복지사(ISP reassessment_date + WEL-005 next_review_date + TRA-001 next_review_date + LEG-001 next_report_due) 통합 쿼리. "완료" 판정 로직(마감일 이후 같은 record_type 최신 기록 존재 여부) 포함 | teacher/social_worker actions.ts |
+| **W-2** ✅ 완료(2026-07-20, 웹만) | 프론트: 마감일 기반 카드 컴포넌트(공용) — record_type 라벨·대상자명·D-day·"기한 초과" 강조 톤. `TeacherHome`·`SocialWorkerHome`에 적용, `SocialWorkerHome`의 기존 `TodayTasks`는 이 카드로 대체 | 웹 우선, 이후 모바일 |
+| **W-3** ✅ 완료(2026-07-20, 웹만) | 백엔드+프론트: 백로그 기반 카드 — 치료사(계획서 미작성 대상자 목록, 이미 파생 가능한 데이터라 백엔드 작업 적음), 활동지원사(기존 "임시저장 N건" 통계를 목록형 카드로 승격, 각 항목에 "마저 작성" 링크) | therapist/supporter |
 | **W-4** | 모바일 4역할 홈 화면에 W-2/W-3 반영(웹 검증 후 이월) | 모바일 |
 
 **우선순위 제안(PM):** W-1→W-2(사회복지사가 데이터도 가장 많고 페르소나 요청도 컸음, 특수교사와 백엔드 함수 공용화)→W-3(치료사·활동지원사, 상대적으로 가벼움)→W-4.
+
+## 5. W-1/W-2/W-3 구현 기록 (2026-07-20, 웹만)
+
+**공용 유틸** — `apps/web/src/lib/weekly-tasks.ts`(`ddayFrom`·`isWithinWeek`·`sortWeeklyTasks`, D-7 이내+기한초과를 "이번 주"로 정의)와 `apps/web/src/components/records/WeeklyTaskCard.tsx`(마감일 기반), `apps/web/src/components/records/BacklogTaskCard.tsx`(백로그 기반) 2개 카드 컴포넌트를 신설했다 — §2 토론대로 성격이 다른 두 카드를 억지로 하나로 합치지 않았다.
+
+**백엔드 보강**(§1 조사에서 "필드는 있는데 안 쓰이고 있던" 부분):
+- `records/transition/actions.ts`의 `TransitionClient.latestPlan`에 `nextReviewDate` 추출 추가(기존엔 roadmapStage만 뽑고 있었음).
+- `records/isp/actions.ts`에 `getServiceUsageNextReviewDates()` 신설 — WEL-005 record 단위 `next_review_date`를 당사자별 최신 1건만 뽑는다(기존 `getServiceUsage`는 `services[]`를 평탄화할 뿐 record 레벨 필드는 아예 조회하지 않았음).
+- `getLegClients()`(이미 `latestReportDue` 보유)·`getBipClients()`/`getItpClients()`(이미 reviewDate/nextReviewDate 보유)는 그대로 재사용 — 새로 만들 필요가 없었다.
+
+**적용**:
+- `TeacherHome.tsx` — BIP·ITP를 합쳐 `WeeklyTaskCard` 렌더(IEP는 재검토일 필드가 없어 제외).
+- `SocialWorkerHome.tsx` — ISP·WEL-005·TRA-001·LEG-001 4종을 합쳐 `WeeklyTaskCard` 렌더, 기존 `TodayTasks`(ISP만 보여주던 컴포넌트) 삭제하고 이 카드로 완전히 대체.
+- `TherapistHome.tsx` — 계획서 미작성 대상자를 `BacklogTaskCard`로.
+- `SupporterHome.tsx` — 기존 "임시저장 N건" 통계는 그대로 두고, 같은 데이터를 목록화한 `BacklogTaskCard`를 추가로 배치(각 항목 클릭 시 해당 일지 상세로 이동).
+
+라이브 DB(social1 계정, RLS 통과 REST 조회)로 `next_review_date`/`next_report_due` 필드가 실제 seed 데이터에 값이 채워져 있음을 확인했다(다만 seed 날짜가 전부 2026-10-15라 지금 시점 "이번 주" 창에는 걸리지 않음 — 코드 정상, seed 데이터가 "이번 주 마감" 시나리오를 겨냥해 만들어진 게 아닐 뿐).
+
+`pnpm typecheck`·`build` 모두 통과. 모바일(W-4)은 이번 라운드 범위 밖.
