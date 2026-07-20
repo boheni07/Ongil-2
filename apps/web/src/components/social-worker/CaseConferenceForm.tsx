@@ -9,6 +9,8 @@ import {
 } from "@/app/(app)/records/case-notes/actions";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
+import { usePersonSelection } from "@/hooks/useRecentPerson";
+import { TargetPersonBanner } from "@/components/records/TargetPersonBanner";
 
 /**
  * W-23 사례회의록(WEL-006) 작성 — 단일 폼(AdvocacyConsultationForm.tsx와 동일 구조).
@@ -36,11 +38,7 @@ export function CaseConferenceForm({
   initialPersonId?: string;
 }) {
   const router = useRouter();
-  const [personId, setPersonId] = useState(
-    initialPersonId && clients.some((c) => c.personId === initialPersonId)
-      ? initialPersonId
-      : clients[0]?.personId ?? ""
-  );
+  const [personId, setPersonId] = usePersonSelection(clients, initialPersonId);
   const [meetingDate, setMeetingDate] = useState(nowLocal());
   const [participantsText, setParticipantsText] = useState("");
   const [discussion, setDiscussion] = useState("");
@@ -167,6 +165,8 @@ export function CaseConferenceForm({
             {error}
           </p>
         )}
+
+        <TargetPersonBanner name={client?.fullName} />
 
         <div className="flex justify-end gap-2 pt-2">
           <Button

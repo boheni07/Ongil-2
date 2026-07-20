@@ -8,6 +8,8 @@ import { DateField } from "@/components/form/DateField";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { computeAge, isSelfConfirmingStage } from "@/lib/lifecycle";
 import { Button } from "@/components/ui/button";
+import { usePersonSelection } from "@/hooks/useRecentPerson";
+import { TargetPersonBanner } from "@/components/records/TargetPersonBanner";
 
 /**
  * TH-13 치료계획서 작성 — 대상·기본정보·초기평가·치료목표·회기계획을 한 화면에서 입력한다
@@ -56,11 +58,7 @@ export function TherapyPlanWizard({
   initialPersonId?: string;
 }) {
   const router = useRouter();
-  const [personId, setPersonId] = useState(
-    initialPersonId && clients.some((c) => c.personId === initialPersonId)
-      ? initialPersonId
-      : clients[0]?.personId ?? ""
-  );
+  const [personId, setPersonId] = usePersonSelection(clients, initialPersonId);
 
   const [therapyType, setTherapyType] =
     useState<TherapyPlanInput["therapy_type"]>("speech");
@@ -321,6 +319,7 @@ export function TherapyPlanWizard({
         )}
 
         <div className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm ring-1 ring-foreground/10">
+          <TargetPersonBanner name={client?.fullName} />
           <Button
             type="button"
             className="h-11 bg-primary-600 font-bold"

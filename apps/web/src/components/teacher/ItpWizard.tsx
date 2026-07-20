@@ -9,6 +9,8 @@ import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { ConfirmBadge } from "@/components/records/ConfirmBadge";
 import { Button } from "@/components/ui/button";
 import { isItpActiveStage, isSelfConfirmingStage } from "@/lib/lifecycle";
+import { usePersonSelection } from "@/hooks/useRecentPerson";
+import { TargetPersonBanner } from "@/components/records/TargetPersonBanner";
 
 /**
  * T-19 개별화전환계획(ITP, EDU-005) 작성 — 대상·흥미영역·현장실습이력·인계메모·검토일을
@@ -41,11 +43,7 @@ export function ItpWizard({
   initialPersonId?: string;
 }) {
   const router = useRouter();
-  const [personId, setPersonId] = useState(
-    initialPersonId && clients.some((c) => c.personId === initialPersonId)
-      ? initialPersonId
-      : clients[0]?.personId ?? ""
-  );
+  const [personId, setPersonId] = usePersonSelection(clients, initialPersonId);
 
   const [areasText, setAreasText] = useState("");
   const [experiences, setExperiences] = useState<ExperienceDraft[]>([emptyExperience()]);
@@ -273,6 +271,7 @@ export function ItpWizard({
         )}
 
         <div className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm ring-1 ring-foreground/10">
+          <TargetPersonBanner name={client?.fullName} />
           <Button
             type="button"
             className="h-11 bg-domain-edu-accent font-bold text-white"

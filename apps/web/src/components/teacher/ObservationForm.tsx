@@ -9,6 +9,8 @@ import {
   type TeacherStudent,
 } from "@/app/(app)/records/iep/actions";
 import { Button } from "@/components/ui/button";
+import { usePersonSelection } from "@/hooks/useRecentPerson";
+import { TargetPersonBanner } from "@/components/records/TargetPersonBanner";
 
 /**
  * T-16 관찰기록 작성(프로토타입 web-teacher.html 445~496줄).
@@ -36,11 +38,7 @@ export function ObservationForm({
   initialPersonId?: string;
 }) {
   const router = useRouter();
-  const [personId, setPersonId] = useState(
-    initialPersonId && students.some((s) => s.personId === initialPersonId)
-      ? initialPersonId
-      : students[0]?.personId ?? ""
-  );
+  const [personId, setPersonId] = usePersonSelection(students, initialPersonId);
   const [observedAt, setObservedAt] = useState(nowLocal());
   const [situation, setSituation] = useState("");
   const [tags, setTags] = useState<string[]>([]);
@@ -223,6 +221,8 @@ export function ObservationForm({
             {error}
           </p>
         )}
+
+        <TargetPersonBanner name={students.find((s) => s.personId === personId)?.fullName} />
 
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="outline" className="h-11" onClick={() => router.back()}>

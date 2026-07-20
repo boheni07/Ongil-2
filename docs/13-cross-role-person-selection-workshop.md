@@ -80,8 +80,8 @@
 | Wave | 항목 | 근거 |
 |---|---|---|
 | **Q-1** ✅ 완료(2026-07-20) | 웹 관찰기록·타임라인의 Home 진입 링크에 `personId` 누락 수정(이미 골랐는데 또 물어보는 불필요한 재질문 제거) | 조사 A — `TeacherHome.tsx:48`, `timeline/page.tsx:57` |
-| **Q-2** | 전문직군용 "최근 선택 N명" 경량 힌트(로컬스토리지, 보호자식 강제 Context 아님) — PersonPicker·select 상단/기본값에 반영 | 토론 결론 — 특수교사 페르소나 지지, 사회복지사·지원사 페르소나가 "완전 고정"엔 반대 |
-| **Q-3** | 웹 폼의 대상자 select는 유지하되, 제출 직전 "대상자 확인" 배너를 시각적으로 강조(접근성 전문가 제안) | 토론 — 재확인을 안전장치로 유지 |
+| **Q-2** ✅ 완료(2026-07-20, 웹만) | 전문직군용 "최근 선택 N명" 경량 힌트(로컬스토리지, 보호자식 강제 Context 아님) — PersonPicker·select 상단/기본값에 반영 | 토론 결론 — 특수교사 페르소나 지지, 사회복지사·지원사 페르소나가 "완전 고정"엔 반대 |
+| **Q-3** ✅ 완료(2026-07-20, 웹만) | 웹 폼의 대상자 select는 유지하되, 제출 직전 "대상자 확인" 배너를 시각적으로 강조(접근성 전문가 제안) | 토론 — 재확인을 안전장치로 유지 |
 | **Q-4** ✅ 완료(2026-07-20) | 모바일 보호자 대시보드: 웹과 동등한 그리드뷰 토글(3명↑) + StageBadge 카드 반영 — 웹·모바일 패리티 | 조사 B |
 | **Q-5** | 당사자 모드 알림 접근 경로를 다른 역할과 동등한 수준으로 승격(우선순위는 낮음 — 접근성 원칙과 상충 여부 추가 검토 필요) | 조사 C |
 | **Q-6** | 전문직군 사이드바/탭바 항목 수 불일치 정리(교사 "IEP 점검"·"타임라인", 사회복지사 "서비스 현황"·"인수인계" 탭바 누락 등) | 조사 C |
@@ -106,3 +106,13 @@
 카드 렌더링을 `PersonCard` 컴포넌트로 추출해 슬라이더(`width: 260` 고정)와 그리드(`flexBasis: "47%"`, 2열) 양쪽에서 재사용한다. 카드 내부의 "성년" 텍스트 태그도 웹과 동일한 `StageBadge`(5단계 생애주기 배지, 아이콘+색상+라벨)로 교체해 웹·모바일 정보 밀도 격차를 해소했다 — `computeLifeStage(p.birthDate)`로 클라이언트에서 직접 계산한다(다른 모바일 화면들의 기존 관행과 동일).
 
 `pnpm --filter @ongil/mobile typecheck` 통과. 에뮬레이터가 없어 실제 그리드 레이아웃 렌더링은 미검증(타입체크로만 확인) — 실기기 확보 시 스팟체크 대상.
+
+## 7. Q-2/Q-3 구현 기록 (2026-07-20, 웹만)
+
+전문직군 대상자 select가 있는 웹 폼 11개(IepWizard·ItpWizard·ObservationForm·BipForm·TherapyPlanWizard·EvalReportForm·IspWizard·TransitionPlanWizard·GuardianshipReportWizard·AdvocacyConsultationForm·CaseConferenceForm) + 목록형 진입 허브 2개(CaseNotesBoard·LegRecordsBoard) 전부에 적용했다.
+
+**Q-2** — 공용 훅 `apps/web/src/hooks/useRecentPerson.ts`(`usePersonSelection`)를 신설해 13개 파일의 동일한 `useState(initialPersonId && list.some(...) ? initialPersonId : list[0]?.personId ?? "")` 초기화 블록을 전부 교체했다. `initialPersonId`가 없을 때만(=Home 상단 공용 버튼처럼 특정 학생 맥락 없이 진입한 경우만) 마운트 후 `useEffect`에서 localStorage(`ongil_recent_person`)의 "최근 선택"으로 기본값을 보정한다 — 초기 렌더는 항상 서버와 동일한 값(첫 번째 항목)으로 시작해 하이드레이션 불일치를 피했다. 선택이 바뀔 때마다 localStorage에 기록해 다음 진입 때도 이어진다.
+
+**Q-3** — 공용 컴포넌트 `apps/web/src/components/records/TargetPersonBanner.tsx`를 신설해 11개 작성 폼(목록형 2개는 제외 — 제출 액션이 없다)의 저장 버튼 바로 위에 "🎯 제출 대상: {이름}"을 강조 표시했다. select 자체는 그대로 두어 재선택 경로를 없애지 않았다(§2 토론 결론 그대로 반영).
+
+`pnpm --filter @ongil/web typecheck`·`build` 모두 통과. 모바일(PersonPickerScreen)은 이번 라운드에 포함하지 않음 — 웹에서 먼저 검증한 뒤 후속 라운드로 이월.

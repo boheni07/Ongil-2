@@ -11,6 +11,8 @@ import { DateField } from "@/components/form/DateField";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
 import { isSelfConfirmingStage } from "@/lib/lifecycle";
+import { usePersonSelection } from "@/hooks/useRecentPerson";
+import { TargetPersonBanner } from "@/components/records/TargetPersonBanner";
 
 /**
  * W-18 후견감독보고서(LEG-001) 작성 — 대상·후견유형·관리현황·특이사항·기한을 한 화면에서
@@ -43,11 +45,7 @@ export function GuardianshipReportWizard({
   initialPersonId?: string;
 }) {
   const router = useRouter();
-  const [personId, setPersonId] = useState(
-    initialPersonId && clients.some((c) => c.personId === initialPersonId)
-      ? initialPersonId
-      : clients[0]?.personId ?? ""
-  );
+  const [personId, setPersonId] = usePersonSelection(clients, initialPersonId);
 
   const [reportKind, setReportKind] = useState<LegReportKind>("periodic");
   const [periodStart, setPeriodStart] = useState("");
@@ -272,6 +270,7 @@ export function GuardianshipReportWizard({
         )}
 
         <div className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm ring-1 ring-foreground/10">
+          <TargetPersonBanner name={client?.fullName} />
           <Button
             type="button"
             className="h-11 bg-primary-600 font-bold"

@@ -10,6 +10,7 @@ import {
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { ConfirmBadge } from "@/components/records/ConfirmBadge";
 import { Button } from "@/components/ui/button";
+import { usePersonSelection } from "@/hooks/useRecentPerson";
 
 /**
  * W-21 법률·권리(LEG) 기록 목록 — 사회복지사 진입 허브.
@@ -34,11 +35,7 @@ export function LegRecordsBoard({
   clients: LegClient[];
   initialPersonId?: string;
 }) {
-  const [personId, setPersonId] = useState(
-    initialPersonId && clients.some((c) => c.personId === initialPersonId)
-      ? initialPersonId
-      : clients[0]?.personId ?? ""
-  );
+  const [personId, setPersonId] = usePersonSelection(clients, initialPersonId);
   const [records, setRecords] = useState<LegRecordSummary[]>([]);
   const [loading, setLoading] = useState(false);
 

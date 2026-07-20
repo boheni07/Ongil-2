@@ -8,6 +8,8 @@ import { DateField } from "@/components/form/DateField";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
 import { isSelfConfirmingStage } from "@/lib/lifecycle";
+import { usePersonSelection } from "@/hooks/useRecentPerson";
+import { TargetPersonBanner } from "@/components/records/TargetPersonBanner";
 
 /**
  * W-13 ISP 작성 — 기본정보·욕구사정·목표영역·서비스계획을 한 화면에서 입력한다
@@ -60,11 +62,7 @@ export function IspWizard({
   initialPersonId?: string;
 }) {
   const router = useRouter();
-  const [personId, setPersonId] = useState(
-    initialPersonId && clients.some((c) => c.personId === initialPersonId)
-      ? initialPersonId
-      : clients[0]?.personId ?? ""
-  );
+  const [personId, setPersonId] = usePersonSelection(clients, initialPersonId);
 
   const [caseManager, setCaseManager] = useState("");
   const [periodStart, setPeriodStart] = useState("");
@@ -440,6 +438,7 @@ export function IspWizard({
         )}
 
         <div className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm ring-1 ring-foreground/10">
+          <TargetPersonBanner name={client?.fullName} />
           <Button
             type="button"
             className="h-11 bg-primary-600 font-bold"

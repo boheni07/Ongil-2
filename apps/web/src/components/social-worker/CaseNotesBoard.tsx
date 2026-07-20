@@ -9,6 +9,7 @@ import {
 } from "@/app/(app)/records/case-notes/actions";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
+import { usePersonSelection } from "@/hooks/useRecentPerson";
 
 /**
  * W-22 사례회의록(WEL-006) 목록 — 사회복지사 진입 허브(LegRecordsBoard.tsx와 동일 구조).
@@ -31,11 +32,7 @@ export function CaseNotesBoard({
   clients: CaseNoteClient[];
   initialPersonId?: string;
 }) {
-  const [personId, setPersonId] = useState(
-    initialPersonId && clients.some((c) => c.personId === initialPersonId)
-      ? initialPersonId
-      : clients[0]?.personId ?? ""
-  );
+  const [personId, setPersonId] = usePersonSelection(clients, initialPersonId);
   const [notes, setNotes] = useState<CaseNoteSummary[]>([]);
   const [loading, setLoading] = useState(false);
 

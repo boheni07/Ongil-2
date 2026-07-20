@@ -8,6 +8,8 @@ import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
 import { DateField } from "@/components/form/DateField";
 import { isSelfConfirmingStage } from "@/lib/lifecycle";
+import { usePersonSelection } from "@/hooks/useRecentPerson";
+import { TargetPersonBanner } from "@/components/records/TargetPersonBanner";
 
 /**
  * T-17 행동중재계획(BIP, EDU-003) 작성 — 단일 폼(ObservationForm 스타일).
@@ -44,11 +46,7 @@ export function BipForm({
   initialPersonId?: string;
 }) {
   const router = useRouter();
-  const [personId, setPersonId] = useState(
-    initialPersonId && students.some((s) => s.personId === initialPersonId)
-      ? initialPersonId
-      : students[0]?.personId ?? ""
-  );
+  const [personId, setPersonId] = usePersonSelection(students, initialPersonId);
 
   const [targetBehavior, setTargetBehavior] = useState("");
   const [behaviorFunction, setBehaviorFunction] = useState<BehaviorFunction>("attention");
@@ -254,6 +252,7 @@ export function BipForm({
         )}
 
         <div className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm ring-1 ring-foreground/10">
+          <TargetPersonBanner name={student?.fullName} />
           <Button
             type="button"
             className="h-11 bg-domain-edu-accent font-bold text-domain-edu-text"

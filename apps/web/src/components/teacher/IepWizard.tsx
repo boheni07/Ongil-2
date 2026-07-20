@@ -8,6 +8,8 @@ import { DateField } from "@/components/form/DateField";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
 import { isPreTransitionStage, isSelfConfirmingStage } from "@/lib/lifecycle";
+import { usePersonSelection } from "@/hooks/useRecentPerson";
+import { TargetPersonBanner } from "@/components/records/TargetPersonBanner";
 
 /**
  * T-13 IEP 작성 — 기본정보·현재수준·목표평가·지원서비스·전환계획을 한 화면에서 입력한다
@@ -54,11 +56,7 @@ export function IepWizard({
   initialPersonId?: string;
 }) {
   const router = useRouter();
-  const [personId, setPersonId] = useState(
-    initialPersonId && students.some((s) => s.personId === initialPersonId)
-      ? initialPersonId
-      : students[0]?.personId ?? ""
-  );
+  const [personId, setPersonId] = usePersonSelection(students, initialPersonId);
 
   const [school, setSchool] = useState("");
   const [academicYear, setAcademicYear] = useState(String(new Date().getFullYear()));
@@ -538,6 +536,7 @@ export function IepWizard({
         )}
 
         <div className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm ring-1 ring-foreground/10">
+          <TargetPersonBanner name={student?.fullName} />
           <Button
             type="button"
             className="h-11 bg-primary-600 font-bold"

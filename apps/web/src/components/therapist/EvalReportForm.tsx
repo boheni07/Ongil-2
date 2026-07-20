@@ -17,6 +17,8 @@ import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
 import { DateField } from "@/components/form/DateField";
 import { EvalComparisonTable } from "./EvalComparisonTable";
+import { usePersonSelection } from "@/hooks/useRecentPerson";
+import { TargetPersonBanner } from "@/components/records/TargetPersonBanner";
 
 /**
  * TH-17 평가보고서 작성(/records/eval/new, docs/04-workflow.md Flow-TH-02).
@@ -58,11 +60,7 @@ export function EvalReportForm({
   clients: TherapistClient[];
   initialPersonId?: string;
 }) {
-  const [personId, setPersonId] = useState(
-    initialPersonId && clients.some((c) => c.personId === initialPersonId)
-      ? initialPersonId
-      : clients[0]?.personId ?? ""
-  );
+  const [personId, setPersonId] = usePersonSelection(clients, initialPersonId);
 
   const [context, setContext] = useState<EvalComposeContext | null>(null);
   const [loadingContext, setLoadingContext] = useState(false);
@@ -329,6 +327,8 @@ export function EvalReportForm({
               {error}
             </p>
           )}
+
+          <TargetPersonBanner name={client?.fullName} />
 
           <div className="flex flex-wrap items-center gap-2 pt-2">
             <Button

@@ -10,6 +10,8 @@ import {
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
 import { isSelfConfirmingStage } from "@/lib/lifecycle";
+import { usePersonSelection } from "@/hooks/useRecentPerson";
+import { TargetPersonBanner } from "@/components/records/TargetPersonBanner";
 
 /**
  * W-19 권익옹호 상담기록(LEG-002) 작성 — 단일 페이지 폼(ObservationForm.tsx와 동일 구조).
@@ -44,11 +46,7 @@ export function AdvocacyConsultationForm({
   initialPersonId?: string;
 }) {
   const router = useRouter();
-  const [personId, setPersonId] = useState(
-    initialPersonId && clients.some((c) => c.personId === initialPersonId)
-      ? initialPersonId
-      : clients[0]?.personId ?? ""
-  );
+  const [personId, setPersonId] = usePersonSelection(clients, initialPersonId);
   const [consultedAt, setConsultedAt] = useState(nowLocal());
   const [issueType, setIssueType] = useState<AdvocacyIssueType>("rights_violation");
   const [content, setContent] = useState("");
@@ -197,6 +195,8 @@ export function AdvocacyConsultationForm({
             {error}
           </p>
         )}
+
+        <TargetPersonBanner name={client?.fullName} />
 
         <div className="flex justify-end gap-2 pt-2">
           <Button

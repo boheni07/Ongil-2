@@ -13,6 +13,8 @@ import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { ConfirmBadge } from "@/components/records/ConfirmBadge";
 import { RoadmapProgress } from "@/components/social-worker/RoadmapProgress";
 import { Button } from "@/components/ui/button";
+import { usePersonSelection } from "@/hooks/useRecentPerson";
+import { TargetPersonBanner } from "@/components/records/TargetPersonBanner";
 import { isPreTransitionStage, isSelfConfirmingStage } from "@/lib/lifecycle";
 
 /**
@@ -51,11 +53,7 @@ export function TransitionPlanWizard({
   initialPersonId?: string;
 }) {
   const router = useRouter();
-  const [personId, setPersonId] = useState(
-    initialPersonId && clients.some((c) => c.personId === initialPersonId)
-      ? initialPersonId
-      : clients[0]?.personId ?? ""
-  );
+  const [personId, setPersonId] = usePersonSelection(clients, initialPersonId);
 
   const [careerGoal, setCareerGoal] = useState("");
   const [roadmapStage, setRoadmapStage] = useState<RoadmapStage>("exploration");
@@ -375,6 +373,7 @@ export function TransitionPlanWizard({
         )}
 
         <div className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm ring-1 ring-foreground/10">
+          <TargetPersonBanner name={client?.fullName} />
           <Button
             type="button"
             className="h-11 bg-primary-600 font-bold"
