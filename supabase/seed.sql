@@ -178,7 +178,7 @@ BEGIN
           jsonb_build_array(jsonb_build_object('category','사회활동지원','minutes',150)),
           jsonb_build_array(jsonb_build_object('category','신변처리','minutes',30), jsonb_build_object('category','가사지원','minutes',150))
         ])[1 + (i % 4)],
-        'health_status', (ARRAY['good','normal','tired'])[1 + (i % 3)],
+        'health_status', (ARRAY['good','sick','tired'])[1 + (i % 3)],
         'meal_status', (ARRAY['full','partial','none'])[1 + (i % 3)],
         'handover_note', (ARRAY[
           '특이사항 없이 일정대로 진행했습니다.',

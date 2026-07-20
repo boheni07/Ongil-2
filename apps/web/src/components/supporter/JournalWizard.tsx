@@ -111,8 +111,11 @@ export function JournalWizard({ persons }: { persons: JournalPersonOption[] }) {
     const map: Record<string, number> = {};
     for (const a of c.activities ?? []) map[a.category] = a.minutes;
     setMinutes(map);
-    setHealth(c.health_status);
-    setMeal(c.meal_status);
+    // 예전 데이터(수기 편집·과거 시드 등)에 지금 스키마 enum에 없는 값이 남아있을 수 있어,
+    // 그대로 넘기면 임시저장 시에도 서버 Zod 검증에 걸려 알기 어려운 에러가 난다
+    // (2026-07-21, health_status='normal' 시드 버그로 실제 재현됨) — 유효한 값일 때만 반영.
+    if (HEALTHS.some((h) => h.value === c.health_status)) setHealth(c.health_status);
+    if (MEALS.some((m) => m.value === c.meal_status)) setMeal(c.meal_status);
     setReferenceId(prev.id);
   }
 
