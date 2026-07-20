@@ -136,7 +136,7 @@ export function SessionNoteForm({
         </span>
       </div>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_300px]">
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
         <div className="flex flex-col gap-4">
           {/* 회기 활동 기록 */}
           <section className="flex flex-col gap-3 rounded-xl bg-white p-5 ring-1 ring-foreground/10">
@@ -259,7 +259,7 @@ export function SessionNoteForm({
         </div>
 
         {/* 우측: 치료 목표(계획 연동) 사이드바 */}
-        <aside className="flex h-fit flex-col gap-3 rounded-xl bg-white p-5 ring-1 ring-foreground/10">
+        <aside className="flex flex-col gap-3 rounded-xl bg-white p-5 ring-1 ring-foreground/10 lg:sticky lg:top-6">
           <h2 className="text-label font-bold text-accent-stone">🎯 치료 목표 (계획 연동)</h2>
           {context.planGoals.length === 0 ? (
             <p className="text-body text-muted-foreground">연결된 목표가 없습니다.</p>
