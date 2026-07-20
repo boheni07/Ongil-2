@@ -95,7 +95,11 @@ export function RecordForm({
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
-        <div className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
+      <div className="flex flex-col gap-6">
+        <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
+          <legend className="text-sm font-bold text-foreground">
+            {isStructuredEdit ? "보호자 메모" : isEdit ? "기록 수정" : "기록 정보"}
+          </legend>
           {!isStructuredEdit && (
             <div>
               <span id="domain-label" className="text-label font-semibold text-accent-stone">
@@ -161,7 +165,8 @@ export function RecordForm({
               </Button>
             </div>
           </div>
-        </div>
+        </fieldset>
+      </div>
 
         {/* 오른쪽 사이드바(lg:sticky) — 구조화 기록 수정 시엔 원본 내용을, 자유 기록일 땐 저장될
             내용 미리보기를 보여주고, 액션 버튼을 스크롤 중에도 계속 접근 가능하게 둔다

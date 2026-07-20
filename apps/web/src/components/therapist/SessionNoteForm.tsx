@@ -14,6 +14,7 @@ import {
 } from "@/app/(app)/records/therapy/actions";
 import { Button } from "@/components/ui/button";
 import { DateField } from "@/components/form/DateField";
+import { TargetPersonBanner } from "@/components/records/TargetPersonBanner";
 
 /**
  * TH-15 회기 일지 작성(프로토타입 web-therapist.html 293~348줄).
@@ -137,10 +138,10 @@ export function SessionNoteForm({
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-6">
           {/* 회기 활동 기록 */}
-          <section className="flex flex-col gap-3 rounded-xl bg-white p-5 ring-1 ring-foreground/10">
-            <h2 className="text-label font-bold text-accent-stone">회기 활동 기록</h2>
+          <fieldset className="flex flex-col gap-3 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
+            <legend className="text-sm font-bold text-foreground">회기 활동 기록</legend>
             <label className="flex flex-col gap-1.5">
               <span className="text-label font-semibold text-accent-stone">
                 회기 일자 <span className="text-domain-med-text">*</span>
@@ -169,11 +170,11 @@ export function SessionNoteForm({
                 placeholder='"큰 공", "빨간 차" 등 자발 산출 8회 관찰. 후반부 집중 저하.'
               />
             </label>
-          </section>
+          </fieldset>
 
           {/* 계획 vs 실제 비교 */}
-          <section className="flex flex-col gap-3 rounded-xl bg-white p-5 ring-1 ring-foreground/10">
-            <h2 className="text-label font-bold text-accent-stone">계획 vs 실제 비교</h2>
+          <fieldset className="flex flex-col gap-3 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
+            <legend className="text-sm font-bold text-foreground">계획 vs 실제 비교</legend>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-(--br-md) bg-muted/50 p-3">
                 <h3 className="text-caption font-bold text-muted-foreground">계획 (목표)</h3>
@@ -207,11 +208,11 @@ export function SessionNoteForm({
                 </ul>
               </div>
             </div>
-          </section>
+          </fieldset>
 
           {/* 영역별 달성도 체크 */}
-          <section className="flex flex-col gap-4 rounded-xl bg-white p-5 ring-1 ring-foreground/10">
-            <h2 className="text-label font-bold text-accent-stone">영역별 달성도 체크</h2>
+          <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
+            <legend className="text-sm font-bold text-foreground">영역별 달성도 체크</legend>
             {AREA_META.map(({ key, icon, label }) => {
               const prev = context.previousSession?.domainScores[key];
               return (
@@ -255,64 +256,67 @@ export function SessionNoteForm({
                 placeholder="다음 회기에 이어갈 활동·조정 사항을 기록하세요"
               />
             </label>
-          </section>
+          </fieldset>
         </div>
 
-        {/* 우측: 치료 목표(계획 연동) 사이드바 */}
-        <aside className="flex flex-col gap-3 rounded-xl bg-white p-5 ring-1 ring-foreground/10 lg:sticky lg:top-6">
-          <h2 className="text-label font-bold text-accent-stone">🎯 치료 목표 (계획 연동)</h2>
-          {context.planGoals.length === 0 ? (
-            <p className="text-body text-muted-foreground">연결된 목표가 없습니다.</p>
-          ) : (
-            context.planGoals.map((g, i) => {
-              const prev = context.previousSession?.domainScores[g.area];
-              return (
-                <div key={i} className="flex flex-col gap-1 rounded-(--br-md) bg-muted/40 p-3">
-                  <span className="text-caption font-bold text-domain-med-text">
-                    {AREA_LABEL[g.area]}
-                  </span>
-                  <span className="text-body text-foreground">{g.long_term || "-"}</span>
-                  <span className="mt-0.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                    <span
-                      className="block h-full rounded-full bg-domain-med-accent"
-                      style={{ width: `${prev ?? 0}%` }}
-                    />
-                  </span>
-                  <span className="text-caption text-muted-foreground">
-                    목표 {g.target_score != null ? `${g.target_score}%` : "-"} · 직전{" "}
-                    {prev != null ? `${prev}%` : "미평가"}
-                  </span>
-                </div>
-              );
-            })
+        {/* 오른쪽 사이드바(lg:sticky) — 치료 목표(계획 연동) 참고·액션 버튼을 스크롤 중에도
+            계속 접근 가능하게 둔다(2026-07-20, JournalWizard와 동일한 원칙). */}
+        <div className="flex flex-col gap-4 lg:sticky lg:top-6">
+          <div className="flex flex-col gap-3 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
+            <h3 className="text-label font-bold text-accent-stone">🎯 치료 목표 (계획 연동)</h3>
+            {context.planGoals.length === 0 ? (
+              <p className="text-body text-muted-foreground">연결된 목표가 없습니다.</p>
+            ) : (
+              context.planGoals.map((g, i) => {
+                const prev = context.previousSession?.domainScores[g.area];
+                return (
+                  <div key={i} className="flex flex-col gap-1 rounded-(--br-md) bg-muted/40 p-3">
+                    <span className="text-caption font-bold text-domain-med-text">
+                      {AREA_LABEL[g.area]}
+                    </span>
+                    <span className="text-body text-foreground">{g.long_term || "-"}</span>
+                    <span className="mt-0.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                      <span
+                        className="block h-full rounded-full bg-domain-med-accent"
+                        style={{ width: `${prev ?? 0}%` }}
+                      />
+                    </span>
+                    <span className="text-caption text-muted-foreground">
+                      목표 {g.target_score != null ? `${g.target_score}%` : "-"} · 직전{" "}
+                      {prev != null ? `${prev}%` : "미평가"}
+                    </span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {error && (
+            <p role="alert" className="text-body font-semibold text-red-600">
+              {error}
+            </p>
           )}
-        </aside>
-      </div>
 
-      {error && (
-        <p role="alert" className="mt-4 text-body font-semibold text-red-600">
-          {error}
-        </p>
-      )}
-
-      <div className="mt-6 flex flex-wrap items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          className="h-11"
-          render={<Link href={`/records/therapy-plan/${planId}`} />}
-        >
-          ← 계획서
-        </Button>
-        <div className="flex-1" />
-        <Button
-          type="button"
-          className="h-11 bg-primary-600 font-bold"
-          disabled={busy}
-          onClick={submit}
-        >
-          {busy ? "저장 중..." : "회기 일지 저장"}
-        </Button>
+          <div className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm ring-1 ring-foreground/10">
+            <TargetPersonBanner name={personName} />
+            <Button
+              type="button"
+              className="h-11 bg-primary-600 font-bold"
+              disabled={busy}
+              onClick={submit}
+            >
+              {busy ? "저장 중..." : "회기 일지 저장"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11"
+              render={<Link href={`/records/therapy-plan/${planId}`} />}
+            >
+              ← 계획서
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );

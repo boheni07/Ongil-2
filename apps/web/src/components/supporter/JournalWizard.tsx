@@ -184,7 +184,7 @@ export function JournalWizard({ persons }: { persons: JournalPersonOption[] }) {
           중에도 계속 보이는 고정(sticky) 사이드바로 재구성했다. lg 미만에서는 세로로 자연스럽게
           쌓인다(오른쪽 → 왼쪽 아래). */}
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-6">
           <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
             <legend className="-mt-1 mb-1 px-1 text-label font-bold text-domain-dai-text">
               📋 서비스 정보
@@ -330,7 +330,7 @@ export function JournalWizard({ persons }: { persons: JournalPersonOption[] }) {
 
         {/* 오른쪽 사이드바 — 스크롤해도 계속 보이도록 lg 이상에서 sticky. 이전 일지 참조·제출 전
             확인 요약·액션 버튼을 한데 모아 넓은 화면에서 "옆에 두고 참고하며 입력"할 수 있게 한다. */}
-        <div className="flex flex-col gap-5 lg:sticky lg:top-6">
+        <div className="flex flex-col gap-4 lg:sticky lg:top-6">
           <aside className="rounded-xl bg-primary-50/60 p-4 ring-1 ring-primary-100">
             <h3 className="text-label font-bold text-primary-800">📎 이전 일지 참조</h3>
             {prev === null && (

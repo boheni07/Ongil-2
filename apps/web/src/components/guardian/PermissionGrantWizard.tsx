@@ -231,8 +231,8 @@ export function PermissionGrantWizard({
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
       <div className="flex flex-col gap-6">
-        <section className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
-          <h2 className="text-headline-3 font-bold text-accent-stone">누구에게 권한을 부여하나요?</h2>
+        <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
+          <legend className="text-headline-3 font-bold text-accent-stone">누구에게 권한을 부여하나요?</legend>
           <label className="flex flex-col gap-1.5">
             <span className="text-label font-semibold text-accent-stone">대상자 이메일</span>
             <div className="flex gap-2">
@@ -304,14 +304,14 @@ export function PermissionGrantWizard({
               이메일을 조회해 기존 협력자를 찾거나, 없으면 초대 링크로 새 이해관계자를 추가할 수 있습니다.
             </p>
           )}
-        </section>
+        </fieldset>
 
-        <section
+        <fieldset
           className={`flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10 ${targetValid ? "" : "opacity-50"}`}
         >
-          <h2 className="text-headline-3 font-bold text-accent-stone">
+          <legend className="text-headline-3 font-bold text-accent-stone">
             어떤 도메인에 접근하나요? <span className="text-body font-normal text-muted-foreground">(복수 선택)</span>
-          </h2>
+          </legend>
           {!targetValid ? (
             <p className="text-caption text-muted-foreground">먼저 대상자를 확정해주세요.</p>
           ) : !presetsLoaded ? (
@@ -339,12 +339,12 @@ export function PermissionGrantWizard({
               </button>
             ))}
           </div>
-        </section>
+        </fieldset>
 
-        <section
+        <fieldset
           className={`flex flex-col gap-5 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10 ${domainsValid ? "" : "opacity-50"}`}
         >
-          <h2 className="text-headline-3 font-bold text-accent-stone">권한 수준과 유효 기간</h2>
+          <legend className="text-headline-3 font-bold text-accent-stone">권한 수준과 유효 기간</legend>
 
           {domainsValid ? (
             <div className="flex flex-col gap-3">
@@ -412,7 +412,7 @@ export function PermissionGrantWizard({
               </p>
             )}
           </div>
-        </section>
+        </fieldset>
       </div>
 
       {/* 오른쪽 사이드바(lg:sticky) — 대상자·도메인 선택 요약과 액션 버튼을 스크롤 중에도
