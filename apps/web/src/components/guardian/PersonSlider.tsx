@@ -76,18 +76,21 @@ export function PersonSlider({
   // 헤더 콤보박스에서 당사자를 바꾸면 여기도 즉시 따라가고, 반대로 카드/화살표를 조작하면
   // setPersonId로 헤더·사이드바에 알린다(두 UI가 같은 CurrentPersonProvider 상태를 공유).
   const setIndex = (updater: number | ((i: number) => number)) => {
-    setIndexState((prev) => {
-      const next = typeof updater === "function" ? (updater as (i: number) => number)(prev) : updater;
-      const person = persons[next];
-      if (person) setPersonId(person.id);
-      return next;
-    });
+    setIndexState((prev) => (typeof updater === "function" ? (updater as (i: number) => number)(prev) : updater));
   };
   useEffect(() => {
     if (!currentPersonId) return;
     const i = persons.findIndex((p) => p.id === currentPersonId);
     if (i >= 0) setIndexState(i);
   }, [currentPersonId, persons]);
+  // index→상위(CurrentPersonProvider) 알림은 setState 업데이터 콜백 밖의 effect에서 수행한다 —
+  // 렌더 중인 다른 컴포넌트(PersonSlider 자신)의 setState 계산 안에서 CurrentPersonProvider의
+  // setPersonId를 직접 호출하면 "Cannot update a component while rendering a different
+  // component" 경고가 발생한다. currentPersonId와 이미 같으면 건너뛰어 위 effect와의 핑퐁을 막는다.
+  useEffect(() => {
+    const person = persons[index];
+    if (person && person.id !== currentPersonId) setPersonId(person.id);
+  }, [index, persons, currentPersonId, setPersonId]);
   const [summary, setSummary] = useState<PersonSummaryCards | null>(null);
   const [notifications, setNotifications] = useState<RecentNotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
