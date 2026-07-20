@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { IepInput } from "@ongil/validation";
 import { createIep, type TeacherStudent } from "@/app/(app)/records/iep/actions";
 import { DateField } from "@/components/form/DateField";
+import { ChoiceGroup } from "@/components/form/ChoiceGroup";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
 import { isPreTransitionStage, isSelfConfirmingStage } from "@/lib/lifecycle";
@@ -455,17 +456,19 @@ export function IepWizard({
               🔀 전환계획은 만 13세 이상 학생에게 표시됩니다.
             </div>
             <Field label="전환 목표 영역">
-              <select
-                className={fieldClass}
+              <ChoiceGroup
+                ariaLabel="전환 목표 영역"
                 value={transitionGoalArea}
-                onChange={(e) => setTransitionGoalArea(e.target.value as typeof transitionGoalArea)}
-              >
-                <option value="">선택 안 함</option>
-                <option value="career">진로·직업</option>
-                <option value="independent_living">자립생활</option>
-                <option value="community">지역사회 참여</option>
-                <option value="further_education">계속교육</option>
-              </select>
+                onChange={setTransitionGoalArea}
+                columns={2}
+                options={[
+                  { value: "", label: "선택 안 함" },
+                  { value: "career", label: "진로·직업" },
+                  { value: "independent_living", label: "자립생활" },
+                  { value: "community", label: "지역사회 참여" },
+                  { value: "further_education", label: "계속교육" },
+                ]}
+              />
             </Field>
             <Field label="희망 진로">
               <input

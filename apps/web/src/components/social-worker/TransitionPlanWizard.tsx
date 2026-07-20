@@ -9,6 +9,7 @@ import {
 } from "@/app/(app)/records/transition/actions";
 import { getLatestItpSummary, type ItpReferenceSummary } from "@/app/(app)/records/itp/actions";
 import { DateField } from "@/components/form/DateField";
+import { ChoiceGroup } from "@/components/form/ChoiceGroup";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { ConfirmBadge } from "@/components/records/ConfirmBadge";
 import { RoadmapProgress } from "@/components/social-worker/RoadmapProgress";
@@ -271,19 +272,16 @@ export function TransitionPlanWizard({
                     </Field>
                   </div>
                   <Field label="진행 상태">
-                    <select
-                      className={fieldClass}
+                    <ChoiceGroup
+                      ariaLabel="진행 상태"
                       value={t.status}
-                      onChange={(e) =>
-                        updateTraining(i, { status: e.target.value as TrainingDraft["status"] })
-                      }
-                    >
-                      {(["planned", "ongoing", "completed"] as const).map((s) => (
-                        <option key={s} value={s}>
-                          {TRAINING_STATUS_LABEL[s]}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(v) => updateTraining(i, { status: v })}
+                      columns={3}
+                      options={(["planned", "ongoing", "completed"] as const).map((s) => ({
+                        value: s,
+                        label: TRAINING_STATUS_LABEL[s],
+                      }))}
+                    />
                   </Field>
                 </div>
               ))}

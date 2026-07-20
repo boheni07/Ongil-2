@@ -8,6 +8,7 @@ import {
   type LegClient,
 } from "@/app/(app)/records/leg/actions";
 import { DateField } from "@/components/form/DateField";
+import { ChoiceGroup } from "@/components/form/ChoiceGroup";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
 import { isSelfConfirmingStage } from "@/lib/lifecycle";
@@ -149,17 +150,13 @@ export function GuardianshipReportWizard({
           </Field>
 
           <Field label="보고 구분" required>
-            <select
-              className={fieldClass}
+            <ChoiceGroup
+              ariaLabel="보고 구분"
               value={reportKind}
-              onChange={(e) => setReportKind(e.target.value as LegReportKind)}
-            >
-              {(["periodic", "initial"] as const).map((k) => (
-                <option key={k} value={k}>
-                  {REPORT_KIND_LABEL[k]}
-                </option>
-              ))}
-            </select>
+              onChange={setReportKind}
+              columns={2}
+              options={(["periodic", "initial"] as const).map((k) => ({ value: k, label: REPORT_KIND_LABEL[k] }))}
+            />
           </Field>
 
           {blocked ? (
@@ -178,17 +175,16 @@ export function GuardianshipReportWizard({
                 </Field>
               </div>
               <Field label="후견 유형" required>
-                <select
-                  className={fieldClass}
+                <ChoiceGroup
+                  ariaLabel="후견 유형"
                   value={guardianType}
-                  onChange={(e) => setGuardianType(e.target.value as GuardianType)}
-                >
-                  {(["adult", "limited", "specific", "voluntary"] as const).map((t) => (
-                    <option key={t} value={t}>
-                      {GUARDIAN_TYPE_LABEL[t]}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setGuardianType}
+                  columns={2}
+                  options={(["adult", "limited", "specific", "voluntary"] as const).map((t) => ({
+                    value: t,
+                    label: GUARDIAN_TYPE_LABEL[t],
+                  }))}
+                />
               </Field>
               <Field label="후견인 성명" required>
                 <input

@@ -8,6 +8,7 @@ import {
   type LegClient,
 } from "@/app/(app)/records/leg/actions";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
+import { ChoiceGroup } from "@/components/form/ChoiceGroup";
 import { Button } from "@/components/ui/button";
 import { isSelfConfirmingStage } from "@/lib/lifecycle";
 import { usePersonSelection } from "@/hooks/useRecentPerson";
@@ -146,19 +147,16 @@ export function AdvocacyConsultationForm({
         )}
 
         <Field label="상담 유형" required>
-          <select
-            className={fieldClass}
+          <ChoiceGroup
+            ariaLabel="상담 유형"
             value={issueType}
-            onChange={(e) => setIssueType(e.target.value as AdvocacyIssueType)}
-          >
-            {(["rights_violation", "discrimination", "abuse_suspected", "other"] as const).map(
-              (t) => (
-                <option key={t} value={t}>
-                  {ISSUE_TYPE_LABEL[t]}
-                </option>
-              )
-            )}
-          </select>
+            onChange={setIssueType}
+            columns={2}
+            options={(["rights_violation", "discrimination", "abuse_suspected", "other"] as const).map((t) => ({
+              value: t,
+              label: ISSUE_TYPE_LABEL[t],
+            }))}
+          />
         </Field>
 
         <Field label="상담 내용" required>

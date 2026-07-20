@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { IspInput } from "@ongil/validation";
 import { createIsp, type SocialWorkerClient } from "@/app/(app)/records/isp/actions";
 import { DateField } from "@/components/form/DateField";
+import { ChoiceGroup } from "@/components/form/ChoiceGroup";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
 import { isSelfConfirmingStage } from "@/lib/lifecycle";
@@ -254,17 +255,13 @@ export function IspWizard({
             />
           </Field>
           <Field label="사정 도구 / 근거">
-            <select
-              className={fieldClass}
+            <ChoiceGroup
+              ariaLabel="사정 도구 / 근거"
               value={assessmentTool}
-              onChange={(e) => setAssessmentTool(e.target.value)}
-            >
-              {ASSESSMENT_TOOLS.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
+              onChange={setAssessmentTool}
+              columns={2}
+              options={ASSESSMENT_TOOLS.map((t) => ({ value: t, label: t }))}
+            />
           </Field>
         </fieldset>
 

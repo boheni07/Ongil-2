@@ -7,6 +7,7 @@ import { createBip, type BipClient } from "@/app/(app)/records/bip/actions";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
 import { DateField } from "@/components/form/DateField";
+import { ChoiceGroup, ChoiceCheckGroup } from "@/components/form/ChoiceGroup";
 import { isSelfConfirmingStage } from "@/lib/lifecycle";
 import { usePersonSelection } from "@/hooks/useRecentPerson";
 import { TargetPersonBanner } from "@/components/records/TargetPersonBanner";
@@ -140,17 +141,13 @@ export function BipForm({
             </select>
           </Field>
           <Field label="행동 기능 (FBA)" required>
-            <select
-              className={fieldClass}
+            <ChoiceGroup
+              ariaLabel="행동 기능"
               value={behaviorFunction}
-              onChange={(e) => setBehaviorFunction(e.target.value as BehaviorFunction)}
-            >
-              {BEHAVIOR_FUNCTIONS.map((f) => (
-                <option key={f.value} value={f.value}>
-                  {f.label}
-                </option>
-              ))}
-            </select>
+              onChange={setBehaviorFunction}
+              options={BEHAVIOR_FUNCTIONS}
+              columns={2}
+            />
           </Field>
         </div>
         <p className="-mt-1 text-caption text-muted-foreground">
@@ -158,24 +155,13 @@ export function BipForm({
         </p>
 
         <Field label="기능평가 근거 (선택, 복수선택 가능)">
-          <div className="flex flex-wrap gap-3">
-            {FBA_BASIS_OPTIONS.map((opt) => (
-              <label key={opt.value} className="flex items-center gap-1.5 text-body text-foreground">
-                <input
-                  type="checkbox"
-                  checked={fbaBasis.includes(opt.value)}
-                  onChange={(e) =>
-                    setFbaBasis((prev) =>
-                      e.target.checked
-                        ? [...prev, opt.value]
-                        : prev.filter((v) => v !== opt.value)
-                    )
-                  }
-                />
-                {opt.label}
-              </label>
-            ))}
-          </div>
+          <ChoiceCheckGroup
+            ariaLabel="기능평가 근거"
+            value={fbaBasis}
+            onChange={setFbaBasis}
+            options={FBA_BASIS_OPTIONS}
+            columns={2}
+          />
         </Field>
 
         <Field label="중재 대상 행동" required>

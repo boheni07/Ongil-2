@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { TherapyArea, TherapyPlanInput } from "@ongil/validation";
 import { createTherapyPlan, type TherapistClient } from "@/app/(app)/records/therapy/actions";
 import { DateField } from "@/components/form/DateField";
+import { ChoiceGroup } from "@/components/form/ChoiceGroup";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { computeAge, isSelfConfirmingStage } from "@/lib/lifecycle";
 import { Button } from "@/components/ui/button";
@@ -187,19 +188,13 @@ export function TherapyPlanWizard({
             </select>
           </Field>
           <Field label="치료 유형" required>
-            <select
-              className={fieldClass}
+            <ChoiceGroup
+              ariaLabel="치료 유형"
               value={therapyType}
-              onChange={(e) =>
-                setTherapyType(e.target.value as TherapyPlanInput["therapy_type"])
-              }
-            >
-              {THERAPY_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
+              onChange={setTherapyType}
+              options={THERAPY_TYPES}
+              columns={3}
+            />
           </Field>
           <Field label="진단명" required>
             <input
