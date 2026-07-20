@@ -36,7 +36,7 @@ export function RecordManager({
   }, [initialItems, query]);
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-headline-1 font-extrabold text-foreground">기록 관리</h1>
@@ -65,10 +65,11 @@ export function RecordManager({
       {/*
         좌우 패널이 각자 독립적으로 스크롤되려면 그리드 자체가 고정 높이를 가져야 한다 —
         overflow-y-auto만으로는 부모가 콘텐츠에 맞춰 계속 늘어나 절대 스크롤이 발생하지
-        않는다(2026-07-19 피드백으로 발견). 56px 헤더 + 페이지 상하 패딩 + 이 페이지 자체
-        헤더 블록의 대략치를 뺀 높이로 고정하고, 작은 화면을 위한 최소 높이를 둔다.
+        않는다(2026-07-19 피드백으로 발견). 2026-07-21부터는 `(app)/layout.tsx`의 main이
+        h-full 체인으로 실제 뷰포트 높이를 물려주므로, 이 컴포넌트는 magic-number calc 없이
+        flex-1 min-h-0만으로 "남은 공간 전부"를 정확히 채운다.
       */}
-      <div className="mt-6 grid h-[calc(100vh-260px)] min-h-[420px] min-w-0 gap-0 rounded-xl bg-white shadow-md ring-1 ring-foreground/10 lg:grid-cols-[320px_1fr]">
+      <div className="mt-6 grid min-h-[420px] min-w-0 flex-1 gap-0 rounded-xl bg-white shadow-md ring-1 ring-foreground/10 lg:grid-cols-[320px_1fr]">
         <div className="min-h-0 overflow-y-auto border-b border-border lg:border-b-0 lg:border-r">
           <div className="p-3">
             <input

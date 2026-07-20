@@ -87,7 +87,14 @@ export function TimelineView({
   }, [filtered, selectedId]);
 
   return (
-    <div className="flex flex-1 flex-col">
+    /*
+      2026-07-20 피드백: 스트림 뷰 목록/상세가 PinnedCard(응급정보, 알레르기·복용약·연락처
+      개수에 따라 높이가 들쭉날쭉함) 때문에 뷰포트를 넘어가던 문제 → 2026-07-21 `(app)/layout.tsx`
+      의 main이 h-full 체인으로 실제 뷰포트 높이를 물려주게 되면서, 이 컴포넌트는 그 남은
+      공간을 h-full로 그대로 채우고, 그리드는 flex-1 min-h-0으로 "PinnedCard 등 나머지가
+      차지하고 남은 공간"만 정확히 채운다 — 더 이상 magic-number calc가 필요 없다.
+    */
+    <div className="flex h-full min-h-0 flex-col">
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-headline-2 font-extrabold text-foreground">타임라인 · {personName}</h1>
         {birthDate && <StageBadge lifeStage={computeLifeStage(birthDate)} />}
@@ -155,9 +162,10 @@ export function TimelineView({
         /*
           스트림 뷰만 좌(목록)·우(상세) 분할한다(2026-07-20, "목록 선택하면 우측에 상세보기"
           요청 반영) — 레인 뷰는 도메인 병렬 컬럼 자체가 가로로 넓어 분할과 안 맞아 그대로 둔다.
-          RecordManager와 동일하게 고정 높이 그리드로 좌우가 각자 독립 스크롤되게 한다.
+          RecordManager와 동일하게 좌우가 각자 독립 스크롤되도록 h-full(부모의 flex-1 min-h-0가
+          실제 높이를 결정)로 채운다.
         */
-        <div className="mt-6 grid h-[calc(100vh-320px)] min-h-[420px] min-w-0 gap-0 rounded-xl bg-white shadow-md ring-1 ring-foreground/10 lg:grid-cols-[380px_1fr]">
+        <div className="mt-6 grid min-h-0 min-w-0 flex-1 gap-0 rounded-xl bg-white shadow-md ring-1 ring-foreground/10 lg:grid-cols-[380px_1fr]">
           <div className="min-h-0 overflow-y-auto border-b border-border p-4 lg:border-b-0 lg:border-r">
             <TimelineStream
               items={filtered}
@@ -171,7 +179,9 @@ export function TimelineView({
           </div>
         </div>
       ) : (
-        <TimelineLane items={filtered} birthDate={birthDate} />
+        <div className="mt-6 min-h-0 flex-1 overflow-y-auto">
+          <TimelineLane items={filtered} birthDate={birthDate} />
+        </div>
       )}
     </div>
   );

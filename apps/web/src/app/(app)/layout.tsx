@@ -81,6 +81,16 @@ function sidebarItems(role: string | null): SidebarItem[] {
   ];
 }
 
+/**
+ * 2026-07-21: "모든 화면이 전체 스크롤 대신 헤더·사이드바는 고정하고 내용 영역만 스크롤"
+ * 요청으로 세 branch(person/guardian/기타) 전부 같은 형태로 손봤다 — 최외곽 wrapper는
+ * `h-full min-h-0`(body의 h-full을 그대로 물려받음), 사이드바+main을 감싸는 행은
+ * `min-h-0 flex-1`, `main` 자체가 `min-h-0 flex-1 overflow-y-auto`로 실제 스크롤
+ * 컨테이너가 된다. 이 체인 덕분에 개별 페이지(예: 접근 로그처럼 목록이 긴 화면)는 아무것도
+ * 손대지 않아도 자동으로 "헤더 고정, 목록만 스크롤"이 된다. RecordManager·TimelineView처럼
+ * 좌우 분할 화면은 이제 `calc(100vh-매직넘버)` 대신 `h-full`만 쓰면 되므로 더 안전해졌다
+ * (매직넘버 방식은 위쪽에 응급정보 카드처럼 높이가 들쭉날쭉한 요소가 있으면 깨졌었다).
+ */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const {
@@ -112,9 +122,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // 당사자 모드(§7-1): 사이드바 없이 중앙 정렬 단일 컬럼 폰 셸, 넉넉한 여백.
   if (role === "person") {
     return (
-      <div className="flex flex-1 flex-col bg-primary-50/20">
+      <div className="flex h-full min-h-0 flex-col bg-primary-50/20">
         <GlobalHeader userName={displayName} userAvatarUrl={avatarUrl} notificationCount={unreadCount} />
-        <main className="mx-auto flex w-full max-w-lg flex-1 flex-col px-5 py-8">{children}</main>
+        <main className="mx-auto flex w-full min-h-0 max-w-lg flex-1 flex-col overflow-y-auto px-5 py-8">{children}</main>
         {process.env.NODE_ENV !== "production" && (
           <div className="mx-auto w-full max-w-lg rounded-t-(--br-lg) bg-primary-800">
             <AccountSwitcher currentEmail={user?.email ?? null} />
@@ -137,16 +147,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         initialPersonId={currentPersonId}
         persons={persons.map((p) => ({ id: p.id, fullName: p.fullName, birthDate: p.birthDate }))}
       >
-        <div className="flex flex-1 flex-col bg-white">
+        <div className="flex h-full min-h-0 flex-col bg-white">
           <GlobalHeader
             userName={displayName}
             userAvatarUrl={avatarUrl}
             notificationCount={unreadCount}
             personSelector={<PersonHeaderSelect />}
           />
-          <div className="flex flex-1">
+          <div className="flex min-h-0 flex-1">
             <GuardianSidebar footer={footer} />
-            <main className="flex flex-1 flex-col bg-[#fafaf9] px-6 py-8">{children}</main>
+            <main className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#fafaf9] px-6 py-8">{children}</main>
           </div>
         </div>
       </CurrentPersonProvider>
@@ -154,11 +164,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex flex-1 flex-col bg-white">
+    <div className="flex h-full min-h-0 flex-col bg-white">
       <GlobalHeader userName={displayName} userAvatarUrl={avatarUrl} notificationCount={unreadCount} />
-      <div className="flex flex-1">
+      <div className="flex min-h-0 flex-1">
         <Sidebar items={sidebarItems(role)} footer={footer} />
-        <main className="flex flex-1 flex-col bg-[#fafaf9] px-6 py-8">{children}</main>
+        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#fafaf9] px-6 py-8">{children}</main>
       </div>
     </div>
   );
