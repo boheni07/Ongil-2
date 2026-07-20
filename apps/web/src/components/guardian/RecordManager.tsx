@@ -26,9 +26,14 @@ import { GuardianshipReportReadView } from "@/components/records/GuardianshipRep
 import { AdvocacyConsultationReadView } from "@/components/records/AdvocacyConsultationReadView";
 import { JournalReadView } from "@/components/records/JournalReadView";
 import { SelfExpressionReadView } from "@/components/records/SelfExpressionReadView";
+import { ServiceUsageReadView } from "@/components/records/ServiceUsageReadView";
 import { Button } from "@/components/ui/button";
 
-/** record_type → 전용 읽기 전용 뷰. 매칭 안 되는 나머지(WEL-005 등)는 RecordContentView 폴백. */
+/**
+ * record_type → 전용 읽기 전용 뷰. GEN-001(자유기록)은 이 맵 밖에서 `GuardianBody`가 따로
+ * 처리한다 — 이 맵에 없는 record_type이 있으면 안 되므로(2026-07-20 "모두 처리해줘" 피드백,
+ * WEL-005가 누락돼 있었음) 16종 record_type 전부가 여기 아니면 GuardianBody여야 한다.
+ */
 const STRUCTURED_READ_VIEWS: Record<string, (props: { content: unknown }) => React.JSX.Element> = {
   "MED-005": TherapyPlanReadView,
   "EDU-001": IepReadView,
@@ -38,6 +43,7 @@ const STRUCTURED_READ_VIEWS: Record<string, (props: { content: unknown }) => Rea
   "MED-006": SessionNoteReadView,
   "MED-007": EvalReportReadView,
   "WEL-004": IspReadView,
+  "WEL-005": ServiceUsageReadView,
   "WEL-006": CaseConferenceReadView,
   "TRA-001": TransitionPlanReadView,
   "LEG-001": GuardianshipReportReadView,
