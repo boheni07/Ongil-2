@@ -43,7 +43,6 @@ function sidebarItems(role: string | null): SidebarItem[] {
       { label: "IEP 점검", href: "/home", icon: <ClipboardList /> },
       { label: "관찰기록", href: "/records/observation/new", icon: <Eye /> },
       { label: "타임라인", href: "/timeline", icon: <BarChart3 /> },
-      { label: "설정", href: "/settings", icon: <Settings /> },
     ];
   }
   if (role === "social_worker") {
@@ -55,7 +54,6 @@ function sidebarItems(role: string | null): SidebarItem[] {
       { label: "서비스 현황", href: "/records/service-status", icon: <ClipboardList /> },
       { label: "타임라인", href: "/timeline", icon: <FolderOpen /> },
       { label: "인수인계", href: "/handovers", icon: <ArrowLeftRight /> },
-      { label: "설정", href: "/settings", icon: <Settings /> },
     ];
   }
   if (role === "therapist") {
@@ -65,7 +63,6 @@ function sidebarItems(role: string | null): SidebarItem[] {
       { label: "회기 일지", href: "/records/session/new", icon: <PencilLine /> },
       { label: "평가보고서", href: "/records/eval/new", icon: <BarChart3 /> },
       { label: "타임라인", href: "/timeline", icon: <Clock /> },
-      { label: "설정", href: "/settings", icon: <Settings /> },
     ];
   }
   if (role === "supporter") {
