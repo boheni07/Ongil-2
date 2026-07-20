@@ -43,6 +43,22 @@ export function IepReviewPane({ detail }: { detail: IepDetail }) {
         {detail.content.academic_year}학년도 · {detail.content.school} · 영역별 목표 진행 상황을
         점검하고 인라인 편집합니다.
       </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button
+          variant="outline"
+          render={<Link href={`/records/observation/new?personId=${detail.personId}`} />}
+          className="h-10 w-fit px-4 font-semibold"
+        >
+          📝 이 학생의 관찰기록 작성
+        </Button>
+        <Button
+          variant="outline"
+          render={<Link href={`/timeline?personId=${detail.personId}`} />}
+          className="h-10 w-fit px-4 font-semibold"
+        >
+          🕐 타임라인 보기
+        </Button>
+      </div>
 
       <div className="mt-6 grid gap-0 overflow-hidden rounded-xl ring-1 ring-foreground/10 lg:grid-cols-[300px_1fr]">
         {/* 좌: 목표 영역 리스트 */}

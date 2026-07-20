@@ -74,7 +74,14 @@ export function TherapyPlanDetail({ detail }: { detail: Detail }) {
         )}
       </dl>
 
-      <div className="mt-4 flex justify-end">
+      <div className="mt-4 flex flex-wrap justify-end gap-2">
+        <Button
+          variant="outline"
+          className="h-11"
+          render={<Link href={`/timeline?personId=${detail.personId}`} />}
+        >
+          🕐 타임라인 보기
+        </Button>
         <Button
           variant="outline"
           className="h-11"

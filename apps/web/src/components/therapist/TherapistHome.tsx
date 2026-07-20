@@ -64,42 +64,60 @@ export async function TherapistHome({ userName }: { userName: string | null }) {
               ? `/records/therapy-plan/${c.latestPlanRecordId}`
               : `/records/therapy-plan/new?personId=${c.personId}`;
             return (
-              <Link
+              <div
                 key={c.personId}
-                href={href}
-                className="flex flex-col gap-3 rounded-xl border-t-4 border-domain-med-accent bg-white p-4 ring-1 ring-foreground/10 transition-colors hover:bg-primary-50"
+                className="flex flex-col gap-3 rounded-xl border-t-4 border-domain-med-accent bg-white p-4 ring-1 ring-foreground/10"
               >
-                <div className="flex items-center gap-3">
-                  <span
-                    aria-hidden="true"
-                    className="flex size-11 shrink-0 items-center justify-center rounded-full bg-domain-med-bg text-body font-bold text-domain-med-text"
-                  >
-                    {c.fullName.slice(0, 2) || "아동"}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate text-body font-bold text-foreground">
-                      {c.fullName}{" "}
-                      <span className="text-caption font-medium text-muted-foreground">
-                        만 {computeAge(c.birthDate)}세
-                      </span>
-                    </p>
-                    <div className="mt-1">
-                      <StageBadge lifeStage={c.lifeStage} className="min-h-6 pr-2 text-[11px]" />
+                <Link href={href} className="flex flex-col gap-3 rounded-(--br-md) transition-colors hover:bg-primary-50">
+                  <div className="flex items-center gap-3">
+                    <span
+                      aria-hidden="true"
+                      className="flex size-11 shrink-0 items-center justify-center rounded-full bg-domain-med-bg text-body font-bold text-domain-med-text"
+                    >
+                      {c.fullName.slice(0, 2) || "아동"}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-body font-bold text-foreground">
+                        {c.fullName}{" "}
+                        <span className="text-caption font-medium text-muted-foreground">
+                          만 {computeAge(c.birthDate)}세
+                        </span>
+                      </p>
+                      <div className="mt-1">
+                        <StageBadge lifeStage={c.lifeStage} className="min-h-6 pr-2 text-[11px]" />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex gap-2">
-                  <MiniStat n={c.planGoalCount} label="치료 목표" />
-                  <MiniStat n={c.sessionCount} label="진행 회기" />
-                </div>
+                  <div className="flex gap-2">
+                    <MiniStat n={c.planGoalCount} label="치료 목표" />
+                    <MiniStat n={c.sessionCount} label="진행 회기" />
+                  </div>
 
-                {!c.latestPlanRecordId && (
-                  <p className="rounded-(--br-sm) bg-accent-amber/20 px-2.5 py-1.5 text-caption font-semibold text-[#B56F10]">
-                    ＋ 계획서 미작성 — 눌러서 작성하기
-                  </p>
-                )}
-              </Link>
+                  {!c.latestPlanRecordId && (
+                    <p className="rounded-(--br-sm) bg-accent-amber/20 px-2.5 py-1.5 text-caption font-semibold text-[#B56F10]">
+                      ＋ 계획서 미작성 — 눌러서 작성하기
+                    </p>
+                  )}
+                </Link>
+
+                {/* Q-1(docs/13 워크숍): 아동을 이미 고른 상태에서 회기 일지·타임라인을
+                    다시 고르지 않도록 카드에서 바로 personId를 실어 보낸다. */}
+                <div className="flex gap-2 border-t border-border/60 pt-2.5 text-caption">
+                  <Link
+                    href={`/records/session/new?personId=${c.personId}`}
+                    className="flex-1 rounded-(--br-sm) bg-muted/60 py-1.5 text-center font-semibold text-accent-stone hover:bg-muted"
+                  >
+                    📝 회기 일지
+                  </Link>
+                  <Link
+                    href={`/timeline?personId=${c.personId}`}
+                    className="flex-1 rounded-(--br-sm) bg-muted/60 py-1.5 text-center font-semibold text-accent-stone hover:bg-muted"
+                  >
+                    🕐 타임라인
+                  </Link>
+                </div>
+              </div>
             );
           })}
         </div>

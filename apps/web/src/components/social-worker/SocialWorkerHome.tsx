@@ -84,60 +84,72 @@ export async function SocialWorkerHome({ userName }: { userName: string | null }
               ? `/records/isp/${c.latestIspRecordId}/review`
               : `/records/isp/new?personId=${c.personId}`;
             return (
-              <Link
+              <div
                 key={c.personId}
-                href={href}
-                className="flex flex-col gap-3 rounded-xl border-t-4 border-domain-wel-accent bg-white p-4 ring-1 ring-foreground/10 transition-colors hover:bg-primary-50"
+                className="flex flex-col gap-3 rounded-xl border-t-4 border-domain-wel-accent bg-white p-4 ring-1 ring-foreground/10"
               >
-                <div className="flex items-center gap-3">
-                  <span
-                    aria-hidden="true"
-                    className="flex size-11 shrink-0 items-center justify-center rounded-full bg-domain-wel-bg text-body font-bold text-domain-wel-text"
-                  >
-                    {c.fullName.slice(0, 2) || "당사자"}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate text-body font-bold text-foreground">{c.fullName}</p>
-                    <div className="mt-1">
-                      <StageBadge
-                        lifeStage={c.lifeStage}
-                        interactive={false}
-                        className="min-h-6 pr-2 text-[11px]"
-                      />
+                <Link href={href} className="flex flex-col gap-3 rounded-(--br-md) transition-colors hover:bg-primary-50">
+                  <div className="flex items-center gap-3">
+                    <span
+                      aria-hidden="true"
+                      className="flex size-11 shrink-0 items-center justify-center rounded-full bg-domain-wel-bg text-body font-bold text-domain-wel-text"
+                    >
+                      {c.fullName.slice(0, 2) || "당사자"}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-body font-bold text-foreground">{c.fullName}</p>
+                      <div className="mt-1">
+                        <StageBadge
+                          lifeStage={c.lifeStage}
+                          interactive={false}
+                          className="min-h-6 pr-2 text-[11px]"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {c.lifeStage === "adult" && (
-                  <p className="rounded-(--br-sm) bg-domain-tra-bg px-2.5 py-1.5 text-caption font-bold text-domain-tra-text">
-                    🧑 성인 서비스 전환 필요
-                  </p>
-                )}
+                  {c.lifeStage === "adult" && (
+                    <p className="rounded-(--br-sm) bg-domain-tra-bg px-2.5 py-1.5 text-caption font-bold text-domain-tra-text">
+                      🧑 성인 서비스 전환 필요
+                    </p>
+                  )}
 
-                <div className="flex gap-2">
-                  <MiniStat n={c.ispGoalCount} label="ISP 목표" />
-                  <MiniStat
-                    n={c.ispAchievementAvg != null ? `${c.ispAchievementAvg}%` : "-"}
-                    label="달성률"
-                  />
-                </div>
-
-                {c.ispAchievementAvg != null && (
-                  <span className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                    <span
-                      className="block h-full rounded-full bg-domain-wel-accent"
-                      style={{ width: `${c.ispAchievementAvg}%` }}
+                  <div className="flex gap-2">
+                    <MiniStat n={c.ispGoalCount} label="ISP 목표" />
+                    <MiniStat
+                      n={c.ispAchievementAvg != null ? `${c.ispAchievementAvg}%` : "-"}
+                      label="달성률"
                     />
-                  </span>
-                )}
+                  </div>
 
-                <ReassessmentNotice dday={c.reassessmentDday} />
-                {!c.latestIspRecordId && (
-                  <p className="rounded-(--br-sm) bg-accent-amber/20 px-2.5 py-1.5 text-caption font-semibold text-[#B56F10]">
-                    ＋ ISP 미작성 — 눌러서 작성하기
-                  </p>
-                )}
-              </Link>
+                  {c.ispAchievementAvg != null && (
+                    <span className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                      <span
+                        className="block h-full rounded-full bg-domain-wel-accent"
+                        style={{ width: `${c.ispAchievementAvg}%` }}
+                      />
+                    </span>
+                  )}
+
+                  <ReassessmentNotice dday={c.reassessmentDday} />
+                  {!c.latestIspRecordId && (
+                    <p className="rounded-(--br-sm) bg-accent-amber/20 px-2.5 py-1.5 text-caption font-semibold text-[#B56F10]">
+                      ＋ ISP 미작성 — 눌러서 작성하기
+                    </p>
+                  )}
+                </Link>
+
+                {/* Q-1(docs/13 워크숍): 당사자를 이미 고른 상태에서 타임라인을 다시
+                    고르지 않도록 카드에서 바로 personId를 실어 보낸다. */}
+                <div className="border-t border-border/60 pt-2.5">
+                  <Link
+                    href={`/timeline?personId=${c.personId}`}
+                    className="block rounded-(--br-sm) bg-muted/60 py-1.5 text-center text-caption font-semibold text-accent-stone hover:bg-muted"
+                  >
+                    🕐 타임라인 보기
+                  </Link>
+                </div>
+              </div>
             );
           })}
         </div>

@@ -68,6 +68,13 @@ export function IspReviewPane({ detail }: { detail: IspDetail }) {
         >
           📝 이 당사자의 사례회의록(WEL-006) 보기
         </Button>
+        <Button
+          variant="outline"
+          render={<Link href={`/timeline?personId=${detail.personId}`} />}
+          className="h-10 w-fit px-4 font-semibold"
+        >
+          🕐 타임라인 보기
+        </Button>
       </div>
 
       <div className="mt-6 grid gap-0 overflow-hidden rounded-xl ring-1 ring-foreground/10 lg:grid-cols-[300px_1fr]">
