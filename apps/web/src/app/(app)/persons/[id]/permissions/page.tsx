@@ -24,7 +24,7 @@ export default async function PermissionsPage({ params }: { params: Promise<{ id
     <div className="max-w-4xl">
       <h1 className="text-headline-1 font-extrabold text-foreground">권한 관리</h1>
       <p className="mt-1 text-body text-muted-foreground">
-        {person.fullName} · 각 행 우측 "⋮ 관리" 메뉴에서 도메인별 접근수준을 수정하거나 전체 권한을 회수할 수 있습니다.
+        {person.fullName} · 각 행 우측 "수정"·"전체 회수" 버튼으로 도메인별 접근수준·기한을 관리할 수 있습니다.
       </p>
 
       {isAdult && (

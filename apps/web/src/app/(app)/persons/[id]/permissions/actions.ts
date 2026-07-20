@@ -208,7 +208,7 @@ async function resolveEditValidUntil(
 export async function updateGranteePermissions(
   personId: string,
   granteeId: string,
-  domains: { domain: DomainKey; accessLevel: CellLevel }[]
+  domains: { domain: DomainKey; accessLevel: CellLevel; validUntil?: string | null }[]
 ): Promise<ActionResult> {
   if (!UUID_RE.test(personId) || !UUID_RE.test(granteeId)) {
     return { error: "대상 정보가 올바르지 않습니다." };
@@ -242,19 +242,25 @@ export async function updateGranteePermissions(
 
   if (toUpsert.length > 0) {
     const rows = await Promise.all(
-      toUpsert.map(async (d) => ({
-        person_id: personId,
-        grantee_id: granteeId,
-        domain: d.domain,
-        access_level: d.accessLevel,
-        is_active: true,
-        valid_until:
-          d.accessLevel === "edit"
-            ? await resolveEditValidUntil(supabase, granteeId, d.domain, existingValidUntil.get(d.domain) ?? null)
-            : (existingValidUntil.get(d.domain) ?? null),
-        granted_by: guard.userId,
-        updated_at: new Date().toISOString(),
-      }))
+      toUpsert.map(async (d) => {
+        // 명시적으로 넘어온 기한(빈 문자열 포함 null)을 우선 쓰고, 안 넘어왔으면 기존 값을 유지한다.
+        let validUntil: string | null =
+          d.validUntil !== undefined ? d.validUntil : (existingValidUntil.get(d.domain) ?? null);
+        // "edit는 무기한 금지" 가드레일 — edit인데 기한이 비었으면(명시적 삭제 포함) 자동 부여한다.
+        if (d.accessLevel === "edit" && !validUntil) {
+          validUntil = await resolveEditValidUntil(supabase, granteeId, d.domain, existingValidUntil.get(d.domain) ?? null);
+        }
+        return {
+          person_id: personId,
+          grantee_id: granteeId,
+          domain: d.domain,
+          access_level: d.accessLevel,
+          is_active: true,
+          valid_until: validUntil,
+          granted_by: guard.userId,
+          updated_at: new Date().toISOString(),
+        };
+      })
     );
     const { error } = await supabase
       .from("permissions")

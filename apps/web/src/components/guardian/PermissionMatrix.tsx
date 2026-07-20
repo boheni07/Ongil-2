@@ -9,12 +9,7 @@ import {
   type PermissionMatrixRow,
 } from "@/app/(app)/persons/[id]/permissions/actions";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
+import { DateField } from "@/components/form/DateField";
 import {
   Dialog,
   DialogPopup,
@@ -138,49 +133,42 @@ export function PermissionMatrix({
                   </span>
                 </th>
                 {DOMAINS.map((d) => {
-                  const level: CellLevel = row.cells[d.key]?.accessLevel ?? "none";
+                  const cell = row.cells[d.key];
+                  const level: CellLevel = cell?.accessLevel ?? "none";
                   const meta = LEVEL[level];
                   return (
                     <td key={d.key} className="p-1 text-center">
                       <span
-                        aria-label={`${row.granteeName} · ${d.label} 현재 ${meta.label}`}
-                        title={
-                          row.cells[d.key]?.validUntil
-                            ? `${meta.label} · ~${row.cells[d.key]?.validUntil}`
-                            : meta.label
-                        }
-                        className="inline-flex h-11 w-full min-w-11 items-center justify-center rounded-(--br-sm) text-caption font-bold"
+                        aria-label={`${row.granteeName} · ${d.label} 현재 ${meta.label}${cell?.validUntil ? ` · ~${cell.validUntil}까지` : ""}`}
+                        className="inline-flex h-11 w-full min-w-11 flex-col items-center justify-center gap-0.5 rounded-(--br-sm) text-caption font-bold"
                         style={{ backgroundColor: meta.bg, color: meta.fg }}
                       >
-                        {meta.label}
+                        <span>{meta.label}</span>
+                        {cell?.validUntil && (
+                          <span className="text-[10px] font-normal opacity-90">~{cell.validUntil}</span>
+                        )}
                       </span>
                     </td>
                   );
                 })}
-                <td className="p-1 text-center">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button
-                          variant="outline"
-                          className="h-9 w-9 p-0 text-body"
-                          aria-label={`${row.granteeName} 관리`}
-                        />
-                      }
+                <td className="p-1">
+                  <div className="flex items-center justify-center gap-1.5">
+                    <Button
+                      variant="outline"
+                      className="h-9 px-3 text-caption font-bold"
+                      onClick={() => setManageTarget(row)}
                     >
-                      ⋮
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => setManageTarget(row)}>✏️ 수정</DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-red-600 data-highlighted:bg-red-50"
-                        onClick={() => onRevokeAll(row)}
-                        disabled={revokingId === row.granteeId}
-                      >
-                        {revokingId === row.granteeId ? "회수 중..." : "🗑️ 전체 회수"}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                      ✏️ 수정
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-9 px-3 text-caption font-bold text-red-600 hover:bg-red-50"
+                      onClick={() => onRevokeAll(row)}
+                      disabled={revokingId === row.granteeId}
+                    >
+                      {revokingId === row.granteeId ? "회수 중..." : "🗑️ 전체 회수"}
+                    </Button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -225,13 +213,35 @@ function GranteeManageDialog({
     for (const d of DOMAINS) init[d.key] = row.cells[d.key]?.accessLevel ?? "none";
     return init;
   });
+  // "" = 무기한(edit는 저장 시 자동으로 기한이 채워짐, §PRD 3-3 "edit는 무기한 금지").
+  const [validUntil, setValidUntil] = useState<Record<DomainKey, string>>(() => {
+    const init = {} as Record<DomainKey, string>;
+    for (const d of DOMAINS) init[d.key] = row.cells[d.key]?.validUntil ?? "";
+    return init;
+  });
+  const [bulkDate, setBulkDate] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function applyBulkDate() {
+    if (!bulkDate) return;
+    setValidUntil((prev) => {
+      const next = { ...prev };
+      for (const d of DOMAINS) {
+        if (levels[d.key] !== "none") next[d.key] = bulkDate;
+      }
+      return next;
+    });
+  }
 
   async function save() {
     setBusy(true);
     setError(null);
-    const domains = DOMAINS.map((d) => ({ domain: d.key, accessLevel: levels[d.key] }));
+    const domains = DOMAINS.map((d) => ({
+      domain: d.key,
+      accessLevel: levels[d.key],
+      validUntil: levels[d.key] === "none" ? undefined : (validUntil[d.key] || null),
+    }));
     const res = await updateGranteePermissions(personId, row.granteeId, domains);
     setBusy(false);
     if (res.error) {
@@ -243,7 +253,7 @@ function GranteeManageDialog({
       if (levels[d.key] === "none") continue;
       cells[d.key] = {
         accessLevel: levels[d.key] as AccessLevel,
-        validUntil: row.cells[d.key]?.validUntil ?? null,
+        validUntil: validUntil[d.key] || row.cells[d.key]?.validUntil || null,
       };
     }
     onSaved(cells);
@@ -251,38 +261,69 @@ function GranteeManageDialog({
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogPopup>
+      <DialogPopup className="max-w-lg">
         <DialogTitle>{row.granteeName} 권한 일괄 수정</DialogTitle>
         <DialogDescription>
-          {ROLE_LABEL[row.granteeRole] ?? row.granteeRole} · 도메인별 접근수준을 고른 뒤 저장하세요.
+          {ROLE_LABEL[row.granteeRole] ?? row.granteeRole} · 도메인별 접근수준·기한을 고른 뒤 저장하세요.
         </DialogDescription>
+
+        <div className="mt-4 flex items-end gap-2 rounded-(--br-md) bg-muted/40 p-3">
+          <label className="flex flex-1 flex-col gap-1">
+            <span className="text-caption font-semibold text-accent-stone">기한 일괄 적용</span>
+            <DateField value={bulkDate} onChange={setBulkDate} className="h-10 bg-white" />
+          </label>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-10"
+            disabled={!bulkDate}
+            onClick={applyBulkDate}
+          >
+            선택된 도메인에 적용
+          </Button>
+        </div>
 
         <div className="mt-4 flex flex-col gap-3">
           {DOMAINS.map((d) => (
-            <div key={d.key} className="flex items-center justify-between gap-3">
-              <span className="text-body font-semibold text-foreground">{d.label}</span>
-              <div className="flex gap-1">
-                {CYCLE_ORDER_UI.map((level) => {
-                  const meta = LEVEL[level];
-                  const active = levels[d.key] === level;
-                  return (
-                    <button
-                      key={level}
-                      type="button"
-                      aria-pressed={active}
-                      onClick={() => setLevels((prev) => ({ ...prev, [d.key]: level }))}
-                      className="inline-flex h-9 w-16 items-center justify-center rounded-(--br-sm) text-caption font-bold outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-primary-600"
-                      style={{
-                        backgroundColor: meta.bg,
-                        color: meta.fg,
-                        opacity: active ? 1 : 0.35,
-                      }}
-                    >
-                      {meta.label}
-                    </button>
-                  );
-                })}
+            <div key={d.key} className="flex flex-col gap-2 rounded-(--br-md) border border-border p-3">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-body font-semibold text-foreground">{d.label}</span>
+                <div className="flex gap-1">
+                  {CYCLE_ORDER_UI.map((level) => {
+                    const meta = LEVEL[level];
+                    const active = levels[d.key] === level;
+                    return (
+                      <button
+                        key={level}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => setLevels((prev) => ({ ...prev, [d.key]: level }))}
+                        className="inline-flex h-9 w-16 items-center justify-center rounded-(--br-sm) text-caption font-bold outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-primary-600"
+                        style={{
+                          backgroundColor: meta.bg,
+                          color: meta.fg,
+                          opacity: active ? 1 : 0.35,
+                        }}
+                      >
+                        {meta.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+              {levels[d.key] !== "none" && (
+                <label className="flex items-center gap-2">
+                  <span className="text-caption font-semibold text-accent-stone">기한</span>
+                  <DateField
+                    value={validUntil[d.key]}
+                    onChange={(v) => setValidUntil((prev) => ({ ...prev, [d.key]: v }))}
+                    className="h-9 flex-1"
+                  />
+                  {levels[d.key] === "edit" && !validUntil[d.key] && (
+                    <span className="text-[11px] text-muted-foreground">비우면 자동 부여(무기한 금지)</span>
+                  )}
+                </label>
+              )}
             </div>
           ))}
         </div>
