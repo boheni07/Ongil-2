@@ -113,129 +113,155 @@ export function ObservationForm({
     );
   }
 
+  const student = students.find((s) => s.personId === personId) ?? null;
+
   return (
-    <div className="mx-auto flex min-h-full max-w-3xl flex-1 flex-col">
+    <div className="mx-auto flex min-h-full max-w-6xl flex-1 flex-col">
       <h1 className="text-headline-2 font-extrabold text-foreground">관찰기록 작성</h1>
       <p className="mt-1 text-body text-muted-foreground">
         행동·언어·사회성·학습 태그를 복수 선택할 수 있습니다.
       </p>
 
-      {/* 관찰기록은 일상 기록(requires_confirmation=false)이라 확인요청 안내·기존기록 요약
-          같은 사이드바 콘텐츠가 없다 — BIP/IEP 등 공식문서와 달리 폭만 적당히 좁혀 가독성을
-          확보한다(2026-07-20, 짧은 폼에 억지로 사이드바를 붙이지 않는다는 판단). */}
-      <div className="mt-6 flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="대상 학생" required>
-            <select
-              className={fieldClass}
-              value={personId}
-              onChange={(e) => setPersonId(e.target.value)}
-            >
-              {students.map((s) => (
-                <option key={s.personId} value={s.personId}>
-                  {s.fullName}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="관찰 일시" required>
-            <input
-              type="datetime-local"
-              className={fieldClass}
-              value={observedAt}
-              onChange={(e) => setObservedAt(e.target.value)}
-            />
-          </Field>
-        </div>
-
-        <Field label="관찰 상황" required>
-          <input
-            className={fieldClass}
-            value={situation}
-            onChange={(e) => setSituation(e.target.value)}
-            placeholder="예: 3교시 국어 모둠 활동"
-          />
-        </Field>
-
-        <div className="flex flex-col gap-3">
-          <span className="text-label font-semibold text-accent-stone">
-            관찰 태그 <span className="text-caption text-muted-foreground">({tags.length}개 선택됨)</span>
-          </span>
-          {Object.entries(OBSERVATION_TAG_CATALOG).map(([category, catTags]) => (
-            <div key={category}>
-              <p className="mb-1.5 text-caption font-bold text-domain-edu-text">{category}</p>
-              <div className="flex flex-wrap gap-2">
-                {catTags.map((tag) => {
-                  const on = tags.includes(tag);
-                  return (
-                    <button
-                      key={tag}
-                      type="button"
-                      aria-pressed={on}
-                      onClick={() => toggleTag(tag)}
-                      className={`min-h-11 rounded-full border-2 px-3.5 text-caption font-semibold transition-colors ${
-                        on
-                          ? "border-domain-edu-accent bg-domain-edu-bg text-domain-edu-text"
-                          : "border-border text-accent-stone hover:border-primary-400"
-                      }`}
-                    >
-                      {tag}
-                    </button>
-                  );
-                })}
-              </div>
+      {/* 2026-07-20: 기록 작성화면의 와이드 레이아웃 기준을 IEP(EDU-001)로 통일 — 짧은 일상
+          기록도 예외를 두지 않고 동일한 max-w-6xl + 1fr/340px 사이드바 구조를 쓴다. */}
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
+        <div className="flex flex-col gap-6">
+          <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
+            <legend className="text-sm font-bold text-foreground">기본 정보</legend>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="대상 학생" required>
+                <select
+                  className={fieldClass}
+                  value={personId}
+                  onChange={(e) => setPersonId(e.target.value)}
+                >
+                  {students.map((s) => (
+                    <option key={s.personId} value={s.personId}>
+                      {s.fullName}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="관찰 일시" required>
+                <input
+                  type="datetime-local"
+                  className={fieldClass}
+                  value={observedAt}
+                  onChange={(e) => setObservedAt(e.target.value)}
+                />
+              </Field>
             </div>
-          ))}
+            <Field label="관찰 상황" required>
+              <input
+                className={fieldClass}
+                value={situation}
+                onChange={(e) => setSituation(e.target.value)}
+                placeholder="예: 3교시 국어 모둠 활동"
+              />
+            </Field>
+          </fieldset>
+
+          <fieldset className="flex flex-col gap-3 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
+            <legend className="text-sm font-bold text-foreground">
+              관찰 태그 <span className="text-caption font-normal text-muted-foreground">({tags.length}개 선택됨)</span>
+            </legend>
+            {Object.entries(OBSERVATION_TAG_CATALOG).map(([category, catTags]) => (
+              <div key={category}>
+                <p className="mb-1.5 text-caption font-bold text-domain-edu-text">{category}</p>
+                <div className="flex flex-wrap gap-2">
+                  {catTags.map((tag) => {
+                    const on = tags.includes(tag);
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => toggleTag(tag)}
+                        className={`min-h-11 rounded-full border-2 px-3.5 text-caption font-semibold transition-colors ${
+                          on
+                            ? "border-domain-edu-accent bg-domain-edu-bg text-domain-edu-text"
+                            : "border-border text-accent-stone hover:border-primary-400"
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </fieldset>
+
+          <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
+            <legend className="text-sm font-bold text-foreground">관찰 내용</legend>
+            <Field label="관찰 내용" required>
+              <textarea
+                className={`${fieldClass} min-h-28`}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                maxLength={3000}
+                placeholder="관찰한 학생의 행동·반응을 구체적으로 기록하세요."
+              />
+            </Field>
+            <Field label="연결할 IEP 목표 (선택)">
+              <select
+                className={fieldClass}
+                value={linkedGoalArea}
+                onChange={(e) => setLinkedGoalArea(e.target.value)}
+                disabled={goalOptions.length === 0}
+              >
+                <option value="">
+                  {goalOptions.length === 0 ? "연결 가능한 IEP 목표가 없습니다" : "연결 안 함"}
+                </option>
+                {goalOptions.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </fieldset>
         </div>
 
-        <Field label="관찰 내용" required>
-          <textarea
-            className={`${fieldClass} min-h-28`}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            maxLength={3000}
-            placeholder="관찰한 학생의 행동·반응을 구체적으로 기록하세요."
-          />
-        </Field>
+        <div className="flex flex-col gap-4 lg:sticky lg:top-6">
+          <div className="rounded-xl border border-primary-100 bg-primary-50/60 p-5">
+            <h3 className="text-label font-bold text-primary-800">요약</h3>
+            <dl className="mt-2 flex flex-col gap-1.5 text-caption">
+              <div className="flex justify-between gap-2">
+                <dt className="text-muted-foreground">학생</dt>
+                <dd className="font-semibold text-foreground">{student?.fullName ?? "-"}</dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt className="text-muted-foreground">선택 태그</dt>
+                <dd className="font-semibold text-foreground">{tags.length}개</dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt className="text-muted-foreground">확인 절차</dt>
+                <dd className="text-right font-semibold text-foreground">불필요(일상 기록)</dd>
+              </div>
+            </dl>
+          </div>
 
-        <Field label="연결할 IEP 목표 (선택)">
-          <select
-            className={fieldClass}
-            value={linkedGoalArea}
-            onChange={(e) => setLinkedGoalArea(e.target.value)}
-            disabled={goalOptions.length === 0}
-          >
-            <option value="">
-              {goalOptions.length === 0 ? "연결 가능한 IEP 목표가 없습니다" : "연결 안 함"}
-            </option>
-            {goalOptions.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-        </Field>
+          {error && (
+            <p role="alert" className="text-body font-semibold text-red-600">
+              {error}
+            </p>
+          )}
 
-        {error && (
-          <p role="alert" className="text-body font-semibold text-red-600">
-            {error}
-          </p>
-        )}
-
-        <TargetPersonBanner name={students.find((s) => s.personId === personId)?.fullName} />
-
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="outline" className="h-11" onClick={() => router.back()}>
-            취소
-          </Button>
-          <Button
-            type="button"
-            className="h-11 bg-domain-edu-accent font-bold text-domain-edu-text"
-            disabled={busy}
-            onClick={save}
-          >
-            {busy ? "저장 중..." : "관찰기록 저장"}
-          </Button>
+          <div className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm ring-1 ring-foreground/10">
+            <TargetPersonBanner name={student?.fullName} />
+            <Button
+              type="button"
+              className="h-11 bg-domain-edu-accent font-bold text-domain-edu-text"
+              disabled={busy}
+              onClick={save}
+            >
+              {busy ? "저장 중..." : "관찰기록 저장"}
+            </Button>
+            <Button type="button" variant="outline" className="h-11" onClick={() => router.back()}>
+              취소
+            </Button>
+          </div>
         </div>
       </div>
     </div>

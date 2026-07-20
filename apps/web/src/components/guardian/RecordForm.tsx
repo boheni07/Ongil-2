@@ -83,7 +83,7 @@ export function RecordForm({
   }
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-1 flex-col">
+    <div className="mx-auto flex max-w-6xl flex-1 flex-col">
       <h1 className="text-headline-1 font-extrabold text-foreground">
         {isEdit ? "기록 수정" : "새 기록 작성"}
       </h1>

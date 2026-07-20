@@ -96,7 +96,7 @@ export function CaseConferenceForm({
   }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-3xl flex-1 flex-col">
+    <div className="mx-auto flex min-h-full max-w-6xl flex-1 flex-col">
       <h1 className="text-headline-2 font-extrabold text-foreground">
         사례회의록 작성{" "}
         <span className="text-body font-medium text-muted-foreground">WEL-006</span>
@@ -106,85 +106,96 @@ export function CaseConferenceForm({
         {client && <StageBadge lifeStage={client.lifeStage} className="min-h-6 pr-2 text-[11px]" />}
       </p>
 
-      <div className="mt-6 flex flex-col gap-4 rounded-xl bg-white p-5 ring-1 ring-foreground/10">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="대상 당사자" required>
-            <select
-              className={fieldClass}
-              value={personId}
-              onChange={(e) => setPersonId(e.target.value)}
-            >
-              {clients.map((c) => (
-                <option key={c.personId} value={c.personId}>
-                  {c.fullName}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="회의 일시" required>
-            <input
-              type="datetime-local"
-              className={fieldClass}
-              value={meetingDate}
-              onChange={(e) => setMeetingDate(e.target.value)}
-            />
-          </Field>
+      {/* 2026-07-20: 기록 작성화면의 와이드 레이아웃 기준을 IEP(EDU-001)로 통일. */}
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
+        <div className="flex flex-col gap-6">
+          <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
+            <legend className="text-sm font-bold text-foreground">회의 정보</legend>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="대상 당사자" required>
+                <select
+                  className={fieldClass}
+                  value={personId}
+                  onChange={(e) => setPersonId(e.target.value)}
+                >
+                  {clients.map((c) => (
+                    <option key={c.personId} value={c.personId}>
+                      {c.fullName}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="회의 일시" required>
+                <input
+                  type="datetime-local"
+                  className={fieldClass}
+                  value={meetingDate}
+                  onChange={(e) => setMeetingDate(e.target.value)}
+                />
+              </Field>
+            </div>
+
+            <Field label="참석자 (쉼표로 구분)" required>
+              <input
+                className={fieldClass}
+                value={participantsText}
+                onChange={(e) => setParticipantsText(e.target.value)}
+                placeholder="예: 김사회복지사, 이보호자, 박특수교사"
+              />
+            </Field>
+
+            <Field label="논의 내용" required>
+              <textarea
+                className={`${fieldClass} min-h-32`}
+                value={discussion}
+                onChange={(e) => setDiscussion(e.target.value)}
+                maxLength={3000}
+                placeholder="회의에서 논의한 내용을 기록하세요."
+              />
+            </Field>
+
+            <Field label="결정사항 (선택)">
+              <textarea
+                className={`${fieldClass} min-h-24`}
+                value={decisions}
+                onChange={(e) => setDecisions(e.target.value)}
+                maxLength={2000}
+                placeholder="회의에서 결정된 사항을 기록하세요."
+              />
+            </Field>
+          </fieldset>
         </div>
 
-        <Field label="참석자 (쉼표로 구분)" required>
-          <input
-            className={fieldClass}
-            value={participantsText}
-            onChange={(e) => setParticipantsText(e.target.value)}
-            placeholder="예: 김사회복지사, 이보호자, 박특수교사"
-          />
-        </Field>
+        <div className="flex flex-col gap-4 lg:sticky lg:top-6">
+          <div className="rounded-xl bg-domain-wel-bg p-5 text-body text-domain-wel-text ring-1 ring-domain-wel-accent/30">
+            📝 사례회의록은 일상 기록으로 확인 절차 없이 바로 저장됩니다.
+          </div>
 
-        <Field label="논의 내용" required>
-          <textarea
-            className={`${fieldClass} min-h-32`}
-            value={discussion}
-            onChange={(e) => setDiscussion(e.target.value)}
-            maxLength={3000}
-            placeholder="회의에서 논의한 내용을 기록하세요."
-          />
-        </Field>
+          {error && (
+            <p role="alert" className="text-body font-semibold text-red-600">
+              {error}
+            </p>
+          )}
 
-        <Field label="결정사항 (선택)">
-          <textarea
-            className={`${fieldClass} min-h-24`}
-            value={decisions}
-            onChange={(e) => setDecisions(e.target.value)}
-            maxLength={2000}
-            placeholder="회의에서 결정된 사항을 기록하세요."
-          />
-        </Field>
-
-        {error && (
-          <p role="alert" className="text-body font-semibold text-red-600">
-            {error}
-          </p>
-        )}
-
-        <TargetPersonBanner name={client?.fullName} />
-
-        <div className="flex justify-end gap-2 pt-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="h-11"
-            onClick={() => router.push("/records/case-notes")}
-          >
-            취소
-          </Button>
-          <Button
-            type="button"
-            className="h-11 bg-domain-wel-accent font-bold text-white"
-            disabled={busy}
-            onClick={save}
-          >
-            {busy ? "저장 중..." : "사례회의록 저장"}
-          </Button>
+          <div className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm ring-1 ring-foreground/10">
+            <TargetPersonBanner name={client?.fullName} />
+            <Button
+              type="button"
+              className="h-11 bg-domain-wel-accent font-bold text-white"
+              disabled={busy}
+              onClick={save}
+            >
+              {busy ? "저장 중..." : "사례회의록 저장"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11"
+              onClick={() => router.push("/records/case-notes")}
+            >
+              취소
+            </Button>
+          </div>
         </div>
       </div>
     </div>
