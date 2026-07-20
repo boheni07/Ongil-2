@@ -1,60 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  getRecordDetail,
-  confirmRecord,
-  type RecordListItem,
-  type RecordDetail,
-} from "@/app/(app)/persons/[id]/records/actions";
+import type { RecordListItem } from "@/app/(app)/persons/[id]/records/actions";
 import { DomainChip } from "@/components/timeline/DomainChip";
 import { ConfirmBadge } from "@/components/records/ConfirmBadge";
-import { ConfirmCTA } from "@/components/records/ConfirmCTA";
-import { RecordContentView } from "@/components/records/RecordContentView";
-import { TherapyPlanReadView } from "@/components/records/TherapyPlanReadView";
-import { IepReadView } from "@/components/records/IepReadView";
-import { ObservationReadView } from "@/components/records/ObservationReadView";
-import { BipReadView } from "@/components/records/BipReadView";
-import { ItpReadView } from "@/components/records/ItpReadView";
-import { SessionNoteReadView } from "@/components/records/SessionNoteReadView";
-import { EvalReportReadView } from "@/components/records/EvalReportReadView";
-import { IspReadView } from "@/components/records/IspReadView";
-import { CaseConferenceReadView } from "@/components/records/CaseConferenceReadView";
-import { TransitionPlanReadView } from "@/components/records/TransitionPlanReadView";
-import { GuardianshipReportReadView } from "@/components/records/GuardianshipReportReadView";
-import { AdvocacyConsultationReadView } from "@/components/records/AdvocacyConsultationReadView";
-import { JournalReadView } from "@/components/records/JournalReadView";
-import { SelfExpressionReadView } from "@/components/records/SelfExpressionReadView";
-import { ServiceUsageReadView } from "@/components/records/ServiceUsageReadView";
+import { RecordDetailPane } from "@/components/records/RecordDetailPane";
 import { Button } from "@/components/ui/button";
-
-/**
- * record_type → 전용 읽기 전용 뷰. GEN-001(자유기록)은 이 맵 밖에서 `GuardianBody`가 따로
- * 처리한다 — 이 맵에 없는 record_type이 있으면 안 되므로(2026-07-20 "모두 처리해줘" 피드백,
- * WEL-005가 누락돼 있었음) 16종 record_type 전부가 여기 아니면 GuardianBody여야 한다.
- */
-const STRUCTURED_READ_VIEWS: Record<string, (props: { content: unknown }) => React.JSX.Element> = {
-  "MED-005": TherapyPlanReadView,
-  "EDU-001": IepReadView,
-  "EDU-002": ObservationReadView,
-  "EDU-003": BipReadView,
-  "EDU-005": ItpReadView,
-  "MED-006": SessionNoteReadView,
-  "MED-007": EvalReportReadView,
-  "WEL-004": IspReadView,
-  "WEL-005": ServiceUsageReadView,
-  "WEL-006": CaseConferenceReadView,
-  "TRA-001": TransitionPlanReadView,
-  "LEG-001": GuardianshipReportReadView,
-  "LEG-002": AdvocacyConsultationReadView,
-  "DAI-002": JournalReadView,
-  "SELF-001": SelfExpressionReadView,
-};
 
 /**
  * G-20 기록 관리 — Split Pane(좌: 검색+목록 / 우: 상세).
  * docs/02-ia.md §3-3, 프로토타입 web-guardian.html 455~523줄.
+ * 우측 상세는 `RecordDetailPane`(2026-07-20, 타임라인과 공용으로 분리)이 전담한다.
  */
 export function RecordManager({
   personId,
@@ -67,10 +24,6 @@ export function RecordManager({
 }) {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(initialItems[0]?.id ?? null);
-  const [detail, setDetail] = useState<RecordDetail | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [confirmBusy, setConfirmBusy] = useState(false);
-  const [confirmError, setConfirmError] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -81,39 +34,6 @@ export function RecordManager({
         (r.authorName?.toLowerCase().includes(q) ?? false)
     );
   }, [initialItems, query]);
-
-  useEffect(() => {
-    if (!selectedId) {
-      setDetail(null);
-      return;
-    }
-    let active = true;
-    setDetailLoading(true);
-    setConfirmError(null);
-    getRecordDetail(selectedId).then((res) => {
-      if (active) {
-        setDetail(res);
-        setDetailLoading(false);
-      }
-    });
-    return () => {
-      active = false;
-    };
-  }, [selectedId]);
-
-  async function handleConfirm() {
-    if (!detail) return;
-    setConfirmBusy(true);
-    setConfirmError(null);
-    const res = await confirmRecord(detail.id);
-    if (res.error) {
-      setConfirmError(res.error);
-      setConfirmBusy(false);
-      return;
-    }
-    setDetail({ ...detail, confirmedAt: new Date().toISOString() });
-    setConfirmBusy(false);
-  }
 
   return (
     <div className="flex flex-1 flex-col">
@@ -196,111 +116,9 @@ export function RecordManager({
         </div>
 
         <div className="min-h-0 overflow-y-auto p-5">
-          {detailLoading && <p className="text-body text-muted-foreground">불러오는 중...</p>}
-          {!detailLoading && !detail && (
-            <p className="text-body text-muted-foreground">기록을 선택해주세요.</p>
-          )}
-          {!detailLoading && detail && (
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <DomainChip domain={detail.domain} />
-                  <h2 className="text-headline-2 font-bold text-foreground">{detail.title}</h2>
-                </div>
-                <Button
-                  render={<Link href={`/persons/${personId}/records/${detail.id}/edit`} />}
-                  variant="outline"
-                  className="h-9"
-                >
-                  ✎ 수정
-                </Button>
-              </div>
-              <p className="text-caption text-muted-foreground">
-                👤 작성자 {detail.authorName ?? "알 수 없음"} · 🗓 {detail.recordDate.slice(0, 10)}
-              </p>
-
-              {detail.requiresConfirmation && !detail.confirmedAt && (
-                <div className="rounded-(--br-md) bg-domain-dai-bg p-4 ring-1 ring-domain-dai-accent/30">
-                  <p className="text-body text-foreground">
-                    🔑 이 기록은 공식 문서로 <b>확인</b>이 필요합니다. 승인·반려가 아니라 내용을
-                    확인했음을 남기는 절차입니다.
-                  </p>
-                  {confirmError && (
-                    <p role="alert" className="mt-2 text-caption font-semibold text-red-600">
-                      {confirmError}
-                    </p>
-                  )}
-                  <ConfirmCTA
-                    onConfirm={handleConfirm}
-                    busy={confirmBusy}
-                    className="mt-3 h-10 font-bold"
-                  />
-                </div>
-              )}
-              {detail.requiresConfirmation && detail.confirmedAt && (
-                <ConfirmBadge confirmedAt={detail.confirmedAt} />
-              )}
-
-              {detail.isGuardianRecord ? (
-                <GuardianBody content={detail.content} />
-              ) : (
-                <StructuredBody
-                  recordType={detail.recordType}
-                  content={detail.content}
-                  guardianNote={detail.guardianNote}
-                />
-              )}
-            </div>
-          )}
+          <RecordDetailPane recordId={selectedId} personId={personId} />
         </div>
       </div>
-    </div>
-  );
-}
-
-function GuardianBody({ content }: { content: unknown }) {
-  const c = content as { title?: string; body?: string } | null;
-  return (
-    <div className="rounded-(--br-lg) border border-border bg-white p-5 shadow-sm">
-      <p className="text-[11px] font-bold tracking-wide text-muted-foreground/80 uppercase">내용</p>
-      <p className="mt-1.5 whitespace-pre-wrap text-[15px] leading-relaxed font-semibold text-foreground">
-        {c?.body ?? ""}
-      </p>
-    </div>
-  );
-}
-
-function StructuredBody({
-  recordType,
-  content,
-  guardianNote,
-}: {
-  recordType: string;
-  content: unknown;
-  guardianNote: { title: string; body: string; editedAt: string } | null;
-}) {
-  const rest = { ...((content as Record<string, unknown>) ?? {}) };
-  delete rest.guardianNote;
-  const ReadView = STRUCTURED_READ_VIEWS[recordType];
-  return (
-    <div className="flex flex-col gap-4">
-      {ReadView ? (
-        <ReadView content={rest} />
-      ) : (
-        <div className="rounded-(--br-lg) border border-border bg-white p-5 shadow-sm">
-          <p className="mb-4 text-[11px] font-bold tracking-wide text-muted-foreground/80 uppercase">
-            원본 기록 내용
-          </p>
-          <RecordContentView content={rest} />
-        </div>
-      )}
-      {guardianNote && (
-        <div className="rounded-(--br-lg) bg-primary-50 p-5 ring-1 ring-primary-100">
-          <p className="text-[11px] font-bold tracking-wide text-primary-700/80 uppercase">보호자 메모</p>
-          <p className="mt-1.5 text-[15px] font-bold text-foreground">{guardianNote.title}</p>
-          <p className="mt-1 whitespace-pre-wrap text-body text-foreground">{guardianNote.body}</p>
-        </div>
-      )}
     </div>
   );
 }

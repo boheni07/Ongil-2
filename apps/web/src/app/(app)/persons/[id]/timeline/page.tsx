@@ -29,6 +29,7 @@ export default async function GuardianTimelinePage({
       personName={person.fullName}
       emergencyInfo={emergencyInfo}
       birthDate={person.birthDate}
+      personId={id}
     />
   );
 }

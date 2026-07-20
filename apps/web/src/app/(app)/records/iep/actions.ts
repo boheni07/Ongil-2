@@ -87,6 +87,7 @@ export interface TimelineItem {
   isPinned: boolean;
   isDraft: boolean;
   tags: string[];
+  authorName: string | null;
 }
 
 function firstIssue(error: { issues: { message: string }[] }): string {
@@ -446,6 +447,7 @@ interface RawTimelineRow {
   is_pinned: boolean | null;
   is_draft: boolean | null;
   tags: string[] | null;
+  author: { full_name: string } | { full_name: string }[] | null;
 }
 
 /**
@@ -462,7 +464,9 @@ export async function getTimeline(
   const supabase = await createClient();
   let query = supabase
     .from("records")
-    .select("id, domain, record_type, content, record_date, is_milestone, is_pinned, is_draft, tags")
+    .select(
+      "id, domain, record_type, content, record_date, is_milestone, is_pinned, is_draft, tags, author:users!records_author_id_fkey(full_name)"
+    )
     .eq("person_id", personId)
     .order("record_date", { ascending: false })
     .limit(100);
@@ -471,15 +475,19 @@ export async function getTimeline(
   const { data, error } = await query;
   if (error || !data) return [];
 
-  return (data as RawTimelineRow[]).map((row) => ({
-    id: row.id,
-    domain: row.domain as DomainKey,
-    recordType: row.record_type,
-    title: recordDisplayTitle(row.record_type, row.content),
-    date: row.record_date,
-    isMilestone: Boolean(row.is_milestone),
-    isPinned: Boolean(row.is_pinned),
-    isDraft: Boolean(row.is_draft),
-    tags: Array.isArray(row.tags) ? row.tags : [],
-  }));
+  return (data as RawTimelineRow[]).map((row) => {
+    const author = Array.isArray(row.author) ? row.author[0] : row.author;
+    return {
+      id: row.id,
+      domain: row.domain as DomainKey,
+      recordType: row.record_type,
+      title: recordDisplayTitle(row.record_type, row.content),
+      date: row.record_date,
+      isMilestone: Boolean(row.is_milestone),
+      isPinned: Boolean(row.is_pinned),
+      isDraft: Boolean(row.is_draft),
+      tags: Array.isArray(row.tags) ? row.tags : [],
+      authorName: author?.full_name ?? null,
+    };
+  });
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { DomainKey } from "@ongil/shared";
 import type { EmergencyInfoInput } from "@ongil/validation";
 import type { TimelineItem } from "@/app/(app)/records/iep/actions";
@@ -8,11 +8,15 @@ import { TimelineStream } from "@/components/timeline/TimelineStream";
 import { TimelineLane } from "@/components/timeline/TimelineLane";
 import { StageBadge, type LifeStage } from "@/components/lifecycle/StageBadge";
 import { computeLifeStage } from "@/lib/lifecycle";
+import { RecordDetailPane } from "@/components/records/RecordDetailPane";
+import { PinnedCard } from "@/components/timeline/PinnedCard";
 
 /**
  * 생애주기 타임라인 최상위 뷰(구 EduTimeline). T-20/W-20/TH-20/G-10 공용.
  * 스트림 뷰(날짜 내림차순) ↔ 레인 뷰(도메인별 컬럼) 토글 + 도메인 필터.
- * emergencyInfo가 주어질 때만 스트림 상단에 PinnedCard가 노출된다(전 역할 호출부 공통 지원).
+ * emergencyInfo가 주어질 때만 PinnedCard가 노출된다(전 역할 호출부 공통 지원).
+ * 2026-07-20: PinnedCard를 스트림 목록에서 분리해 뷰·필터와 무관하게 항상 최상단에
+ * 고정 노출한다(스크롤되는 좌측 목록 안에 있으면 필터링·스크롤에 따라 안 보일 수 있었음).
  * docs/03-uiux.md §6-2·§8.
  */
 
@@ -43,6 +47,7 @@ export function TimelineView({
   emergencyInfo,
   domainFilterDefault = "ALL",
   birthDate,
+  personId,
 }: {
   items: TimelineItem[];
   personName: string;
@@ -50,10 +55,13 @@ export function TimelineView({
   domainFilterDefault?: DomainKey | "ALL";
   /** 있으면 헤더 StageBadge·단계 필터·레인뷰 전환 구분선을 노출한다(없으면 하위 호환으로 생략). */
   birthDate?: string;
+  /** 있으면 스트림 뷰 우측 상세 패널의 "✎ 수정" 링크가 뜬다. */
+  personId?: string;
 }) {
   const [view, setView] = useState<View>("stream");
   const [domainFilter, setDomainFilter] = useState<DomainKey | "ALL">(domainFilterDefault);
   const [stageFilter, setStageFilter] = useState<StageFilter>("ALL");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const domains = useMemo(() => {
     const set = new Set<DomainKey>();
@@ -69,6 +77,14 @@ export function TimelineView({
     }
     return out;
   }, [items, domainFilter, stageFilter, birthDate]);
+
+  // 스트림 뷰 우측 상세 패널의 기본 선택 — 필터가 바뀌어 선택 항목이 목록에서 사라지면
+  // 첫 번째 항목으로 다시 맞춘다(2026-07-20, 목록 클릭→상세 연동 신설).
+  useEffect(() => {
+    if (!filtered.some((it) => it.id === selectedId)) {
+      setSelectedId(filtered[0]?.id ?? null);
+    }
+  }, [filtered, selectedId]);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -125,12 +141,35 @@ export function TimelineView({
         </label>
       </div>
 
-      {filtered.length === 0 && emergencyInfo === undefined ? (
+      {emergencyInfo !== undefined && (
+        <div className="mt-5">
+          <PinnedCard emergencyInfo={emergencyInfo ?? null} personName={personName} />
+        </div>
+      )}
+
+      {filtered.length === 0 ? (
         <p className="mt-6 rounded-xl bg-white p-5 text-body text-muted-foreground ring-1 ring-foreground/10">
           표시할 기록이 없습니다.
         </p>
       ) : view === "stream" ? (
-        <TimelineStream items={filtered} personName={personName} emergencyInfo={emergencyInfo} />
+        /*
+          스트림 뷰만 좌(목록)·우(상세) 분할한다(2026-07-20, "목록 선택하면 우측에 상세보기"
+          요청 반영) — 레인 뷰는 도메인 병렬 컬럼 자체가 가로로 넓어 분할과 안 맞아 그대로 둔다.
+          RecordManager와 동일하게 고정 높이 그리드로 좌우가 각자 독립 스크롤되게 한다.
+        */
+        <div className="mt-6 grid h-[calc(100vh-320px)] min-h-[420px] min-w-0 gap-0 rounded-xl bg-white shadow-md ring-1 ring-foreground/10 lg:grid-cols-[380px_1fr]">
+          <div className="min-h-0 overflow-y-auto border-b border-border p-4 lg:border-b-0 lg:border-r">
+            <TimelineStream
+              items={filtered}
+              birthDate={birthDate}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+            />
+          </div>
+          <div className="min-h-0 overflow-y-auto p-5">
+            <RecordDetailPane recordId={selectedId} personId={personId} />
+          </div>
+        </div>
       ) : (
         <TimelineLane items={filtered} birthDate={birthDate} />
       )}

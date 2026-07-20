@@ -103,13 +103,19 @@ export function TimelineLane({
                     key={entry.item.id}
                     className="rounded-(--br-md) bg-white p-3 ring-1 ring-foreground/10"
                   >
-                    <div className="text-caption font-semibold text-muted-foreground">
-                      {formatTimelineDate(entry.item.date).slice(5)}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-caption font-semibold text-muted-foreground">
+                        {formatTimelineDate(entry.item.date).slice(5)}
+                      </span>
+                      <DomainChip domain={entry.item.domain} className="h-5 text-[11px]" />
                     </div>
                     <div className="mt-0.5 text-body font-semibold text-foreground">
                       {entry.item.title}
                       {entry.item.isMilestone && <span className="text-accent-amber"> ◆</span>}
                     </div>
+                    {entry.item.authorName && (
+                      <div className="mt-1 text-caption text-muted-foreground">👤 {entry.item.authorName}</div>
+                    )}
                   </div>
                 )
               )}
