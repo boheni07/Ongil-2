@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -10,10 +19,12 @@ import {
   type GuardianPerson,
   type PersonSummaryCards,
 } from "../lib/guardian";
+import { computeLifeStage } from "../lib/iep";
 import { koreanAge, relativeDay } from "../lib/date";
 import { DomainChip } from "../components/DomainChip";
 import { PendingConfirmCard } from "../components/dashboard/PendingConfirmCard";
 import { NotificationBell } from "../components/NotificationBell";
+import { StageBadge } from "../components/lifecycle/StageBadge";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { GuardianStackParamList } from "../navigation/types";
 
@@ -26,6 +37,9 @@ export function GuardianDashboardScreen({ navigation }: Props) {
   const [persons, setPersons] = useState<GuardianPerson[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [summary, setSummary] = useState<PersonSummaryCards | null>(null);
+  // 웹 PersonSlider.tsx와 동일하게 3명 이상일 때만 그리드 보기를 노출한다(docs/13 Wave Q-4 —
+  // 다자녀 보호자가 가로 슬라이더만으로는 전체를 훑어보기 어렵다는 리빙랩 관찰이 근거).
+  const [viewMode, setViewMode] = useState<"slider" | "grid">("slider");
 
   const load = useCallback(async () => {
     const list = await getGuardianPersons();
@@ -79,43 +93,51 @@ export function GuardianDashboardScreen({ navigation }: Props) {
           <Text style={styles.emptyText}>아직 등록된 당사자가 없습니다.</Text>
         </View>
       ) : (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.slider}
-          accessibilityLabel="당사자 슬라이더"
-        >
-          {persons.map((p) => {
-            const sel = p.id === selectedId;
-            const age = koreanAge(p.birthDate);
-            return (
-              <Pressable
-                key={p.id}
-                accessibilityRole="button"
-                accessibilityState={{ selected: sel }}
-                accessibilityLabel={`${p.fullName}${age != null ? ` 만 ${age}세` : ""}`}
-                onPress={() => setSelectedId(p.id)}
-                style={[styles.personCard, sel && styles.personCardSel]}
-              >
-                <View style={styles.pcHead}>
-                  <Text style={styles.avatar}>🧑</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.pcName}>{p.fullName}</Text>
-                    <Text style={styles.pcMeta}>
-                      {p.birthDate}
-                      {age != null ? ` · 만 ${age}세` : ""}
-                    </Text>
-                    <Text style={styles.pcMeta}>
-                      {p.disabilityTypes.length ? p.disabilityTypes.join(", ") : "장애정보 미등록"}
-                      {p.disabilityDegree ? ` · ${p.disabilityDegree === "severe" ? "심함" : "심하지 않음"}` : ""}
-                    </Text>
-                  </View>
-                </View>
-                {p.isAdult ? <Text style={styles.adultTag}>성년</Text> : null}
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+        <>
+          {persons.length > 2 && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={viewMode === "slider" ? "그리드로 보기" : "슬라이더로 보기"}
+              onPress={() => setViewMode((m) => (m === "slider" ? "grid" : "slider"))}
+              style={({ pressed }) => [styles.viewToggle, pressed && styles.pressed]}
+            >
+              <Text style={styles.viewToggleText}>
+                {viewMode === "slider" ? "⊞ 그리드로 보기" : "⟷ 슬라이더로 보기"}
+              </Text>
+            </Pressable>
+          )}
+
+          {viewMode === "slider" || persons.length <= 2 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.slider}
+              accessibilityLabel="당사자 슬라이더"
+            >
+              {persons.map((p) => (
+                <PersonCard
+                  key={p.id}
+                  person={p}
+                  selected={p.id === selectedId}
+                  onSelect={() => setSelectedId(p.id)}
+                  style={styles.personCard}
+                />
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={styles.grid}>
+              {persons.map((p) => (
+                <PersonCard
+                  key={p.id}
+                  person={p}
+                  selected={p.id === selectedId}
+                  onSelect={() => setSelectedId(p.id)}
+                  style={styles.personCardGrid}
+                />
+              ))}
+            </View>
+          )}
+        </>
       )}
 
       <Pressable
@@ -250,6 +272,47 @@ export function GuardianDashboardScreen({ navigation }: Props) {
   );
 }
 
+function PersonCard({
+  person: p,
+  selected,
+  onSelect,
+  style,
+}: {
+  person: GuardianPerson;
+  selected: boolean;
+  onSelect: () => void;
+  style: StyleProp<ViewStyle>;
+}) {
+  const age = koreanAge(p.birthDate);
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      accessibilityLabel={`${p.fullName}${age != null ? ` 만 ${age}세` : ""}`}
+      onPress={onSelect}
+      style={[styles.personCardBase, style, selected && styles.personCardSel]}
+    >
+      <View style={styles.pcHead}>
+        <Text style={styles.avatar}>🧑</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.pcName}>{p.fullName}</Text>
+          <Text style={styles.pcMeta}>
+            {p.birthDate}
+            {age != null ? ` · 만 ${age}세` : ""}
+          </Text>
+          <Text style={styles.pcMeta}>
+            {p.disabilityTypes.length ? p.disabilityTypes.join(", ") : "장애정보 미등록"}
+            {p.disabilityDegree ? ` · ${p.disabilityDegree === "severe" ? "심함" : "심하지 않음"}` : ""}
+          </Text>
+        </View>
+      </View>
+      {/* docs/13 Wave Q-4: 웹 카드는 생애주기 배지를 쓰는데 모바일은 "성년" 텍스트 태그로
+          축약돼 있던 정보 밀도 격차를 해소 — 웹과 동일하게 StageBadge로 통일한다. */}
+      <StageBadge lifeStage={computeLifeStage(p.birthDate)} style={styles.stageBadge} />
+    </Pressable>
+  );
+}
+
 function EmergencyRow({ label, value }: { label: string; value?: string }) {
   return (
     <View style={styles.emRow}>
@@ -272,31 +335,39 @@ const styles = StyleSheet.create({
   emptyBox: { padding: SPACING.xl, alignItems: "center", backgroundColor: NEUTRAL.surface, borderRadius: RADIUS.md, marginTop: SPACING.lg },
   emptyText: { fontSize: FONT.body, color: NEUTRAL.textMuted },
   slider: { gap: SPACING.md, paddingVertical: SPACING.lg },
-  personCard: {
-    width: 260,
+  viewToggle: {
+    alignSelf: "flex-end",
+    marginTop: SPACING.md,
+    minHeight: 36,
+    paddingHorizontal: SPACING.md,
+    justifyContent: "center",
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: NEUTRAL.border,
+    backgroundColor: NEUTRAL.bg,
+  },
+  viewToggleText: { fontSize: 13, fontWeight: "700", color: NEUTRAL.text },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: SPACING.md,
+    paddingVertical: SPACING.lg,
+  },
+  personCardBase: {
     padding: SPACING.md,
     borderRadius: RADIUS.lg,
     borderWidth: 2,
     borderColor: NEUTRAL.border,
     backgroundColor: NEUTRAL.bg,
   },
+  personCard: { width: 260 },
+  personCardGrid: { flexBasis: "47%", flexGrow: 1 },
   personCardSel: { borderColor: PRIMARY[600], backgroundColor: PRIMARY[50] },
   pcHead: { flexDirection: "row", gap: SPACING.md, alignItems: "center" },
   avatar: { fontSize: 40 },
   pcName: { fontSize: 18, fontWeight: "800", color: NEUTRAL.text },
   pcMeta: { fontSize: 13, color: NEUTRAL.textMuted, marginTop: 2 },
-  adultTag: {
-    alignSelf: "flex-start",
-    marginTop: SPACING.sm,
-    fontSize: 11,
-    fontWeight: "700",
-    color: PRIMARY[700],
-    backgroundColor: PRIMARY[100],
-    borderRadius: RADIUS.sm,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    overflow: "hidden",
-  },
+  stageBadge: { marginTop: SPACING.sm },
   addBtn: {
     minHeight: 48,
     borderRadius: RADIUS.md,
