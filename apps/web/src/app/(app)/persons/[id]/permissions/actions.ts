@@ -271,6 +271,110 @@ export async function cyclePermissionCell(
   return { ok: true, newLevel: target };
 }
 
+/** edit 레벨 진입 시 valid_until 자동 부여(가드레일) — cyclePermissionCell과 동일 규칙. */
+async function resolveEditValidUntil(
+  supabase: SupabaseClient,
+  granteeId: string,
+  domain: DomainKey,
+  existingValidUntil: string | null
+): Promise<string> {
+  const keepExisting =
+    existingValidUntil !== null && existingValidUntil >= new Date().toISOString().slice(0, 10);
+  if (keepExisting) return existingValidUntil as string;
+
+  const granteeRole = await getGranteeRole(supabase, granteeId);
+  const days = granteeRole ? await presetValidDays(supabase, granteeRole, domain) : null;
+  return dateFromNow(days ?? EDIT_FALLBACK_VALID_DAYS);
+}
+
+/**
+ * G-30 우측 관리 메뉴 "수정" — 이해관계자 한 명의 6개 도메인 접근수준을 한 번에 반영한다
+ * (매트릭스 셀 클릭의 즉시저장 방식과 달리, 다이얼로그에서 여러 도메인을 고른 뒤 한 번만 저장).
+ * level="none"인 도메인은 회수(is_active=false), 그 외는 UPSERT(edit는 valid_until 가드레일 적용).
+ */
+export async function updateGranteePermissions(
+  personId: string,
+  granteeId: string,
+  domains: { domain: DomainKey; accessLevel: CellLevel }[]
+): Promise<ActionResult> {
+  if (!UUID_RE.test(personId) || !UUID_RE.test(granteeId)) {
+    return { error: "대상 정보가 올바르지 않습니다." };
+  }
+
+  const supabase = await createClient();
+  const guard = await requirePrimaryGuardian(supabase, personId);
+  if ("error" in guard) return { error: guard.error };
+
+  const { data: existingRows } = await supabase
+    .from("permissions")
+    .select("domain, valid_until")
+    .eq("person_id", personId)
+    .eq("grantee_id", granteeId);
+  const existingValidUntil = new Map<DomainKey, string | null>(
+    (existingRows ?? []).map((r) => [r.domain as DomainKey, (r.valid_until as string | null) ?? null])
+  );
+
+  const toRevoke = domains.filter((d) => d.accessLevel === "none").map((d) => d.domain);
+  const toUpsert = domains.filter((d) => d.accessLevel !== "none");
+
+  if (toRevoke.length > 0) {
+    const { error } = await supabase
+      .from("permissions")
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq("person_id", personId)
+      .eq("grantee_id", granteeId)
+      .in("domain", toRevoke);
+    if (error) return { error: `회수에 실패했습니다: ${error.message}` };
+  }
+
+  if (toUpsert.length > 0) {
+    const rows = await Promise.all(
+      toUpsert.map(async (d) => ({
+        person_id: personId,
+        grantee_id: granteeId,
+        domain: d.domain,
+        access_level: d.accessLevel,
+        is_active: true,
+        valid_until:
+          d.accessLevel === "edit"
+            ? await resolveEditValidUntil(supabase, granteeId, d.domain, existingValidUntil.get(d.domain) ?? null)
+            : (existingValidUntil.get(d.domain) ?? null),
+        granted_by: guard.userId,
+        updated_at: new Date().toISOString(),
+      }))
+    );
+    const { error } = await supabase
+      .from("permissions")
+      .upsert(rows, { onConflict: "person_id,grantee_id,domain" });
+    if (error) return { error: `권한 변경에 실패했습니다: ${error.message}` };
+  }
+
+  return { ok: true };
+}
+
+/**
+ * G-30 우측 관리 메뉴 "회수" — 이해관계자 한 명이 보유한 모든 도메인 권한을 한 번에 회수한다
+ * (revokePermission의 도메인 단위 버전과 달리 전체 일괄).
+ */
+export async function revokeAllPermissions(personId: string, granteeId: string): Promise<ActionResult> {
+  if (!UUID_RE.test(personId) || !UUID_RE.test(granteeId)) {
+    return { error: "대상 정보가 올바르지 않습니다." };
+  }
+
+  const supabase = await createClient();
+  const guard = await requirePrimaryGuardian(supabase, personId);
+  if ("error" in guard) return { error: guard.error };
+
+  const { error } = await supabase
+    .from("permissions")
+    .update({ is_active: false, updated_at: new Date().toISOString() })
+    .eq("person_id", personId)
+    .eq("grantee_id", granteeId)
+    .eq("is_active", true);
+  if (error) return { error: `회수에 실패했습니다: ${error.message}` };
+  return { ok: true };
+}
+
 async function getGranteeRole(
   supabase: SupabaseClient,
   granteeId: string
