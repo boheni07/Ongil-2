@@ -403,3 +403,58 @@ export async function getServiceUsage(filters?: {
 
   return rows;
 }
+
+/**
+ * docs/14 워크숍 Wave W-1/W-4 — 담당 당사자별 최신 WEL-005(서비스 이용현황) `next_review_date`.
+ * 웹 동형(records/isp/actions.ts getServiceUsageNextReviewDates). SocialWorkerHomeScreen의
+ * "이번 주 처리할 일" 카드가 사용한다.
+ */
+export async function getServiceUsageNextReviewDates(): Promise<
+  { personId: string; personName: string; nextReviewDate: string }[]
+> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: perms } = await supabase
+    .from("permissions")
+    .select("person_id")
+    .eq("grantee_id", user.id)
+    .eq("is_active", true);
+  if (!perms || perms.length === 0) return [];
+
+  const personIds = [...new Set(perms.map((p) => p.person_id as string))];
+
+  const [personsRes, planRes] = await Promise.all([
+    supabase.from("persons").select("id, full_name").in("id", personIds),
+    supabase
+      .from("records")
+      .select("person_id, content")
+      .in("person_id", personIds)
+      .eq("record_type", "WEL-005")
+      .eq("is_draft", false)
+      .order("record_date", { ascending: false }),
+  ]);
+
+  const nameById = new Map<string, string>();
+  for (const p of personsRes.data ?? []) {
+    nameById.set(p.id as string, (p.full_name as string) ?? "");
+  }
+
+  const seen = new Set<string>();
+  const rows: { personId: string; personName: string; nextReviewDate: string }[] = [];
+  for (const rec of (planRes.data ?? []) as RawServiceUsageRow[]) {
+    if (seen.has(rec.person_id)) continue; // record_date 내림차순 정렬이라 첫 등장이 최신
+    seen.add(rec.person_id);
+    const c = rec.content as { next_review_date?: unknown } | null;
+    if (typeof c?.next_review_date !== "string") continue;
+    rows.push({
+      personId: rec.person_id,
+      personName: nameById.get(rec.person_id) ?? "",
+      nextReviewDate: c.next_review_date,
+    });
+  }
+
+  return rows;
+}

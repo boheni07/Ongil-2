@@ -76,7 +76,7 @@
 | **W-1** ✅ 완료(2026-07-20, 웹만) | 백엔드: 역할별 "이번 주 처리할 일" 조회 함수 신설 — 특수교사(BIP review_date + ITP next_review_date), 사회복지사(ISP reassessment_date + WEL-005 next_review_date + TRA-001 next_review_date + LEG-001 next_report_due) 통합 쿼리. "완료" 판정 로직(마감일 이후 같은 record_type 최신 기록 존재 여부) 포함 | teacher/social_worker actions.ts |
 | **W-2** ✅ 완료(2026-07-20, 웹만) | 프론트: 마감일 기반 카드 컴포넌트(공용) — record_type 라벨·대상자명·D-day·"기한 초과" 강조 톤. `TeacherHome`·`SocialWorkerHome`에 적용, `SocialWorkerHome`의 기존 `TodayTasks`는 이 카드로 대체 | 웹 우선, 이후 모바일 |
 | **W-3** ✅ 완료(2026-07-20, 웹만) | 백엔드+프론트: 백로그 기반 카드 — 치료사(계획서 미작성 대상자 목록, 이미 파생 가능한 데이터라 백엔드 작업 적음), 활동지원사(기존 "임시저장 N건" 통계를 목록형 카드로 승격, 각 항목에 "마저 작성" 링크) | therapist/supporter |
-| **W-4** | 모바일 4역할 홈 화면에 W-2/W-3 반영(웹 검증 후 이월) | 모바일 |
+| **W-4** ✅ 완료(2026-07-20) | 모바일 4역할 홈 화면에 W-2/W-3 반영(웹 검증 후 이월) | 모바일 |
 
 **우선순위 제안(PM):** W-1→W-2(사회복지사가 데이터도 가장 많고 페르소나 요청도 컸음, 특수교사와 백엔드 함수 공용화)→W-3(치료사·활동지원사, 상대적으로 가벼움)→W-4.
 
@@ -98,3 +98,15 @@
 라이브 DB(social1 계정, RLS 통과 REST 조회)로 `next_review_date`/`next_report_due` 필드가 실제 seed 데이터에 값이 채워져 있음을 확인했다(다만 seed 날짜가 전부 2026-10-15라 지금 시점 "이번 주" 창에는 걸리지 않음 — 코드 정상, seed 데이터가 "이번 주 마감" 시나리오를 겨냥해 만들어진 게 아닐 뿐).
 
 `pnpm typecheck`·`build` 모두 통과. 모바일(W-4)은 이번 라운드 범위 밖.
+
+## 6. W-4 구현 기록 (2026-07-20)
+
+웹 4개 컴포넌트(`WeeklyTaskCard`/`BacklogTaskCard`/`lib/weekly-tasks.ts`/백엔드 보강)를 모바일에 1:1 이식했다.
+
+- `apps/mobile/src/lib/weekly-tasks.ts`(신규, 웹 동형) — 차이는 `href` 대신 `onPress: () => void`를 쓴다는 점뿐이다(RN 네비게이션은 문자열 경로가 아니라 route name+params라 각 홈 화면이 자신의 `navigation` 객체로 직접 콜백을 구성).
+- `apps/mobile/src/components/records/{WeeklyTaskCard,BacklogTaskCard}.tsx`(신규) — 기존 `Card` 컴포넌트(2026-07-20 mobile 카드화 라운드에서 신설) 위에 얹었다.
+- 백엔드: `lib/transition.ts`의 `TransitionClient.latestPlan`에 `nextReviewDate` 추출 추가(웹과 동일한 누락이 모바일에도 그대로 있었음), `lib/isp.ts`에 `getServiceUsageNextReviewDates()` 신설(웹과 동형).
+- `TeacherHomeScreen`/`SocialWorkerHomeScreen`에 `WeeklyTaskCard` 배치 — 사회복지사는 웹과 동일하게 기존 `TodayTasks` 함수+전용 스타일을 완전히 제거하고 대체했다.
+- `TherapistHomeScreen`/`SupporterHomeScreen`에 `BacklogTaskCard` 배치.
+
+`pnpm --filter @ongil/mobile typecheck` 통과. 에뮬레이터 부재로 실제 렌더링은 미검증(타입체크로만 확인) — 실기기 확보 시 스팟체크 대상. 이로써 docs/14 워크숍 Wave W-1~W-4 전체가 종결됐다.

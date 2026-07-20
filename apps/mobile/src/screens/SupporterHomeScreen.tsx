@@ -14,12 +14,17 @@ import { flushQueue, getQueue } from "../lib/offline-queue";
 import { useNetworkSync } from "../hooks/useNetworkSync";
 import { formatKoreanDate, relativeDay } from "../lib/date";
 import { NotificationBell } from "../components/NotificationBell";
+import { BacklogTaskCard, type BacklogTaskItem } from "../components/records/BacklogTaskCard";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { SupporterStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<SupporterStackParamList, "SupporterHome">;
 
-/** S-01 홈 — 인사·통계, 활동일지 작성 CTA, 작성한 일지 목록. */
+/**
+ * S-01 홈 — 인사·통계, 활동일지 작성 CTA, 작성한 일지 목록.
+ * "처리 대기 중"(docs/14 Wave W-4)은 방문 일정이 없어 날짜 기반 카드 대신 "임시저장 일지"
+ * 백로그로 대체한다(웹 동형) — 기존 "임시저장" 통계를 목록형으로 승격한 것뿐이다.
+ */
 export function SupporterHomeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
@@ -56,7 +61,14 @@ export function SupporterHomeScreen({ navigation }: Props) {
     }, [load])
   );
 
-  const draftCount = journals.filter((j) => j.isDraft).length;
+  const draftJournals = journals.filter((j) => j.isDraft);
+  const draftCount = draftJournals.length;
+  const backlogItems: BacklogTaskItem[] = draftJournals.map((j) => ({
+    personId: j.personId,
+    personName: j.personName ?? "이용자",
+    label: "일지 임시저장 — 마저 작성",
+    onPress: () => navigation.navigate("JournalDetail", { journalId: j.id }),
+  }));
 
   if (loading) {
     return (
@@ -114,6 +126,12 @@ export function SupporterHomeScreen({ navigation }: Props) {
       >
         <Text style={styles.secondaryCtaText}>🔁 인수인계</Text>
       </Pressable>
+
+      <BacklogTaskCard
+        title="📋 처리 대기 중"
+        emptyText="임시저장된 일지가 없습니다."
+        items={backlogItems}
+      />
 
       <Text style={styles.sectionTitle}>작성한 일지</Text>
       {journals.length === 0 ? (

@@ -68,6 +68,8 @@ export interface TransitionClient {
     roadmapStage: RoadmapStage | null;
     requiresConfirmation: boolean;
     confirmedAt: string | null;
+    /** docs/14 워크숍 — 홈 "이번 주 처리할 일" 카드용 다음 검토일(웹 동형). */
+    nextReviewDate: string | null;
   } | null;
 }
 
@@ -94,6 +96,11 @@ function planRoadmapStage(content: unknown): RoadmapStage | null {
   return s === "exploration" || s === "planning" || s === "training" || s === "employment"
     ? s
     : null;
+}
+
+function planNextReviewDate(content: unknown): string | null {
+  const c = content as { next_review_date?: unknown } | null;
+  return typeof c?.next_review_date === "string" ? c.next_review_date : null;
 }
 
 interface RawPlanRow {
@@ -159,6 +166,7 @@ export async function getTransitionPlanClients(): Promise<TransitionClient[]> {
             roadmapStage: planRoadmapStage(plan.content),
             requiresConfirmation: Boolean(plan.requires_confirmation),
             confirmedAt: plan.confirmed_at,
+            nextReviewDate: planNextReviewDate(plan.content),
           }
         : null,
     };

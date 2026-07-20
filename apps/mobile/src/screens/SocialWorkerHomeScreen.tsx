@@ -4,10 +4,18 @@ import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
-import { getSocialWorkerClients, type SocialWorkerClient } from "../lib/isp";
+import {
+  getSocialWorkerClients,
+  getServiceUsageNextReviewDates,
+  type SocialWorkerClient,
+} from "../lib/isp";
+import { getTransitionPlanClients, type TransitionClient } from "../lib/transition";
+import { getLegClients, type LegClient } from "../lib/leg";
 import { koreanAge } from "../lib/date";
 import { StageBadge } from "../components/lifecycle/StageBadge";
 import { NotificationBell } from "../components/NotificationBell";
+import { WeeklyTaskCard } from "../components/records/WeeklyTaskCard";
+import { ddayFrom, isWithinWeek, sortWeeklyTasks, type WeeklyTaskItem } from "../lib/weekly-tasks";
 import { DOMAIN_COLORS, FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { SocialWorkerStackParamList } from "../navigation/types";
 
@@ -18,12 +26,21 @@ function isReassessmentSoon(dday: number | null): boolean {
   return dday != null && dday >= 0 && dday <= 30;
 }
 
-/** W-01 홈 — 요약 통계, 담당 당사자 카드 목록. 카드 탭 시 ISP 점검 또는 새 ISP 작성으로 이동. */
+/**
+ * W-01 홈 — 요약 통계, 담당 당사자 카드 목록. 카드 탭 시 ISP 점검 또는 새 ISP 작성으로 이동.
+ * "이번 주 처리할 일"(docs/14 Wave W-4)은 ISP·WEL-005·TRA-001·LEG-001 4종 마감일을
+ * 통합한다(웹 동형) — 기존 TodayTasks(ISP만)를 이 카드로 완전히 대체했다.
+ */
 export function SocialWorkerHomeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [clients, setClients] = useState<SocialWorkerClient[]>([]);
+  const [serviceUsageReviews, setServiceUsageReviews] = useState<
+    { personId: string; personName: string; nextReviewDate: string }[]
+  >([]);
+  const [transitionClients, setTransitionClients] = useState<TransitionClient[]>([]);
+  const [legClients, setLegClients] = useState<LegClient[]>([]);
 
   const load = useCallback(async () => {
     const {
@@ -32,7 +49,12 @@ export function SocialWorkerHomeScreen({ navigation }: Props) {
     const meta = user?.user_metadata ?? {};
     setName((meta.full_name as string) || (meta.name as string) || "");
     // 성인기 당사자는 성인 서비스 전환 검토 대상이라 목록 최상단으로 끌어올린다(안정 정렬).
-    const list = await getSocialWorkerClients();
+    const [list, serviceUsageRes, transitionRes, legRes] = await Promise.all([
+      getSocialWorkerClients(),
+      getServiceUsageNextReviewDates(),
+      getTransitionPlanClients(),
+      getLegClients(),
+    ]);
     const sorted = list
       .map((c, i) => ({ c, i }))
       .sort((a, b) => {
@@ -42,6 +64,9 @@ export function SocialWorkerHomeScreen({ navigation }: Props) {
       })
       .map((x) => x.c);
     setClients(sorted);
+    setServiceUsageReviews(serviceUsageRes);
+    setTransitionClients(transitionRes);
+    setLegClients(legRes);
     setLoading(false);
   }, []);
 
@@ -61,6 +86,66 @@ export function SocialWorkerHomeScreen({ navigation }: Props) {
 
   const withIspCount = clients.filter((c) => c.latestIspRecordId).length;
   const reassessSoonCount = clients.filter((c) => isReassessmentSoon(c.reassessmentDday)).length;
+
+  const weeklyTasks = sortWeeklyTasks([
+    ...clients.flatMap((c): WeeklyTaskItem[] => {
+      if (c.reassessmentDday == null || !isWithinWeek(c.reassessmentDday)) return [];
+      return [
+        {
+          personId: c.personId,
+          personName: c.fullName,
+          recordType: "WEL-004",
+          label: "ISP 재사정",
+          dday: c.reassessmentDday,
+          onPress: () => navigation.navigate("IspWizard", { personId: c.personId, personName: c.fullName }),
+        },
+      ];
+    }),
+    ...serviceUsageReviews.flatMap((r): WeeklyTaskItem[] => {
+      const dday = ddayFrom(r.nextReviewDate);
+      if (dday == null || !isWithinWeek(dday)) return [];
+      return [
+        {
+          personId: r.personId,
+          personName: r.personName,
+          recordType: "WEL-005",
+          label: "서비스 이용현황 재검토",
+          dday,
+          onPress: () => navigation.navigate("ServiceUsage"),
+        },
+      ];
+    }),
+    ...transitionClients.flatMap((c): WeeklyTaskItem[] => {
+      const dday = ddayFrom(c.latestPlan?.nextReviewDate);
+      if (dday == null || !isWithinWeek(dday)) return [];
+      return [
+        {
+          personId: c.personId,
+          personName: c.fullName,
+          recordType: "TRA-001",
+          label: "전환계획 재검토",
+          dday,
+          onPress: () =>
+            navigation.navigate("TransitionPlanWizard", { personId: c.personId, personName: c.fullName }),
+        },
+      ];
+    }),
+    ...legClients.flatMap((c): WeeklyTaskItem[] => {
+      const dday = ddayFrom(c.latestReportDue);
+      if (dday == null || !isWithinWeek(dday)) return [];
+      return [
+        {
+          personId: c.personId,
+          personName: c.fullName,
+          recordType: "LEG-001",
+          label: "후견감독보고서 제출기한",
+          dday,
+          onPress: () =>
+            navigation.navigate("GuardianshipReportWizard", { personId: c.personId, personName: c.fullName }),
+        },
+      ];
+    }),
+  ]);
 
   const openClient = (c: SocialWorkerClient) => {
     if (c.latestIspRecordId) {
@@ -149,7 +234,7 @@ export function SocialWorkerHomeScreen({ navigation }: Props) {
         <Text style={styles.altBtnText}>🔁 인수인계</Text>
       </Pressable>
 
-      <TodayTasks clients={clients} navigation={navigation} />
+      <WeeklyTaskCard items={weeklyTasks} />
 
       <Text style={styles.sectionTitle}>담당 당사자</Text>
       {clients.length === 0 ? (
@@ -233,60 +318,10 @@ function Stat({ n, label }: { n: number; label: string }) {
   );
 }
 
-/**
- * "오늘 할 일"(프로토타입 app-social-worker.html/web-social-worker.html W-01) — 실제로
- * 판정 가능한 근거 데이터가 있는 건 ISP 재사정 임박/초과뿐이라(reassessmentDday) 그것만
- * 보여준다(웹 SocialWorkerHome.tsx의 TodayTasks와 동일 결정, 2026-07-19).
- */
-function TodayTasks({
-  clients,
-  navigation,
-}: {
-  clients: SocialWorkerClient[];
-  navigation: Props["navigation"];
-}) {
-  const tasks = clients.filter((c) => isReassessmentSoon(c.reassessmentDday));
-  if (tasks.length === 0) return null;
-  return (
-    <View style={styles.todayCard}>
-      <Text style={styles.todayTitle}>오늘 할 일</Text>
-      {tasks.map((c) => (
-        <Pressable
-          key={c.personId}
-          accessibilityRole="button"
-          onPress={() =>
-            c.latestIspRecordId
-              ? navigation.navigate("IspReview", { recordId: c.latestIspRecordId })
-              : navigation.navigate("IspWizard", { personId: c.personId, personName: c.fullName })
-          }
-          style={({ pressed }) => [styles.todayRow, pressed && styles.pressed]}
-        >
-          <View style={styles.todayDot} />
-          <Text style={styles.todayText}>
-            {c.fullName} ISP 재사정 D-{c.reassessmentDday}
-          </Text>
-        </Pressable>
-      ))}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: NEUTRAL.bg },
   content: { padding: SPACING.xl },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: NEUTRAL.bg },
-  todayCard: {
-    backgroundColor: "#fff",
-    borderRadius: RADIUS.lg,
-    padding: SPACING.lg,
-    marginTop: SPACING.lg,
-    borderWidth: 1,
-    borderColor: NEUTRAL.border,
-  },
-  todayTitle: { fontSize: FONT.body, fontWeight: "800", color: NEUTRAL.text, marginBottom: SPACING.xs },
-  todayRow: { flexDirection: "row", alignItems: "center", gap: SPACING.sm, paddingVertical: SPACING.sm },
-  todayDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: DOMAIN_COLORS.MED.accent },
-  todayText: { fontSize: FONT.caption, color: NEUTRAL.text },
   topRow: { flexDirection: "row", alignItems: "flex-start" },
   topActions: { flexDirection: "row", alignItems: "center", gap: SPACING.sm },
   title: { fontSize: FONT.h2, fontWeight: "800", color: NEUTRAL.text },

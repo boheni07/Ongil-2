@@ -8,12 +8,17 @@ import { getTherapistClients, type TherapistClient } from "../lib/therapy";
 import { koreanAge } from "../lib/date";
 import { StageBadge } from "../components/lifecycle/StageBadge";
 import { NotificationBell } from "../components/NotificationBell";
+import { BacklogTaskCard, type BacklogTaskItem } from "../components/records/BacklogTaskCard";
 import { FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { TherapistStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<TherapistStackParamList, "TherapistHome">;
 
-/** TH-01 홈 — 요약 통계, 담당 아동 카드 목록. 카드 탭 시 계획서 상세 또는 새 계획서 작성으로 이동. */
+/**
+ * TH-01 홈 — 요약 통계, 담당 아동 카드 목록. 카드 탭 시 계획서 상세 또는 새 계획서 작성으로 이동.
+ * "처리 대기 중"(docs/14 Wave W-4)은 치료계획서가 재검토일 필드를 스키마에 갖고 있지 않아
+ * 날짜 기반 카드 대신 "계획서 미작성 대상자" 백로그로 대체한다(웹 동형).
+ */
 export function TherapistHomeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
@@ -46,6 +51,14 @@ export function TherapistHomeScreen({ navigation }: Props) {
 
   const withPlanCount = clients.filter((c) => c.latestPlanRecordId).length;
   const totalSessions = clients.reduce((sum, c) => sum + c.sessionCount, 0);
+  const backlogItems: BacklogTaskItem[] = clients
+    .filter((c) => !c.latestPlanRecordId)
+    .map((c) => ({
+      personId: c.personId,
+      personName: c.fullName,
+      label: "치료계획서 미작성",
+      onPress: () => navigation.navigate("TherapyPlanWizard", { personId: c.personId, personName: c.fullName }),
+    }));
 
   const openClient = (c: TherapistClient) => {
     if (c.latestPlanRecordId) {
@@ -94,6 +107,12 @@ export function TherapistHomeScreen({ navigation }: Props) {
           <Text style={[styles.newBtnText, styles.newBtnAltText]}>＋ 평가보고서</Text>
         </Pressable>
       </View>
+
+      <BacklogTaskCard
+        title="📋 처리 대기 중"
+        emptyText="처리 대기 중인 항목이 없습니다."
+        items={backlogItems}
+      />
 
       <Text style={styles.sectionTitle}>담당 아동</Text>
       {clients.length === 0 ? (

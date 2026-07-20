@@ -10,20 +10,29 @@ import {
   isItpActiveStage,
   type TeacherStudent,
 } from "../lib/iep";
+import { getBipClients, type BipClient } from "../lib/bip";
+import { getItpClients, type ItpClient } from "../lib/itp";
 import { koreanAge } from "../lib/date";
 import { StageBadge } from "../components/lifecycle/StageBadge";
 import { NotificationBell } from "../components/NotificationBell";
+import { WeeklyTaskCard } from "../components/records/WeeklyTaskCard";
+import { ddayFrom, isWithinWeek, sortWeeklyTasks, type WeeklyTaskItem } from "../lib/weekly-tasks";
 import { DOMAIN_COLORS, FONT, NEUTRAL, PRIMARY, RADIUS, SPACING } from "../theme/colors";
 import type { TeacherStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<TeacherStackParamList, "TeacherHome">;
 
-/** T-01 홈 — 요약 통계, 담당 학생 카드 목록. 카드 탭 시 IEP 점검 또는 새 IEP 작성으로 이동. */
+/**
+ * T-01 홈 — 요약 통계, 담당 학생 카드 목록. 카드 탭 시 IEP 점검 또는 새 IEP 작성으로 이동.
+ * "이번 주 처리할 일"(docs/14 Wave W-4)은 BIP·ITP 재검토일(마감일 기반)에서 파생한다(웹 동형).
+ */
 export function TeacherHomeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [students, setStudents] = useState<TeacherStudent[]>([]);
+  const [bipClients, setBipClients] = useState<BipClient[]>([]);
+  const [itpClients, setItpClients] = useState<ItpClient[]>([]);
 
   const load = useCallback(async () => {
     const {
@@ -31,7 +40,14 @@ export function TeacherHomeScreen({ navigation }: Props) {
     } = await supabase.auth.getUser();
     const meta = user?.user_metadata ?? {};
     setName((meta.full_name as string) || (meta.name as string) || "");
-    setStudents(await getTeacherStudents());
+    const [studentsRes, bipRes, itpRes] = await Promise.all([
+      getTeacherStudents(),
+      getBipClients(),
+      getItpClients(),
+    ]);
+    setStudents(studentsRes);
+    setBipClients(bipRes);
+    setItpClients(itpRes);
     setLoading(false);
   }, []);
 
@@ -52,6 +68,37 @@ export function TeacherHomeScreen({ navigation }: Props) {
   const transitionCount = students.filter((s) => !isPreTransitionStage(s.lifeStage)).length;
   const withIepCount = students.filter((s) => s.latestIepRecordId).length;
   const itpTargetCount = students.filter((s) => isItpActiveStage(s.lifeStage)).length;
+
+  const weeklyTasks = sortWeeklyTasks([
+    ...bipClients.flatMap((c): WeeklyTaskItem[] => {
+      const dday = ddayFrom(c.latestBip?.reviewDate);
+      if (dday == null || !isWithinWeek(dday)) return [];
+      return [
+        {
+          personId: c.personId,
+          personName: c.fullName,
+          recordType: "EDU-003",
+          label: "행동중재계획(BIP) 재검토",
+          dday,
+          onPress: () => navigation.navigate("BipForm", { personId: c.personId, personName: c.fullName }),
+        },
+      ];
+    }),
+    ...itpClients.flatMap((c): WeeklyTaskItem[] => {
+      const dday = ddayFrom(c.latestItp?.nextReviewDate);
+      if (dday == null || !isWithinWeek(dday)) return [];
+      return [
+        {
+          personId: c.personId,
+          personName: c.fullName,
+          recordType: "EDU-005",
+          label: "개별화전환계획(ITP) 재검토",
+          dday,
+          onPress: () => navigation.navigate("ItpWizard", { personId: c.personId, personName: c.fullName }),
+        },
+      ];
+    }),
+  ]);
 
   const openStudent = (s: TeacherStudent) => {
     if (s.latestIepRecordId) {
@@ -81,6 +128,8 @@ export function TeacherHomeScreen({ navigation }: Props) {
         <Stat n={withIepCount} label="IEP 수립" />
         <Stat n={transitionCount} label="전환계획 대상" />
       </View>
+
+      <WeeklyTaskCard items={weeklyTasks} />
 
       <View style={styles.quickRow}>
         <Pressable
