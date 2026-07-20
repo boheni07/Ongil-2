@@ -13,7 +13,38 @@ import { ConfirmBadge } from "@/components/records/ConfirmBadge";
 import { ConfirmCTA } from "@/components/records/ConfirmCTA";
 import { RecordContentView } from "@/components/records/RecordContentView";
 import { TherapyPlanReadView } from "@/components/records/TherapyPlanReadView";
+import { IepReadView } from "@/components/records/IepReadView";
+import { ObservationReadView } from "@/components/records/ObservationReadView";
+import { BipReadView } from "@/components/records/BipReadView";
+import { ItpReadView } from "@/components/records/ItpReadView";
+import { SessionNoteReadView } from "@/components/records/SessionNoteReadView";
+import { EvalReportReadView } from "@/components/records/EvalReportReadView";
+import { IspReadView } from "@/components/records/IspReadView";
+import { CaseConferenceReadView } from "@/components/records/CaseConferenceReadView";
+import { TransitionPlanReadView } from "@/components/records/TransitionPlanReadView";
+import { GuardianshipReportReadView } from "@/components/records/GuardianshipReportReadView";
+import { AdvocacyConsultationReadView } from "@/components/records/AdvocacyConsultationReadView";
+import { JournalReadView } from "@/components/records/JournalReadView";
+import { SelfExpressionReadView } from "@/components/records/SelfExpressionReadView";
 import { Button } from "@/components/ui/button";
+
+/** record_type → 전용 읽기 전용 뷰. 매칭 안 되는 나머지(WEL-005 등)는 RecordContentView 폴백. */
+const STRUCTURED_READ_VIEWS: Record<string, (props: { content: unknown }) => React.JSX.Element> = {
+  "MED-005": TherapyPlanReadView,
+  "EDU-001": IepReadView,
+  "EDU-002": ObservationReadView,
+  "EDU-003": BipReadView,
+  "EDU-005": ItpReadView,
+  "MED-006": SessionNoteReadView,
+  "MED-007": EvalReportReadView,
+  "WEL-004": IspReadView,
+  "WEL-006": CaseConferenceReadView,
+  "TRA-001": TransitionPlanReadView,
+  "LEG-001": GuardianshipReportReadView,
+  "LEG-002": AdvocacyConsultationReadView,
+  "DAI-002": JournalReadView,
+  "SELF-001": SelfExpressionReadView,
+};
 
 /**
  * G-20 기록 관리 — Split Pane(좌: 검색+목록 / 우: 상세).
@@ -244,10 +275,11 @@ function StructuredBody({
 }) {
   const rest = { ...((content as Record<string, unknown>) ?? {}) };
   delete rest.guardianNote;
+  const ReadView = STRUCTURED_READ_VIEWS[recordType];
   return (
     <div className="flex flex-col gap-4">
-      {recordType === "MED-005" ? (
-        <TherapyPlanReadView content={rest} />
+      {ReadView ? (
+        <ReadView content={rest} />
       ) : (
         <div className="rounded-(--br-lg) border border-border bg-white p-5 shadow-sm">
           <p className="mb-4 text-[11px] font-bold tracking-wide text-muted-foreground/80 uppercase">
