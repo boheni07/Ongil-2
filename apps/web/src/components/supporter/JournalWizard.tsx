@@ -6,7 +6,6 @@ import { computeServiceHours, type SupportJournalInput } from "@ongil/validation
 import { submitSupportJournal, getPreviousJournal } from "@/app/(app)/journal/actions";
 import { DateField } from "@/components/form/DateField";
 import { TimeField } from "@/components/form/TimeField";
-import { IconOption } from "@/components/person/IconOption";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -316,18 +315,48 @@ export function JournalWizard({
             💪 건강·식사
           </legend>
           <div>
-            <p className="mb-3 text-label font-semibold text-accent-stone">🍚 식사 상태</p>
-            <div className="flex flex-wrap gap-3">
+            <p className="mb-2 text-label font-semibold text-accent-stone">🍚 식사 상태</p>
+            <div className="grid grid-cols-3 gap-2">
               {MEALS.map((o) => (
-                <IconOption key={o.value} size="compact" emoji={o.emoji} label={o.label} selected={meal === o.value} onSelect={() => setMeal(o.value)} />
+                <button
+                  key={o.value}
+                  type="button"
+                  aria-pressed={meal === o.value}
+                  onClick={() => setMeal(o.value)}
+                  className={`flex min-h-11 flex-col items-center gap-1 rounded-(--br-md) border-2 px-2 py-2 text-caption font-semibold transition-colors ${
+                    meal === o.value
+                      ? "border-domain-dai-accent bg-domain-dai-bg text-domain-dai-text"
+                      : "border-border text-accent-stone hover:border-domain-dai-accent/60"
+                  }`}
+                >
+                  <span aria-hidden="true" className="text-xl">
+                    {o.emoji}
+                  </span>
+                  {o.label}
+                </button>
               ))}
             </div>
           </div>
           <div>
-            <p className="mb-3 text-label font-semibold text-accent-stone">💪 건강 상태</p>
-            <div className="flex flex-wrap gap-3">
+            <p className="mb-2 text-label font-semibold text-accent-stone">💪 건강 상태</p>
+            <div className="grid grid-cols-3 gap-2">
               {HEALTHS.map((o) => (
-                <IconOption key={o.value} size="compact" emoji={o.emoji} label={o.label} selected={health === o.value} onSelect={() => setHealth(o.value)} />
+                <button
+                  key={o.value}
+                  type="button"
+                  aria-pressed={health === o.value}
+                  onClick={() => setHealth(o.value)}
+                  className={`flex min-h-11 flex-col items-center gap-1 rounded-(--br-md) border-2 px-2 py-2 text-caption font-semibold transition-colors ${
+                    health === o.value
+                      ? "border-domain-dai-accent bg-domain-dai-bg text-domain-dai-text"
+                      : "border-border text-accent-stone hover:border-domain-dai-accent/60"
+                  }`}
+                >
+                  <span aria-hidden="true" className="text-xl">
+                    {o.emoji}
+                  </span>
+                  {o.label}
+                </button>
               ))}
             </div>
           </div>
