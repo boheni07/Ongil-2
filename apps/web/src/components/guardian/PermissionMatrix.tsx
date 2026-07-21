@@ -5,6 +5,7 @@ import type { AccessLevel, DomainKey, Role } from "@ongil/validation";
 import {
   revokeAllPermissions,
   updateGranteePermissions,
+  getPermissionPresets,
   type CellLevel,
   type PermissionMatrixRow,
 } from "@/app/(app)/persons/[id]/permissions/actions";
@@ -44,6 +45,13 @@ const LEVEL: Record<CellLevel, { bg: string; fg: string; label: string }> = {
 };
 
 const CYCLE_ORDER_UI: CellLevel[] = ["none", "read", "write", "edit"];
+
+/** YYYY-MM-DD 오늘+days — "기본값 설정"이 preset의 default_valid_days를 실제 날짜로 환산할 때 쓴다. */
+function dateFromNow(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
 
 const ROLE_LABEL: Record<Role, string> = {
   guardian: "보호자",
@@ -221,7 +229,29 @@ function GranteeManageDialog({
   });
   const [bulkDate, setBulkDate] = useState("");
   const [busy, setBusy] = useState(false);
+  const [presetLoading, setPresetLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  /**
+   * "기본값 설정" — permission_presets(role×domain)을 그대로 불러와 6개 도메인 전부를
+   * 그 역할의 기본 프로필로 리셋한다(프리셋에 없는 도메인은 "없음"). 아직 저장 전 폼 상태만
+   * 바꾸는 것이라 "저장"을 눌러야 실제로 반영된다 — 되돌리기 쉬워 별도 확인 없이 즉시 적용.
+   */
+  async function applyRolePreset() {
+    setPresetLoading(true);
+    const presets = await getPermissionPresets(row.granteeRole);
+    const byDomain = new Map(presets.map((p) => [p.domain, p]));
+    const nextLevels = {} as Record<DomainKey, CellLevel>;
+    const nextValidUntil = {} as Record<DomainKey, string>;
+    for (const d of DOMAINS) {
+      const preset = byDomain.get(d.key);
+      nextLevels[d.key] = preset?.accessLevel ?? "none";
+      nextValidUntil[d.key] = preset?.defaultValidDays != null ? dateFromNow(preset.defaultValidDays) : "";
+    }
+    setLevels(nextLevels);
+    setValidUntil(nextValidUntil);
+    setPresetLoading(false);
+  }
 
   function applyBulkDate() {
     if (!bulkDate) return;
@@ -266,6 +296,19 @@ function GranteeManageDialog({
         <DialogDescription>
           {ROLE_LABEL[row.granteeRole] ?? row.granteeRole} · 도메인별 접근수준·기한을 고른 뒤 저장하세요.
         </DialogDescription>
+
+        <Button
+          type="button"
+          variant="outline"
+          className="mt-3 h-10 w-full"
+          disabled={presetLoading}
+          onClick={applyRolePreset}
+        >
+          {presetLoading ? "불러오는 중..." : `⚙️ ${ROLE_LABEL[row.granteeRole] ?? row.granteeRole} 기본값 설정`}
+        </Button>
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          역할별 권장 접근수준·기한으로 아래 선택을 전부 되돌립니다(저장 전까지는 반영되지 않음).
+        </p>
 
         <div className="mt-4 flex items-end gap-2 rounded-(--br-md) bg-muted/40 p-3">
           <label className="flex flex-1 flex-col gap-1">
