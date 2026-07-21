@@ -137,7 +137,7 @@ export function SupporterHomeScreen({ navigation }: Props) {
       {journals.length === 0 ? (
         <Text style={styles.empty}>아직 작성한 일지가 없습니다.</Text>
       ) : (
-        journals.map((j) => (
+        journals.slice(0, 10).map((j) => (
           <Pressable
             key={j.id}
             accessibilityRole="button"

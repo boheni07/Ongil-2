@@ -73,7 +73,8 @@ export async function SupporterHome({ userName }: { userName: string | null }) {
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {journals.map((j) => (
+          {/* 최근 10건만 — 통계(Stat)는 journals(최대 20건 조회) 전체로 계산하고, 이 목록만 별도로 자른다. */}
+          {journals.slice(0, 10).map((j) => (
             <li key={j.id}>
               <Link
                 href={`/journals/${j.id}`}
