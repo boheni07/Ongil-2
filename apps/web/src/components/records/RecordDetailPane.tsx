@@ -59,9 +59,16 @@ const STRUCTURED_READ_VIEWS: Record<string, (props: { content: unknown }) => Rea
 export function RecordDetailPane({
   recordId,
   personId,
+  getEditHref,
 }: {
   recordId: string | null;
   personId?: string;
+  /**
+   * 기본 "✎ 수정" 링크(`/persons/{personId}/records/{id}/edit`, 보호자 전용 경로)가
+   * 안 맞는 화면(예: 활동지원사 일지 목록 — 2026-07-21)에서 편집 링크를 직접 계산한다.
+   * null을 반환하면 그 기록에는 편집 버튼을 아예 숨긴다(예: 이미 제출된 일지).
+   */
+  getEditHref?: (detail: RecordDetail) => string | null;
 }) {
   const [detail, setDetail] = useState<RecordDetail | null>(null);
   const [loading, setLoading] = useState(false);
@@ -104,6 +111,12 @@ export function RecordDetailPane({
   if (loading) return <p className="text-body text-muted-foreground">불러오는 중...</p>;
   if (!detail) return <p className="text-body text-muted-foreground">기록을 선택해주세요.</p>;
 
+  const editHref = getEditHref
+    ? getEditHref(detail)
+    : personId
+      ? `/persons/${personId}/records/${detail.id}/edit`
+      : null;
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -111,13 +124,9 @@ export function RecordDetailPane({
           <DomainChip domain={detail.domain} />
           <h2 className="text-headline-2 font-bold text-foreground">{detail.title}</h2>
         </div>
-        {personId && (
-          <Button
-            render={<Link href={`/persons/${personId}/records/${detail.id}/edit`} />}
-            variant="outline"
-            className="h-9"
-          >
-            ✎ 수정
+        {editHref && (
+          <Button render={<Link href={editHref} />} variant="outline" className="h-9">
+            ✎ {detail.isDraft ? "이어서 작성" : "수정"}
           </Button>
         )}
       </div>
