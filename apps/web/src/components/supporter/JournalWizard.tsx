@@ -49,21 +49,45 @@ function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function JournalWizard({ persons }: { persons: JournalPersonOption[] }) {
-  const router = useRouter();
+export interface ExistingJournal {
+  id: string;
+  personId: string;
+  content: SupportJournalInput;
+}
 
-  const [personId, setPersonId] = useState(persons[0]?.id ?? "");
-  const [serviceDate, setServiceDate] = useState(todayISO());
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
+/**
+ * `existing`이 있으면 임시저장(draft) 일지를 이어서 작성하는 모드다(2026-07-21, "임시저장된
+ * 일지를 선택하면 계속 작성할 수 있는 기능이 없다" 요청 반영) — 모든 필드를 그 content로
+ * 초기화하고, 저장 시 새로 INSERT하지 않고 submitSupportJournal에 recordId를 넘겨 UPDATE한다.
+ */
+export function JournalWizard({
+  persons,
+  existing,
+}: {
+  persons: JournalPersonOption[];
+  existing?: ExistingJournal;
+}) {
+  const router = useRouter();
+  const ec = existing?.content;
+
+  const [personId, setPersonId] = useState(existing?.personId ?? persons[0]?.id ?? "");
+  const [serviceDate, setServiceDate] = useState(ec?.service_date ?? todayISO());
+  const [startTime, setStartTime] = useState(ec?.start_time ?? "");
+  const [endTime, setEndTime] = useState(ec?.end_time ?? "");
   // 계획(사전 일정) 시간 — 선택 입력. 실적(service_hours: start/end 자동 계산)과 별개(docs/07 §5 갭④).
-  const [scheduledHours, setScheduledHours] = useState("");
-  const [minutes, setMinutes] = useState<Record<string, number>>({});
-  const [health, setHealth] = useState<Health>("good");
-  const [meal, setMeal] = useState<Meal>("full");
-  const [incidents, setIncidents] = useState("");
-  const [handover, setHandover] = useState("");
-  const [referenceId, setReferenceId] = useState<string | undefined>(undefined);
+  const [scheduledHours, setScheduledHours] = useState(
+    ec?.scheduled_hours != null ? String(ec.scheduled_hours) : ""
+  );
+  const [minutes, setMinutes] = useState<Record<string, number>>(() => {
+    const map: Record<string, number> = {};
+    for (const a of ec?.activities ?? []) map[a.category] = a.minutes;
+    return map;
+  });
+  const [health, setHealth] = useState<Health>(ec?.health_status ?? "good");
+  const [meal, setMeal] = useState<Meal>(ec?.meal_status ?? "full");
+  const [incidents, setIncidents] = useState(ec?.incidents ?? "");
+  const [handover, setHandover] = useState(ec?.handover_note ?? "");
+  const [referenceId, setReferenceId] = useState<string | undefined>(ec?.reference_journal_id);
 
   const [prev, setPrev] = useState<
     { id: string; content: SupportJournalInput; recordDate: string } | null | undefined | "loading"
@@ -151,7 +175,7 @@ export function JournalWizard({ persons }: { persons: JournalPersonOption[] }) {
     }
     setBusy(true);
     setError(null);
-    const res = await submitSupportJournal(personId, buildInput(), isDraft);
+    const res = await submitSupportJournal(personId, buildInput(), isDraft, existing?.id);
     if (res.error) {
       setBusy(false);
       setError(res.error);
@@ -177,7 +201,9 @@ export function JournalWizard({ persons }: { persons: JournalPersonOption[] }) {
 
   return (
     <div className="mx-auto flex w-full min-h-full max-w-6xl flex-1 flex-col">
-      <h1 className="text-headline-2 font-extrabold text-foreground">활동일지 작성</h1>
+      <h1 className="text-headline-2 font-extrabold text-foreground">
+        {existing ? "임시저장 일지 이어서 작성" : "활동일지 작성"}
+      </h1>
       <p className="mt-1 text-body text-muted-foreground">
         {personName} 님 · {serviceDate}
       </p>

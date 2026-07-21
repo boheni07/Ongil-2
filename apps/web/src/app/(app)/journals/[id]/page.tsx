@@ -41,7 +41,12 @@ export default async function JournalDetailPage({ params }: { params: Promise<{ 
         </dl>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 flex flex-wrap gap-2">
+        {journal.isDraft && (
+          <Button render={<Link href={`/journals/${journal.id}/edit`} />} className="h-11 bg-accent-amber font-bold text-accent-stone hover:bg-[#f5bd5e]">
+            ✎ 이어서 작성
+          </Button>
+        )}
         <Button variant="outline" render={<Link href="/home" />} className="h-11">
           ← 목록으로
         </Button>

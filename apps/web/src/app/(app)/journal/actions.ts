@@ -48,14 +48,24 @@ function firstIssue(error: { issues: { message: string }[] }): string {
 /**
  * S-12 활동지원 일지 제출. isDraft=true면 임시저장(F-S-05).
  * content에는 서버가 재계산한 service_hours를 포함해 저장한다.
+ *
+ * `existingRecordId`가 있으면 새로 INSERT하지 않고 그 기록을 UPDATE한다 — "임시저장한 일지를
+ * 선택해 이어서 작성" 흐름(2026-07-21)에서 쓴다. records_update RLS가 "본인이 작성자이고
+ * 아직 is_draft=true인 기록"은 도메인 접근수준과 무관하게 UPDATE를 허용하도록 확장돼 있다
+ * (20260721000000_p3_records_update_own_draft_rls) — 이미 확정 제출된 기록은 이 경로로
+ * 다시 수정할 수 없다(UPDATE가 0행에 매치돼 실패로 처리됨).
  */
 export async function submitSupportJournal(
   personId: string,
   input: SupportJournalInput,
-  isDraft = false
+  isDraft = false,
+  existingRecordId?: string
 ): Promise<SupportJournalResult> {
   if (!UUID_RE.test(personId)) {
     return { error: "당사자 정보가 올바르지 않습니다." };
+  }
+  if (existingRecordId && !UUID_RE.test(existingRecordId)) {
+    return { error: "기록 정보가 올바르지 않습니다." };
   }
 
   const parsed = supportJournalSchema.safeParse(input);
@@ -73,6 +83,29 @@ export async function submitSupportJournal(
   // scheduled_hours(사전 일정)와 service_hours(사후 실적)는 의미가 다른 별개 필드다(docs/07 §5 갭④).
   const serviceHours = computeServiceHours(parsed.data.start_time, parsed.data.end_time);
   const content = { ...parsed.data, service_hours: serviceHours };
+
+  if (existingRecordId) {
+    const { data: row, error: updErr } = await supabase
+      .from("records")
+      .update({
+        content,
+        is_draft: isDraft,
+        record_date: parsed.data.service_date,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", existingRecordId)
+      .eq("record_type", "DAI-002")
+      .select("id")
+      .single();
+
+    if (updErr || !row) {
+      return { error: `일지 저장에 실패했습니다: ${updErr?.message ?? "이미 제출된 일지는 이어서 작성할 수 없습니다."}` };
+    }
+    if (!isDraft) {
+      await logAccess(personId, "update", { recordId: row.id as string, domain: "DAI" });
+    }
+    return { ok: true, recordId: row.id as string };
+  }
 
   const { data: row, error: insErr } = await supabase
     .from("records")
@@ -97,6 +130,31 @@ export async function submitSupportJournal(
     await logAccess(personId, "create", { recordId: row.id as string, domain: "DAI" });
   }
   return { ok: true, recordId: row.id as string };
+}
+
+/**
+ * S-12 "임시저장된 일지 이어서 작성" — draft 하나를 personId·content까지 온전히 가져온다.
+ * is_draft=false(이미 확정 제출)면 null을 반환해 호출부가 편집 화면 대신 상세로 보내게 한다.
+ */
+export async function getJournalDraft(
+  recordId: string
+): Promise<{ id: string; personId: string; content: SupportJournalInput } | null> {
+  if (!UUID_RE.test(recordId)) return null;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("records")
+    .select("id, person_id, content, is_draft")
+    .eq("id", recordId)
+    .eq("record_type", "DAI-002")
+    .maybeSingle();
+
+  if (error || !data || !data.is_draft) return null;
+  return {
+    id: data.id as string,
+    personId: data.person_id as string,
+    content: data.content as SupportJournalInput,
+  };
 }
 
 /**
