@@ -223,15 +223,15 @@ export function SocialWorkerHomeScreen({ navigation }: Props) {
         </Pressable>
       </View>
 
-      {/* docs/13 Wave Q-6: 웹 사이드바엔 "인수인계"가 있는데 모바일엔 진입점 자체가
+      {/* docs/13 Wave Q-6: 웹 사이드바엔 "인계인수"가 있는데 모바일엔 진입점 자체가
           없었다(HandoverList/Compose 라우트가 SocialWorkerStack에 등록조차 안 돼 있었음). */}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="인수인계"
+        accessibilityLabel="인계인수"
         onPress={() => navigation.navigate("HandoverList")}
         style={({ pressed }) => [styles.altBtn, styles.handoverBtn, pressed && styles.pressed]}
       >
-        <Text style={styles.altBtnText}>🔁 인수인계</Text>
+        <Text style={styles.altBtnText}>🔁 인계인수</Text>
       </Pressable>
 
       <WeeklyTaskCard items={weeklyTasks} />

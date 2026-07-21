@@ -152,12 +152,12 @@ export function MainNavigator({ session }: { session: Session }) {
         <SupporterStack.Screen
           name="HandoverList"
           component={HandoverListScreen}
-          options={{ title: "인수인계" }}
+          options={{ title: "인계인수" }}
         />
         <SupporterStack.Screen
           name="HandoverCompose"
           component={HandoverComposeScreen}
-          options={{ title: "인수인계 작성" }}
+          options={{ title: "인계인수 작성" }}
         />
         <SupporterStack.Screen name="Notifications" component={NotificationListScreen} options={{ title: "알림" }} />
       </SupporterStack.Navigator>
@@ -343,10 +343,10 @@ export function MainNavigator({ session }: { session: Session }) {
           component={AdvocacyConsultationFormScreen}
           options={{ title: "권익옹호 상담기록 작성" }}
         />
-        <SocialWorkerStack.Screen name="HandoverList" options={{ title: "인수인계" }}>
+        <SocialWorkerStack.Screen name="HandoverList" options={{ title: "인계인수" }}>
           {(props) => <HandoverListScreen {...(props as unknown as SwHandoverListProps)} />}
         </SocialWorkerStack.Screen>
-        <SocialWorkerStack.Screen name="HandoverCompose" options={{ title: "인수인계 작성" }}>
+        <SocialWorkerStack.Screen name="HandoverCompose" options={{ title: "인계인수 작성" }}>
           {(props) => <HandoverComposeScreen {...(props as unknown as SwHandoverComposeProps)} />}
         </SocialWorkerStack.Screen>
         <SocialWorkerStack.Screen name="Notifications" component={NotificationListScreen} options={{ title: "알림" }} />

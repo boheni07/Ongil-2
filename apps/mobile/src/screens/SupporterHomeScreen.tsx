@@ -120,11 +120,11 @@ export function SupporterHomeScreen({ navigation }: Props) {
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="인수인계"
+        accessibilityLabel="인계인수"
         onPress={() => navigation.navigate("HandoverList")}
         style={({ pressed }) => [styles.secondaryCta, pressed && styles.pressed]}
       >
-        <Text style={styles.secondaryCtaText}>🔁 인수인계</Text>
+        <Text style={styles.secondaryCtaText}>🔁 인계인수</Text>
       </Pressable>
 
       <BacklogTaskCard
@@ -163,17 +163,17 @@ export function SupporterHomeScreen({ navigation }: Props) {
         ))
       )}
 
-      {/* 프로토타입 web-supporter.html/app-supporter.html S-01 "🔁 최근 인수인계" — 웹엔 없던
+      {/* 프로토타입 web-supporter.html/app-supporter.html S-01 "🔁 최근 인계인수" — 웹엔 없던
           섹션이었으나(2026-07-19 신설), 모바일은 처음부터 함께 반영한다. */}
-      <Text style={styles.sectionTitle}>🔁 최근 인수인계</Text>
+      <Text style={styles.sectionTitle}>🔁 최근 인계인수</Text>
       {handovers.length === 0 ? (
-        <Text style={styles.empty}>받은 인수인계가 없습니다.</Text>
+        <Text style={styles.empty}>받은 인계인수가 없습니다.</Text>
       ) : (
         handovers.map((h) => (
           <Pressable
             key={h.id}
             accessibilityRole="button"
-            accessibilityLabel={`${h.fromUserName ?? "알 수 없음"} → ${h.personName ?? "당사자"} 님 관련 인수인계`}
+            accessibilityLabel={`${h.fromUserName ?? "알 수 없음"} → ${h.personName ?? "당사자"} 님 관련 인계인수`}
             onPress={() => navigation.navigate("HandoverList")}
             style={({ pressed }) => [styles.row, pressed && styles.pressed]}
           >

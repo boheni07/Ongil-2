@@ -22,7 +22,7 @@ export type NotificationType =
 export const NOTIFICATION_TYPE_LABEL: Record<NotificationType, string> = {
   record_new: "새 기록",
   permission_grant: "권한 변경",
-  handover: "인수인계",
+  handover: "인계인수",
   reminder: "리마인더",
   record_confirm: "기록 확인 요청",
   life_stage_youth: "생애주기 전환(청소년)",

@@ -106,7 +106,7 @@ export type SocialWorkerStackParamList = {
   LegBoard: undefined;
   GuardianshipReportWizard: { personId?: string; personName?: string } | undefined;
   AdvocacyConsultationForm: { personId?: string; personName?: string } | undefined;
-  // docs/13 Wave Q-6: 웹 사이드바엔 "인수인계"가 있는데 모바일엔 진입점 자체가 없던 갭 —
+  // docs/13 Wave Q-6: 웹 사이드바엔 "인계인수"가 있는데 모바일엔 진입점 자체가 없던 갭 —
   // SupporterStackParamList와 동형(공용 HandoverList/HandoverComposeScreen 재사용).
   HandoverList: undefined;
   HandoverCompose: { personId: string; personName: string } | undefined;

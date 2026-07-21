@@ -151,7 +151,7 @@ textarea.fi{resize:vertical;min-height:80px}
 <div class="proto-nav">
   <button data-tab="home" data-go="home" class="on">[S-01] 홈</button>
   <button data-tab="journal" data-go="journal">[S-12/13] 일지</button>
-  <button data-tab="handover" data-go="handover">[S-20/21] 인수인계</button>
+  <button data-tab="handover" data-go="handover">[S-20/21] 인계인수</button>
   <button data-tab="settings" data-go="settings">설정</button>
 </div>
 <div class="proto-tag">⚠ 정적 프로토타입 · 활동지원사 앱 (390px)</div>
@@ -183,7 +183,7 @@ textarea.fi{resize:vertical;min-height:80px}
       <div class="task now"><span class="tm">13:00</span><div class="flex"><div class="nm">홍길동</div><div class="mt">3시간 · 일지 작성 필요</div></div><button class="pill" style="background:var(--dai-accent);color:#fff;border:none" onclick="openWizard()">작성</button></div>
       <div class="task"><span class="tm">17:00</span><div class="flex"><div class="nm">김영수</div><div class="mt">2시간 · 예정</div></div><span class="pill wait">예정</span></div>
 
-      <div class="sec">🔁 최근 인수인계</div>
+      <div class="sec">🔁 최근 인계인수</div>
       <div class="hrow" onclick="openDetail()">
         <div class="av">박</div>
         <div class="flex"><div class="ht">투약 시간 변경 안내</div><div class="hs">박서연 → 홍길동 · 2시간 전</div></div>
@@ -319,11 +319,11 @@ textarea.fi{resize:vertical;min-height:80px}
       </div>
     </section>
 
-    <!-- 인수인계 (목록/작성) -->
+    <!-- 인계인수 (목록/작성) -->
     <section class="screen" data-screen="handover">
       <div id="hList">
-        <div class="pxlabel"><b>[S-20]</b> 인수인계 목록 · ST-02</div>
-        <h2 class="h">인수인계</h2>
+        <div class="pxlabel"><b>[S-20]</b> 인계인수 목록 · ST-02</div>
+        <h2 class="h">인계인수</h2>
         <div class="sub">새 항목 2건</div>
         <button class="big-btn" onclick="openHWrite()">➕ 인계 작성</button>
         <div class="filt">
@@ -337,7 +337,7 @@ textarea.fi{resize:vertical;min-height:80px}
       </div>
 
       <div id="hWrite" style="display:none">
-        <div class="pxlabel"><b>[S-21]</b> 인수인계 작성 · ST-04</div>
+        <div class="pxlabel"><b>[S-21]</b> 인계인수 작성 · ST-04</div>
         <h2 class="h">인계 작성</h2>
         <div class="sub">다음 지원사에게 전달할 내용</div>
         <div class="fg"><label class="fl" for="h-who">대상 이용자 <span class="rq">*</span></label><select class="fi" id="h-who"><option>홍길동</option><option>김영수</option></select></div>
@@ -369,13 +369,13 @@ textarea.fi{resize:vertical;min-height:80px}
   <nav class="tabbar" id="tabbar">
     <button data-tab="home" class="on" onclick="goScreen('home')"><span class="ti">🏠</span>홈</button>
     <button data-tab="journal" onclick="goScreen('journal')"><span class="ti">📄</span>일지</button>
-    <button data-tab="handover" onclick="goScreen('handover')"><span class="ti">🔁</span>인수인계</button>
+    <button data-tab="handover" onclick="goScreen('handover')"><span class="ti">🔁</span>인계인수</button>
     <button data-tab="settings" onclick="goScreen('settings')"><span class="ti">⚙️</span>설정</button>
   </nav>
 </div>
 
 <script>
-const TITLES={home:'',journal:'활동일지',handover:'인수인계',settings:'설정'};
+const TITLES={home:'',journal:'활동일지',handover:'인계인수',settings:'설정'};
 function resetStacks(){
   jList.style.display='block';jWizard.style.display='none';jDetail.style.display='none';
   hList.style.display='block';hWrite.style.display='none';

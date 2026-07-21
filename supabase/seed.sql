@@ -499,7 +499,7 @@ BEGIN
       CASE WHEN i % 2 = 0 THEN p_a ELSE p_b END,
       CASE WHEN i % 3 = 0 THEN u_supporter1 WHEN i % 3 = 1 THEN u_teacher1 ELSE u_social1 END,
       CASE WHEN i % 3 = 0 THEN u_teacher1 WHEN i % 3 = 1 THEN u_social1 ELSE u_therapist1 END,
-      format('%s번째 인수인계: 오늘 오전 활동 중 특이사항을 공유합니다.', i),
+      format('%s번째 인계인수: 오늘 오전 활동 중 특이사항을 공유합니다.', i),
       (ARRAY['high','normal','low'])[1 + (i % 3)]::"HandoverPriority",
       now() - (i || ' days')::interval
     );

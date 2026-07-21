@@ -19,7 +19,7 @@ const PRIORITY_CHOICES: { value: HandoverPriority; label: string; emoji: string 
   { value: "low", label: "참고", emoji: "⚪" },
 ];
 
-/** S-21 인수인계 작성 — 당사자 → 대상 지원사 → 내용/중요도. docs/04-workflow.md Flow-S-02. */
+/** S-21 인계인수 작성 — 당사자 → 대상 지원사 → 내용/중요도. docs/04-workflow.md Flow-S-02. */
 export function HandoverComposeScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const paramPersonId = route.params?.personId;
@@ -137,7 +137,7 @@ export function HandoverComposeScreen({ navigation, route }: Props) {
 
       <View style={{ marginTop: SPACING.lg }}>
         <PrimaryButton
-          label="인수인계 남기기"
+          label="인계인수 남기기"
           onPress={submit}
           loading={loading}
           disabled={!personId || !toUserId || !content.trim()}

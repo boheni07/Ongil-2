@@ -8,7 +8,7 @@ import { HandoverPriorityBadge } from "@/components/handover/HandoverPriorityBad
 import { Button } from "@/components/ui/button";
 
 /**
- * S-20 인수인계 목록. docs/04-workflow.md Flow-S-02.
+ * S-20 인계인수 목록. docs/04-workflow.md Flow-S-02.
  * [받은 인계] / [보낸 인계] 두 탭. 받은 인계는 서버가 이미 미확인 우선 정렬해서 주므로
  * 프론트는 순서를 그대로 렌더한다. 각 미확인 건에만 "확인했습니다" CTA를 노출하고,
  * 확인 성공 시 낙관적으로 acknowledgedAt을 채워 즉시 반영(실패 시 롤백)한다.
@@ -59,17 +59,17 @@ export function HandoverTabs({
     <div className="flex flex-1 flex-col">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-headline-1 font-extrabold text-foreground">인수인계</h1>
+          <h1 className="text-headline-1 font-extrabold text-foreground">인계인수</h1>
           <p className="mt-1 text-body text-muted-foreground">
             다음 지원사에게 전달할 인계 사항을 주고받습니다.
           </p>
         </div>
         <Button render={<Link href="/handovers/new" />} className="h-11 font-bold">
-          + 인수인계 작성
+          + 인계인수 작성
         </Button>
       </div>
 
-      <div role="tablist" aria-label="인수인계 목록" className="mt-6 flex gap-1 border-b border-border">
+      <div role="tablist" aria-label="인계인수 목록" className="mt-6 flex gap-1 border-b border-border">
         <TabButton active={tab === "received"} onClick={() => setTab("received")}>
           받은 인계
           {unreadCount > 0 && (
@@ -92,7 +92,7 @@ export function HandoverTabs({
       {tab === "received" ? (
         <div role="tabpanel" className="mt-5 flex flex-col gap-3">
           {receivedItems.length === 0 ? (
-            <EmptyState message="받은 인수인계가 없습니다." />
+            <EmptyState message="받은 인계인수가 없습니다." />
           ) : (
             receivedItems.map((it) => (
               <HandoverCard key={it.id} item={it} direction="received">
@@ -116,7 +116,7 @@ export function HandoverTabs({
       ) : (
         <div role="tabpanel" className="mt-5 flex flex-col gap-3">
           {sent.length === 0 ? (
-            <EmptyState message="보낸 인수인계가 없습니다." />
+            <EmptyState message="보낸 인계인수가 없습니다." />
           ) : (
             sent.map((it) => (
               <HandoverCard key={it.id} item={it} direction="sent">

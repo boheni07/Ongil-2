@@ -50,7 +50,7 @@ const FIELD_LABEL: Record<string, string> = {
   health_status: "건강 상태",
   meal_status: "식사 상태",
   incidents: "특이사항",
-  handover_note: "인수인계 메모",
+  handover_note: "인계인수 메모",
   reference_journal_id: "참조 일지",
   domain: "분야",
   title: "제목",

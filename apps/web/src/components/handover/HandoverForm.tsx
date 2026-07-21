@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 /**
- * S-21 인수인계 작성 폼. docs/04-workflow.md Flow-S-02.
+ * S-21 인계인수 작성 폼. docs/04-workflow.md Flow-S-02.
  * 대상 당사자 선택 → 대상 지원사 선택(getHandoverTargets) → 내용·중요도 입력 → 제출.
  * 담당 이용자 목록은 S-12와 동일하게 기존 일지에 등장한 이용자에서 파생해 상위에서 주입한다.
  */
@@ -111,9 +111,9 @@ export function HandoverForm({ persons }: { persons: HandoverPersonOption[] }) {
   if (persons.length === 0) {
     return (
       <div className="rounded-xl bg-white p-6 ring-1 ring-foreground/10">
-        <h1 className="text-headline-2 font-bold text-foreground">인수인계 작성</h1>
+        <h1 className="text-headline-2 font-bold text-foreground">인계인수 작성</h1>
         <p className="mt-3 text-body text-muted-foreground">
-          아직 담당 이용자가 없어 인수인계를 작성할 수 없습니다. 활동일지를 남긴 이용자가 생기면
+          아직 담당 이용자가 없어 인계인수를 작성할 수 없습니다. 활동일지를 남긴 이용자가 생기면
           해당 이용자의 인계를 작성할 수 있습니다.
         </p>
         <Button variant="outline" render={<Link href="/handovers" />} className="mt-5 h-11">
@@ -127,7 +127,7 @@ export function HandoverForm({ persons }: { persons: HandoverPersonOption[] }) {
 
   return (
     <div className="flex flex-1 flex-col">
-      <h1 className="text-headline-2 font-extrabold text-foreground">인수인계 작성</h1>
+      <h1 className="text-headline-2 font-extrabold text-foreground">인계인수 작성</h1>
       <p className="mt-1 text-body text-muted-foreground">
         다음 지원사에게 전달할 인계 사항을 작성합니다.
       </p>

@@ -4,7 +4,7 @@ import { getReceivedHandovers } from "@/app/(app)/handovers/actions";
 import { Button } from "@/components/ui/button";
 import { BacklogTaskCard, type BacklogTaskItem } from "@/components/records/BacklogTaskCard";
 
-/** "2시간 전"/"어제"/"3일 전" — 프로토타입 S-01 최근 인수인계 상대시간 표기(web-supporter.html). */
+/** "2시간 전"/"어제"/"3일 전" — 프로토타입 S-01 최근 인계인수 상대시간 표기(web-supporter.html). */
 function formatRelativeTime(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diffMs / 60000);
@@ -18,7 +18,7 @@ function formatRelativeTime(iso: string): string {
 }
 
 /**
- * S-01 활동지원사 홈 — 통계(작성 일지/임시저장) + 최근 일지 목록 + 최근 인수인계 + 일지 작성 CTA.
+ * S-01 활동지원사 홈 — 통계(작성 일지/임시저장) + 최근 일지 목록 + 최근 인계인수 + 일지 작성 CTA.
  * 방문 일정 시스템은 아직 없어 통계는 기존 일지 데이터에서 파생한다.
  * "처리 대기 중"(docs/14 Wave W-3)은 방문 일정이 없어 날짜 기반 카드 대신 "임시저장 일지"
  * 백로그로 대체한다 — 기존 "임시저장" 통계가 이미 있던 걸 목록형으로 승격한 것뿐이다.
@@ -107,14 +107,14 @@ export async function SupporterHome({ userName }: { userName: string | null }) {
       )}
 
       <div className="mt-8 mb-3 flex items-center justify-between">
-        <h2 className="text-headline-3 font-bold text-accent-stone">🔁 최근 인수인계</h2>
+        <h2 className="text-headline-3 font-bold text-accent-stone">🔁 최근 인계인수</h2>
         <Link href="/handovers" className="text-caption font-semibold text-primary-700 underline">
           전체 보기 →
         </Link>
       </div>
       {handovers.length === 0 ? (
         <p className="rounded-xl bg-white p-5 text-body text-muted-foreground ring-1 ring-foreground/10">
-          받은 인수인계가 없습니다.
+          받은 인계인수가 없습니다.
         </p>
       ) : (
         <ul className="flex flex-col gap-2">

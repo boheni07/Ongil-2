@@ -208,18 +208,18 @@ records 테이블 INSERT (domain=DAI, type=SELF-001)
     ▼
 records 테이블 INSERT (domain=DAI, type=DAI-002)
     ▼
-인수인계 작성 여부 선택 → Flow-S-02
+인계인수 작성 여부 선택 → Flow-S-02
 ```
 
-### Flow-S-02: 인수인계
+### Flow-S-02: 인계인수
 
 ```
-[인수인계 S-20]
+[인계인수 S-20]
     │
     ├── [받은 인계 탭] — 미확인 우선 정렬
     │       → "확인했습니다" CTA → acknowledged_at 기록
     │
-    └── [보낸 인계 탭] / [+ 인수인계 작성]
+    └── [보낸 인계 탭] / [+ 인계인수 작성]
             → 대상 당사자, 내용, 중요도 입력
             → handover_notes 테이블 INSERT
             → 다음 지원사에게 FCM 알림
@@ -490,7 +490,7 @@ trg_confirmation_owner 트리거가 auth.uid() = confirmer_id 검증
 confirmed_at 기록 → author_id에게 완료 알림 (type:'record_confirm', status:'confirmed')
 ```
 
-**반려 없음** — 확인 주체가 내용에 이견이 있으면 확인을 미루고 작성자에게 인수인계/알림으로 정정을 요청한다. 기록 자체는 확인 대기 중에도 이미 확정 상태이며 열람·활용에는 제약이 없다.
+**반려 없음** — 확인 주체가 내용에 이견이 있으면 확인을 미루고 작성자에게 인계인수/알림으로 정정을 요청한다. 기록 자체는 확인 대기 중에도 이미 확정 상태이며 열람·활용에는 제약이 없다.
 
 **재확인 트리거 (기록 수정 시)**: G-21 등에서 `edit` 권한으로 기존 기록의 `content`를 수정하면 `trg_reset_confirmation_on_edit`(`05-erd.md` §4-6④)이 `confirmed_at`을 `NULL`로 재설정해 확인 대기 상태로 되돌린다.
 

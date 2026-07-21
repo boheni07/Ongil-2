@@ -362,7 +362,7 @@ export function SupporterTabNavigator() {
       />
       <SupporterTab.Screen
         name="Handovers"
-        options={{ title: "인수인계", tabBarIcon: () => <TabIcon emoji="🔁" /> }}
+        options={{ title: "인계인수", tabBarIcon: () => <TabIcon emoji="🔁" /> }}
       >
         {(props) => <HandoverListScreen {...(props as unknown as HandoverListProps)} />}
       </SupporterTab.Screen>

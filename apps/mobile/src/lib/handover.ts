@@ -2,11 +2,11 @@ import { handoverNoteSchema, type HandoverNoteInput } from "@ongil/validation";
 import { supabase } from "./supabase";
 
 /**
- * P1 인수인계 (S-20 목록, S-21 작성) 데이터 접근.
+ * P1 인계인수 (S-20 목록, S-21 작성) 데이터 접근.
  * 웹 Server Action(apps/web/src/app/(app)/handovers/actions.ts)과 동일한 로직을
  * Supabase 직접 호출로 재현한다. docs/04-workflow.md Flow-S-02, docs/01-prd.md F-S-02.
  *
- * 인수인계 접근 제어(누가 어떤 person의 인계를 보고/쓸 수 있는지)는 handover_notes RLS(§4)에
+ * 인계인수 접근 제어(누가 어떤 person의 인계를 보고/쓸 수 있는지)는 handover_notes RLS(§4)에
  * 위임한다 — 여기서 permissions를 재검증하지 않는다. 단 getHandoverTargets는 RLS로 자동
  * 필터되지 않는 조회(다른 유저 후보 목록)이므로 person_id·domain 필터를 명시적으로 건다.
  */
@@ -159,7 +159,7 @@ export async function getHandoverTargets(personId: string): Promise<HandoverTarg
 }
 
 /**
- * S-21 인수인계 작성 — handover_notes INSERT 후 대상 지원사에게 notifications INSERT(best-effort).
+ * S-21 인계인수 작성 — handover_notes INSERT 후 대상 지원사에게 notifications INSERT(best-effort).
  * from_user_id=로그인 유저. 접근 권한은 handover_notes RLS에 위임.
  * 알림 INSERT는 부가 기능이라 실패해도 인계 저장을 롤백하지 않는다(try/catch로 무시).
  */
@@ -194,7 +194,7 @@ export async function createHandover(
     .single();
 
   if (insErr) {
-    return { error: `인수인계 저장에 실패했습니다: ${insErr.message}` };
+    return { error: `인계인수 저장에 실패했습니다: ${insErr.message}` };
   }
 
   const handoverId = row.id as string;
@@ -210,8 +210,8 @@ export async function createHandover(
     await supabase.from("notifications").insert({
       recipient_id: parsed.data.toUserId,
       type: "handover",
-      title: "새 인수인계",
-      body: `${fromName}님이 인수인계를 남겼습니다.`,
+      title: "새 인계인수",
+      body: `${fromName}님이 인계인수를 남겼습니다.`,
       data: { handover_id: handoverId, person_id: personId },
     });
   } catch {
@@ -229,7 +229,7 @@ export async function createHandover(
  */
 export async function acknowledgeHandover(id: string): Promise<HandoverResult> {
   if (!UUID_RE.test(id)) {
-    return { error: "인수인계 정보가 올바르지 않습니다." };
+    return { error: "인계인수 정보가 올바르지 않습니다." };
   }
 
   const {

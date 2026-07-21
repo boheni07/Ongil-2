@@ -138,7 +138,7 @@ export async function getEvalComposeContext(personId: string): Promise<EvalCompo
 /**
  * TH-17 평가보고서 작성 — records INSERT(domain='MED', record_type='MED-007').
  * requires_confirmation=false(§4-6 표에 미포함), record_date=eval_date.
- * 저장 성공 후 best-effort로 알림 2계열 발송(실패해도 저장은 유지 — 인수인계 패턴):
+ * 저장 성공 후 best-effort로 알림 2계열 발송(실패해도 저장은 유지 — 인계인수 패턴):
  *  (a) person.primary_guardian_id, (b) 이 person에 WEL write/edit 활성 권한을 가진 social_worker 전원.
  */
 export async function createEvalReport(

@@ -5,10 +5,10 @@ import { createClient } from "@/lib/supabase/server";
 import { notifyRecipients } from "@/lib/notify";
 
 /**
- * S-20(인수인계 목록)/S-21(인수인계 작성) Server Action 모음.
+ * S-20(인계인수 목록)/S-21(인계인수 작성) Server Action 모음.
  * docs/04-workflow.md Flow-S-02, docs/01-prd.md F-S-02.
  *
- * 인수인계 접근 제어(누가 어떤 person의 인계를 보고/쓸 수 있는지)는 handover_notes RLS(§4)에
+ * 인계인수 접근 제어(누가 어떤 person의 인계를 보고/쓸 수 있는지)는 handover_notes RLS(§4)에
  * 위임한다 — 여기서 permissions를 재검증하지 않는다. 단 getHandoverTargets는 RLS로 자동
  * 필터되지 않는 조회(다른 유저 후보 목록)이므로 person_id·domain 필터를 명시적으로 건다.
  */
@@ -167,7 +167,7 @@ export async function getHandoverTargets(personId: string): Promise<HandoverTarg
 }
 
 /**
- * S-21 인수인계 작성 — handover_notes INSERT 후 대상 지원사에게 notifications INSERT(best-effort).
+ * S-21 인계인수 작성 — handover_notes INSERT 후 대상 지원사에게 notifications INSERT(best-effort).
  * from_user_id=로그인 유저. 접근 권한(대상 person에 대한 인계 작성 자격)은 handover_notes RLS에 위임.
  * 알림 INSERT는 부가 기능이라 실패해도 인계 저장을 롤백하지 않는다(try/catch로 무시).
  */
@@ -203,7 +203,7 @@ export async function createHandover(
     .single();
 
   if (insErr) {
-    return { error: `인수인계 저장에 실패했습니다: ${insErr.message}` };
+    return { error: `인계인수 저장에 실패했습니다: ${insErr.message}` };
   }
 
   const handoverId = row.id as string;
@@ -217,8 +217,8 @@ export async function createHandover(
   const fromName = (me?.full_name as string | undefined) ?? "담당자";
   await notifyRecipients([parsed.data.toUserId], {
     type: "handover",
-    title: "새 인수인계",
-    body: `${fromName}님이 인수인계를 남겼습니다.`,
+    title: "새 인계인수",
+    body: `${fromName}님이 인계인수를 남겼습니다.`,
     data: { handover_id: handoverId, person_id: personId },
   });
 
@@ -233,7 +233,7 @@ export async function createHandover(
  */
 export async function acknowledgeHandover(id: string): Promise<HandoverResult> {
   if (!UUID_RE.test(id)) {
-    return { error: "인수인계 정보가 올바르지 않습니다." };
+    return { error: "인계인수 정보가 올바르지 않습니다." };
   }
 
   const supabase = await createClient();

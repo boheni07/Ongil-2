@@ -53,7 +53,7 @@ function sidebarItems(role: string | null): SidebarItem[] {
       { label: "전환계획", href: "/records/transition/new", icon: <Compass /> },
       { label: "서비스 현황", href: "/records/service-status", icon: <ClipboardList /> },
       { label: "타임라인", href: "/timeline", icon: <FolderOpen /> },
-      { label: "인수인계", href: "/handovers", icon: <ArrowLeftRight /> },
+      { label: "인계인수", href: "/handovers", icon: <ArrowLeftRight /> },
     ];
   }
   if (role === "therapist") {
@@ -70,7 +70,7 @@ function sidebarItems(role: string | null): SidebarItem[] {
       { label: "홈", href: "/home", icon: <Home /> },
       { label: "일지 작성", href: "/journals/new", icon: <PencilLine /> },
       { label: "일지 목록", href: "/journals", icon: <FileText /> },
-      { label: "인수인계", href: "/handovers", icon: <ArrowLeftRight /> },
+      { label: "인계인수", href: "/handovers", icon: <ArrowLeftRight /> },
       { label: "인계 작성", href: "/handovers/new", icon: <Plus /> },
     ];
   }

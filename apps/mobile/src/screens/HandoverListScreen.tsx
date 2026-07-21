@@ -25,7 +25,7 @@ const PRIORITY_LABEL: Record<string, string> = {
   low: "참고",
 };
 
-/** S-20 인수인계 목록 — 받은/보낸 탭, 확인 CTA. docs/04-workflow.md Flow-S-02. */
+/** S-20 인계인수 목록 — 받은/보낸 탭, 확인 CTA. docs/04-workflow.md Flow-S-02. */
 export function HandoverListScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<Tab>("received");
@@ -72,11 +72,11 @@ export function HandoverListScreen({ navigation }: Props) {
     >
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="인수인계 작성"
+        accessibilityLabel="인계인수 작성"
         onPress={() => navigation.navigate("HandoverCompose")}
         style={({ pressed }) => [styles.cta, pressed && styles.pressed]}
       >
-        <Text style={styles.ctaText}>＋ 인수인계 작성</Text>
+        <Text style={styles.ctaText}>＋ 인계인수 작성</Text>
       </Pressable>
 
       <View style={styles.tabs}>
@@ -93,7 +93,7 @@ export function HandoverListScreen({ navigation }: Props) {
 
       {items.length === 0 ? (
         <Text style={styles.empty}>
-          {tab === "received" ? "받은 인수인계가 없습니다." : "보낸 인수인계가 없습니다."}
+          {tab === "received" ? "받은 인계인수가 없습니다." : "보낸 인계인수가 없습니다."}
         </Text>
       ) : (
         items.map((h) => (

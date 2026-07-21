@@ -61,7 +61,7 @@ gantt
     P2-2 ISP 스위트              :p2_2, after p1_5, 3d
     P2-3 치료계획서+회기일지     :p2_3, after p1_5, 3d
     P2-4 생애주기 타임라인 통합  :p2_4, after p2_1 p2_2 p2_3, 2d
-    P2-5 인수인계                :p2_5, after p1_4, 1d
+    P2-5 인계인수                :p2_5, after p1_4, 1d
     P2-6 생애주기 단계 기능      :p2_6, after p0_3, 2d
     P2-7 기록 확인 절차          :p2_7, after p2_1 p2_2 p2_3, 2d
     P2-8 동의·권리 관리          :p2_8, after p0_5, 1d
@@ -99,7 +99,7 @@ gantt
 | P2-2 | ISP 스위트 | P1-5 | FE+MO+BE | 3일 |
 | P2-3 | 치료계획서+회기일지 | P1-5 | FE+MO+BE | 3일 |
 | P2-4 | 생애주기 타임라인 통합 | P2-1, P2-2, P2-3 | FE+MO | 2일 |
-| P2-5 | 인수인계 | P1-4 | FE+MO | 1일 |
+| P2-5 | 인계인수 | P1-4 | FE+MO | 1일 |
 | P2-6 | 생애주기 단계(life_stage) 기능 | P0-3 | BE | 2일 |
 | P2-7 | 기록 확인(Confirmation) 절차 | P2-1, P2-2, P2-3 | BE+FE+MO | 2일 |
 | P2-8 | 동의·권리 관리 | P0-5 | FE+MO | 1일 |
@@ -365,13 +365,13 @@ ongil-dev 스킬로 보호자(G-10) 기준으로 구현된 생애주기 타임�
 MilestoneCard, DraftBadge, 도메인 6색 chip 전부 공통 컴포넌트화. docs/03-uiux.md §6-2 참조.
 ```
 
-### P2-5. 인수인계
+### P2-5. 인계인수
 
 **선행**: P1-4
 
 **AI 프롬프트**:
 ```
-ongil-dev 스킬로 인수인계 목록(S-20)과 작성(S-21)을 웹+앱 구현해줘.
+ongil-dev 스킬로 인계인수 목록(S-20)과 작성(S-21)을 웹+앱 구현해줘.
 docs/04-workflow.md Flow-S-02 기준 "받은 인계 탭" 미확인 우선정렬,
 "확인했습니다" CTA로 acknowledged_at 기록하는 로직 포함.
 ```

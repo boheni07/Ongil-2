@@ -2,7 +2,7 @@
 -- 참조: docs/04-workflow.md Flow-SYS-03, docs/05-erd.md §4-12
 -- 작성: backend-db
 --
--- 배경: 지금까지 여러 라운드(인수인계·생애주기·기록확인)가 notifications 에 INSERT 만 했을 뿐
+-- 배경: 지금까지 여러 라운드(인계인수·생애주기·기록확인)가 notifications 에 INSERT 만 했을 뿐
 --   실제 FCM 푸시·이메일 발송은 전무했다. 이 마이그레이션이 그 발송 트리거를 붙인다.
 --
 -- 아키텍처(Supabase 표준 — Database Webhook via pg_net + Vault):

@@ -406,7 +406,7 @@ CREATE INDEX idx_access_logs_actor ON access_logs(actor_id, accessed_at DESC);
 -- INSERT only
 ```
 
-### 2-10. handover_notes (인수인계)
+### 2-10. handover_notes (인계인수)
 
 ```sql
 CREATE TABLE handover_notes (
@@ -1188,7 +1188,7 @@ BEFORE UPDATE ON records
 FOR EACH ROW EXECUTE FUNCTION enforce_confirmation_owner();
 ```
 
-- 반려 개념은 없다. 내용에 이견이 있으면 확인을 미루고 작성자에게 별도 코멘트/메시지로 정정을 요청하는 것을 권장(현재 스킴 밖의 커뮤니케이션 채널 — 인수인계·알림으로 대체).
+- 반려 개념은 없다. 내용에 이견이 있으면 확인을 미루고 작성자에게 별도 코멘트/메시지로 정정을 요청하는 것을 권장(현재 스킴 밖의 커뮤니케이션 채널 — 인계인수·알림으로 대체).
 - 확인 완료 시 작성자(`author_id`)에게 `notifications`(type:`record_confirm`, data:`{status:'confirmed'}`) 알림을 보내는 것을 권장.
 
 **④ 재확인 트리거 — 확인된 기록을 수정하면 확인 대기 상태로 되돌림 (PRD §3-4, Flow-SYS-07 연동)**
@@ -1338,9 +1338,9 @@ CREATE POLICY guardians_insert ON guardians FOR INSERT
 - **공동보호자 초대 수락:** invitee의 user_id는 주보호자와 다르고 `primary_guardian_id`도 아니므로 위 정책으로는 INSERT되지 않는다 — 초대 수락 시 guardians INSERT는 invitations(§4-8) 기반으로 **service_role/Edge Function**에서 처리한다(클라이언트 authenticated 직접 INSERT 아님).
 - **관계 해제/변경:** UPDATE/DELETE 정책을 두지 않아 클라이언트에서 불가. 보호자 관계 변경은 감사 로그를 동반하는 service_role 경로에서만 수행한다.
 
-### 4-10. handover_notes 테이블 (인수인계 노트 — S-20 목록 / S-21 작성)
+### 4-10. handover_notes 테이블 (인계인수 노트 — S-20 목록 / S-21 작성)
 
-> ⚠️ **정정 이력:** `handover_notes`는 `20260709035541_init_13_tables`에서 테이블만 생성되고 `ENABLE ROW LEVEL SECURITY`가 전무했으며, `20260709041005_p0_4_rls_grants`에서 `authenticated`에 CRUD 전권 GRANT만 받았다 — consents(§4-7)·guardians(§4-9)·permission_logs(§4-4)와 **동일 계열의 allow-all 노출**이다. RLS 자체가 없으므로 임의 인증 사용자가 **모든 당사자의 모든 인수인계 노트를 열람·위조·삭제**할 수 있었다. S-20/S-21 구현 라운드에서 실제 쓰기가 발생하므로 `20260713000000_p2_handover_notifications_rls`에서 폐쇄한다.
+> ⚠️ **정정 이력:** `handover_notes`는 `20260709035541_init_13_tables`에서 테이블만 생성되고 `ENABLE ROW LEVEL SECURITY`가 전무했으며, `20260709041005_p0_4_rls_grants`에서 `authenticated`에 CRUD 전권 GRANT만 받았다 — consents(§4-7)·guardians(§4-9)·permission_logs(§4-4)와 **동일 계열의 allow-all 노출**이다. RLS 자체가 없으므로 임의 인증 사용자가 **모든 당사자의 모든 인계인수 노트를 열람·위조·삭제**할 수 있었다. S-20/S-21 구현 라운드에서 실제 쓰기가 발생하므로 `20260713000000_p2_handover_notifications_rls`에서 폐쇄한다.
 
 ```sql
 ALTER TABLE handover_notes ENABLE ROW LEVEL SECURITY;
@@ -1372,14 +1372,14 @@ CREATE POLICY handover_notes_update ON handover_notes FOR UPDATE
 -- 컬럼 단위 GRANT: acknowledged_at 만 갱신 허용(content/priority/from_user_id 변조 차단)
 REVOKE UPDATE ON handover_notes FROM authenticated;
 GRANT  UPDATE (acknowledged_at) ON handover_notes TO authenticated;
--- DELETE 정책 없음 → 인수인계 기록 불변(위조·은폐 방지). privilege 도 회수.
+-- DELETE 정책 없음 → 인계인수 기록 불변(위조·은폐 방지). privilege 도 회수.
 REVOKE DELETE ON handover_notes FROM authenticated;
 ```
 
 - **발신자 위조 방지:** `from_user_id = auth.uid()`를 WITH CHECK 에 강제해 타인 명의 작성이 불가능하다.
 - **재확인 방지:** 이미 확인된(acknowledged_at NOT NULL) 건은 USING 에 걸려 재수정 0행 처리된다.
 
-### 4-11. notifications 테이블 (알림 — 인수인계·확인절차 등 다기능 발신)
+### 4-11. notifications 테이블 (알림 — 인계인수·확인절차 등 다기능 발신)
 
 > ⚠️ **정정 이력:** `notifications`도 §4-10과 동일하게 RLS 미활성 + CRUD 전권 GRANT 상태여서, 임의 인증 사용자가 **타인 알림을 열람·위조·삭제**할 수 있었다. `20260713000000_p2_handover_notifications_rls`에서 폐쇄한다.
 
@@ -1390,7 +1390,7 @@ ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 CREATE POLICY notifications_select ON notifications FOR SELECT
   USING (recipient_id = auth.uid());
 
--- INSERT: 다기능(인수인계·기록확인 등)이 상대에게 알림을 보내야 하므로 발신자 제약 대신
+-- INSERT: 다기능(인계인수·기록확인 등)이 상대에게 알림을 보내야 하므로 발신자 제약 대신
 --   WITH CHECK(true) + 안전 컬럼 GRANT 로 is_read/sent_at/read_at 조작을 차단 (perm_logs_insert 선례)
 CREATE POLICY notifications_insert ON notifications FOR INSERT WITH CHECK (true);
 
@@ -1532,7 +1532,7 @@ CREATE INDEX idx_records_type_date ON records(record_type, record_date DESC);
 CREATE INDEX idx_permissions_active ON permissions(person_id, grantee_id, domain)
   WHERE is_active = true;
 
--- 인수인계 미확인 우선 정렬
+-- 인계인수 미확인 우선 정렬
 CREATE INDEX idx_handover_unread ON handover_notes(to_user_id, acknowledged_at NULLS FIRST);
 
 -- 알림 미읽음

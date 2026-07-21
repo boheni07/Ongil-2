@@ -1,5 +1,5 @@
--- P2: handover_notes / notifications RLS 핫픽스 — S-20/S-21(인수인계) 구현 라운드에서 security-rls 발견
--- 참조: docs/05-erd.md §4-10, §4-11 / docs/04-workflow.md(인수인계 플로우)
+-- P2: handover_notes / notifications RLS 핫픽스 — S-20/S-21(인계인수) 구현 라운드에서 security-rls 발견
+-- 참조: docs/05-erd.md §4-10, §4-11 / docs/04-workflow.md(인계인수 플로우)
 -- 작성: security-rls
 --
 -- ⚠️ 발견된 실제 상태(consents·guardians·permission_logs 와 동일 계열의 실사용 결함):
@@ -7,12 +7,12 @@
 --   (1) 20260709035541_init_13_tables 에서 테이블만 생성되고 ENABLE ROW LEVEL SECURITY 가 전무.
 --   (2) 20260709041005_p0_4_rls_grants 에서 authenticated 에 SELECT/INSERT/UPDATE/DELETE 전권 GRANT.
 --   → RLS 자체가 꺼져 있으므로(정책 부재가 아니라 ENABLE 부재) 임의의 로그인 사용자가
---     모든 당사자의 모든 인수인계 노트·알림을 SELECT/INSERT/UPDATE/DELETE 가능한 상태였다
---     — 타인 인수인계 내용·알림을 열람·위조·삭제할 수 있는 개인정보/무결성 결함.
+--     모든 당사자의 모든 인계인수 노트·알림을 SELECT/INSERT/UPDATE/DELETE 가능한 상태였다
+--     — 타인 인계인수 내용·알림을 열람·위조·삭제할 수 있는 개인정보/무결성 결함.
 --   본 마이그레이션이 RLS 를 켜고 본인 한정 접근 + 컬럼 단위 GRANT 로 변조 표면을 봉쇄한다.
 
 -- =========================================================================
--- §4-10. handover_notes 테이블 (인수인계 노트 — S-20 목록 / S-21 작성)
+-- §4-10. handover_notes 테이블 (인계인수 노트 — S-20 목록 / S-21 작성)
 -- =========================================================================
 
 ALTER TABLE handover_notes ENABLE ROW LEVEL SECURITY;
@@ -27,7 +27,7 @@ CREATE POLICY handover_notes_select ON handover_notes FOR SELECT
 
 -- INSERT: 발신자 본인 명의로만(from_user_id = auth.uid()) + 대상 당사자에 대한 DAI(일상지원)
 --   도메인 write/edit 권한 보유(records_insert 와 동일 조건) 또는 해당 person 의 보호자.
---   → 권한 없는 제3자가 임의 당사자에게 인수인계 노트를 심는 것을 차단한다.
+--   → 권한 없는 제3자가 임의 당사자에게 인계인수 노트를 심는 것을 차단한다.
 CREATE POLICY handover_notes_insert ON handover_notes FOR INSERT
   WITH CHECK (
     from_user_id = auth.uid()
@@ -67,11 +67,11 @@ CREATE POLICY handover_notes_update ON handover_notes FOR UPDATE
 REVOKE UPDATE ON handover_notes FROM authenticated;
 GRANT  UPDATE (acknowledged_at) ON handover_notes TO authenticated;
 
--- DELETE 정책 없음 → 인수인계 기록 불변(위조·은폐 방지). privilege 도 명시적으로 회수.
+-- DELETE 정책 없음 → 인계인수 기록 불변(위조·은폐 방지). privilege 도 명시적으로 회수.
 REVOKE DELETE ON handover_notes FROM authenticated;
 
 -- =========================================================================
--- §4-11. notifications 테이블 (알림 — 인수인계·확인절차 등 다기능 발신)
+-- §4-11. notifications 테이블 (알림 — 인계인수·확인절차 등 다기능 발신)
 -- =========================================================================
 
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
@@ -80,7 +80,7 @@ ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 CREATE POLICY notifications_select ON notifications FOR SELECT
   USING (recipient_id = auth.uid());
 
--- INSERT: 서로 다른 기능(인수인계·기록확인 등)이 상대방에게 알림을 보내야 하므로 발신자 제약을
+-- INSERT: 서로 다른 기능(인계인수·기록확인 등)이 상대방에게 알림을 보내야 하므로 발신자 제약을
 --   걸기 어렵다 → WITH CHECK(true) 로 열되(perm_logs_insert 선례와 동일 판단), 쓰기 가능 컬럼을
 --   (recipient_id, type, title, body, data) 로 한정해 is_read/sent_at/read_at 조작을 차단한다.
 CREATE POLICY notifications_insert ON notifications FOR INSERT

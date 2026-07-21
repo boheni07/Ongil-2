@@ -71,7 +71,7 @@ export default function TermsPage() {
                 </tr>
                 <tr>
                   <th className="py-2 pr-4 text-left font-bold">협력 연결</th>
-                  <td className="py-2">보호자·협력자 간 초대 및 인수인계</td>
+                  <td className="py-2">보호자·협력자 간 초대 및 인계인수</td>
                 </tr>
               </tbody>
             </table>
