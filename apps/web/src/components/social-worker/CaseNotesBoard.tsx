@@ -9,6 +9,7 @@ import {
 } from "@/app/(app)/records/case-notes/actions";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { usePersonSelection } from "@/hooks/useRecentPerson";
 
 /**
@@ -102,12 +103,15 @@ export function CaseNotesBoard({
 
       {client && (
         <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border-t-4 border-domain-wel-accent bg-white p-4 ring-1 ring-foreground/10">
-          <span
-            aria-hidden="true"
-            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-domain-wel-bg text-body font-bold text-domain-wel-text"
-          >
-            {client.fullName.slice(0, 2) || "당사자"}
-          </span>
+          <Avatar size="lg" className="size-11 bg-domain-wel-bg">
+            {client.avatarUrl ? <AvatarImage src={client.avatarUrl} alt="" /> : null}
+            <AvatarFallback
+              aria-hidden="true"
+              className="bg-domain-wel-bg text-body font-bold text-domain-wel-text"
+            >
+              {client.fullName.slice(0, 2) || "당사자"}
+            </AvatarFallback>
+          </Avatar>
           <div className="min-w-0">
             <p className="truncate text-body font-bold text-foreground">{client.fullName}</p>
             <div className="mt-1 flex flex-wrap items-center gap-2">

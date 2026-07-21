@@ -32,6 +32,7 @@ export interface CaseNoteClient {
   personId: string;
   fullName: string;
   birthDate: string;
+  avatarUrl: string | null;
   lifeStage: LifeStage;
   caseNoteCount: number;
 }
@@ -90,7 +91,7 @@ export async function getCaseNoteClients(): Promise<CaseNoteClient[]> {
   if (personIds.length === 0) return [];
 
   const [personsRes, notesRes] = await Promise.all([
-    supabase.from("persons").select("id, full_name, birth_date").in("id", personIds),
+    supabase.from("persons").select("id, full_name, birth_date, avatar_url").in("id", personIds),
     supabase
       .from("records")
       .select("person_id")
@@ -114,6 +115,7 @@ export async function getCaseNoteClients(): Promise<CaseNoteClient[]> {
     personId: p.id as string,
     fullName: (p.full_name as string) ?? "",
     birthDate: p.birth_date as string,
+    avatarUrl: (p.avatar_url as string | null) ?? null,
     lifeStage: computeLifeStage(p.birth_date as string),
     caseNoteCount: countByPerson.get(p.id as string) ?? 0,
   }));

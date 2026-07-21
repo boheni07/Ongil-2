@@ -4,6 +4,7 @@ import { getBipClients } from "@/app/(app)/records/bip/actions";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { ConfirmBadge } from "@/components/records/ConfirmBadge";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 /**
  * T-15 행동중재계획(BIP) 목록·학생 선택 — 특수교사가 EDU write/edit 권한을 가진 학생 카드.
@@ -61,12 +62,15 @@ export default async function BipListPage() {
               className="flex flex-col gap-3 rounded-xl border-t-4 border-domain-edu-accent bg-white p-4 ring-1 ring-foreground/10 transition-colors hover:bg-primary-50"
             >
               <div className="flex items-center gap-3">
-                <span
-                  aria-hidden="true"
-                  className="flex size-11 shrink-0 items-center justify-center rounded-full bg-domain-edu-bg text-body font-bold text-domain-edu-text"
-                >
-                  {s.fullName.slice(0, 2) || "학생"}
-                </span>
+                <Avatar size="lg" className="size-11 bg-domain-edu-bg">
+                  {s.avatarUrl ? <AvatarImage src={s.avatarUrl} alt="" /> : null}
+                  <AvatarFallback
+                    aria-hidden="true"
+                    className="bg-domain-edu-bg text-body font-bold text-domain-edu-text"
+                  >
+                    {s.fullName.slice(0, 2) || "학생"}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="min-w-0">
                   <p className="truncate text-body font-bold text-foreground">{s.fullName}</p>
                   <div className="mt-1">

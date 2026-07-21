@@ -166,9 +166,11 @@ export function PersonSlider({
       {viewMode === "slider" || !showGridToggle ? (
         <div className="flex items-center gap-2">
           <SliderButton dir="prev" disabled={index === 0} onClick={() => setIndex((i) => Math.max(0, i - 1))} />
+          {/* w-64(256px)는 "이번주 기록" 등 3열 통계 라벨이 줄바꿈됐다(2026-07-22 신고) —
+              w-80(320px)으로 넓혀 라벨이 한 줄에 들어가게 함. */}
           <ul className="flex flex-1 gap-3 overflow-x-auto pb-1">
             {persons.map((p, i) => (
-              <li key={p.id} className="w-64 shrink-0">
+              <li key={p.id} className="w-80 shrink-0">
                 <PersonCard person={p} stats={personStats[p.id]} selected={i === index} onSelect={() => setIndex(i)} />
               </li>
             ))}
@@ -429,7 +431,7 @@ function PcStat({ n, label }: { n: number | string; label: string }) {
   return (
     <div className="flex-1 rounded-(--br-md) bg-muted p-2 text-center">
       <p className="text-[18px] font-extrabold text-primary-700">{n}</p>
-      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p className="text-[11px] whitespace-nowrap text-muted-foreground">{label}</p>
     </div>
   );
 }

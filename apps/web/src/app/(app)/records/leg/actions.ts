@@ -55,6 +55,7 @@ export interface LegClient {
   personId: string;
   fullName: string;
   birthDate: string;
+  avatarUrl: string | null;
   lifeStage: LifeStage;
   /** 이 당사자의 LEG 기록(LEG-001+LEG-002) 총 건수. */
   legRecordCount: number;
@@ -156,7 +157,7 @@ export async function getLegClients(): Promise<LegClient[]> {
   const personIds = [...new Set(perms.map((p) => p.person_id as string))];
 
   const [personsRes, legRes] = await Promise.all([
-    supabase.from("persons").select("id, full_name, birth_date").in("id", personIds),
+    supabase.from("persons").select("id, full_name, birth_date, avatar_url").in("id", personIds),
     supabase
       .from("records")
       .select("id, person_id, record_type, content, record_date")
@@ -189,6 +190,7 @@ export async function getLegClients(): Promise<LegClient[]> {
       personId: p.id as string,
       fullName: (p.full_name as string) ?? "",
       birthDate: p.birth_date as string,
+      avatarUrl: (p.avatar_url as string | null) ?? null,
       lifeStage: computeLifeStage(p.birth_date as string),
       legRecordCount: countByPerson.get(p.id as string) ?? 0,
       latestReportDue: due,

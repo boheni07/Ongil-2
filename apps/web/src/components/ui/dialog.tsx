@@ -36,7 +36,11 @@ function DialogPopup({ className, children, ...props }: DialogPrimitive.Popup.Pr
       <DialogPrimitive.Popup
         data-slot="dialog-popup"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl bg-white p-6 shadow-lg ring-1 ring-foreground/10 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          // max-h+overflow-y-auto 없이 top-1/2 중앙정렬만 쓰면 콘텐츠가 뷰포트보다 길 때
+          // 위쪽이 화면 밖(y<0)으로 밀려나 위쪽 필드가 클릭 자체가 안 되는 문제가 있었다
+          // (2026-07-21 권한관리 수정 다이얼로그의 "날짜 버튼이 안 눌린다" 신고로 발견 —
+          // 도메인 6개+날짜 필드를 전부 펼치면 뷰포트보다 쉽게 길어진다).
+          "fixed top-1/2 left-1/2 z-50 max-h-[85vh] w-full max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl bg-white p-6 shadow-lg ring-1 ring-foreground/10 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           className
         )}
         {...props}

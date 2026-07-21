@@ -87,5 +87,18 @@ export async function updateOwnProfile(
   if (error) {
     return { error: `저장 실패: ${error.message}` };
   }
+
+  // 셀프 가입 당사자(persons.id = primary_guardian_id = auth.uid())는 users 행과 별개로
+  // persons 행도 갖고 있고, 다른 역할(교사·사회복지사·치료사 홈, 타임라인, 보호자 대시보드)은
+  // 전부 persons.avatar_url/full_name을 읽는다 — users만 갱신하면 그쪽 화면에서 사진이
+  // 계속 안 보인다(2026-07-21 "박당사" 사진 미표시 신고로 발견). role=person일 때만 동기화.
+  const { data: userRow } = await supabase.from("users").select("role").eq("id", user.id).maybeSingle();
+  if (userRow?.role === "person") {
+    await supabase
+      .from("persons")
+      .update({ full_name: fullName, avatar_url: input.avatarUrl })
+      .eq("id", user.id);
+  }
+
   return { ok: true };
 }

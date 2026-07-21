@@ -146,8 +146,8 @@ export function EvalReportForm({
       <div className="rounded-xl bg-white p-6 ring-1 ring-foreground/10">
         <h1 className="text-headline-2 font-bold text-foreground">평가보고서 작성</h1>
         <p className="mt-3 text-body text-muted-foreground">
-          담당 아동이 없어 평가보고서를 작성할 수 없습니다. 보호자가 의료(MED) 도메인 작성 권한을
-          부여하면 해당 아동의 평가보고서를 작성할 수 있습니다.
+          담당 당사자가 없어 평가보고서를 작성할 수 없습니다. 보호자가 의료(MED) 도메인 작성 권한을
+          부여하면 해당 당사자의 평가보고서를 작성할 수 있습니다.
         </p>
       </div>
     );
@@ -165,7 +165,7 @@ export function EvalReportForm({
           <p className="mt-1 flex flex-wrap items-center gap-2 text-body text-muted-foreground">
             {client
               ? `${client.fullName} (만 ${computeAge(client.birthDate)}세)`
-              : "아동을 선택하세요"}
+              : "당사자를 선택하세요"}
             {client && (
               <StageBadge lifeStage={client.lifeStage} className="min-h-6 pr-2 text-[11px]" />
             )}
@@ -184,10 +184,10 @@ export function EvalReportForm({
         <div className="flex flex-col gap-6">
           <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
             <legend className="text-sm font-bold text-foreground">대상·평가 단계</legend>
-            {/* 대상 아동 선택 */}
+            {/* 대상 당사자 선택 */}
             <label className="flex max-w-md flex-col gap-1.5">
               <span className="text-label font-semibold text-accent-stone">
-                대상 아동 <span className="text-domain-med-text">*</span>
+                대상 당사자 <span className="text-domain-med-text">*</span>
               </span>
               <select
                 className={fieldClass}

@@ -26,9 +26,13 @@ import { GuardianSidebar } from "@/components/guardian/GuardianSidebar";
 /**
  * 2026-07-19: `/prototypes` 5개 역할 사이드바(web-guardian/teacher/social-worker/therapist/
  * supporter.html) 원문을 그대로 옮겼다 — 항목 라벨·순서·"설정"(보호자는 "동의·권리 관리")
- * 포함까지 프로토타입과 1:1. 특수교사 "IEP 점검"·사회복지사 "ISP 점검"은 특정 기록을 골라야
- * 하는 화면이라 목록 랜딩 페이지가 없어 홈(담당 학생/당사자 카드에서 개별 점검 진입)으로
- * 연결한다 — 다른 항목은 전부 프로토타입과 동일하게 독립 화면으로 바로 연결된다.
+ * 포함까지 프로토타입과 1:1. 다른 항목은 전부 프로토타입과 동일하게 독립 화면으로 바로 연결된다.
+ *
+ * 2026-07-21: 사회복지사의 "ISP 점검", 이어서 특수교사의 "IEP 점검"도 홈과 똑같이 href="/home"
+ * 이었는데, 사용자가 두 차례에 걸쳐 "홈과 점검 화면이 같다"고 지적 — 둘 다 특정 기록을 골라야
+ * 하는 화면이라 별도 목록 랜딩 페이지가 없어 홈(담당 학생/당사자 카드에서 개별 점검 진입)으로
+ * 연결해 뒀던 것인데, 결과적으로 같은 href를 가진 사이드바 항목이 두 개씩 있어 혼란스러웠다.
+ * 두 역할 다 중복 항목을 제거하고 "홈" 하나로 정리했다.
  *
  * 2026-07-20: 보호자는 헤더의 "당사자 선택" 드롭다운으로 사이드바가 참조하는 "현재 당사자"를
  * 바꿀 수 있어야 하는데(프로토타입 원문 동작), 이 함수는 요청 시점 1회만 실행되는 Server
@@ -40,7 +44,6 @@ function sidebarItems(role: string | null): SidebarItem[] {
     return [
       { label: "홈", href: "/home", icon: <Home /> },
       { label: "IEP 작성", href: "/records/iep/new", icon: <PencilLine /> },
-      { label: "IEP 점검", href: "/home", icon: <ClipboardList /> },
       { label: "관찰기록", href: "/records/observation/new", icon: <Eye /> },
       { label: "타임라인", href: "/timeline", icon: <BarChart3 /> },
     ];
@@ -49,7 +52,6 @@ function sidebarItems(role: string | null): SidebarItem[] {
     return [
       { label: "홈", href: "/home", icon: <Home /> },
       { label: "ISP 작성", href: "/records/isp/new", icon: <PencilLine /> },
-      { label: "ISP 점검", href: "/home", icon: <BarChart3 /> },
       { label: "전환계획", href: "/records/transition/new", icon: <Compass /> },
       { label: "서비스 현황", href: "/records/service-status", icon: <ClipboardList /> },
       { label: "타임라인", href: "/timeline", icon: <FolderOpen /> },

@@ -10,6 +10,7 @@ import {
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { ConfirmBadge } from "@/components/records/ConfirmBadge";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { usePersonSelection } from "@/hooks/useRecentPerson";
 
 /**
@@ -114,12 +115,15 @@ export function LegRecordsBoard({
 
       {client && (
         <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border-t-4 border-domain-leg-accent bg-white p-4 ring-1 ring-foreground/10">
-          <span
-            aria-hidden="true"
-            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-domain-leg-bg text-body font-bold text-domain-leg-text"
-          >
-            {client.fullName.slice(0, 2) || "당사자"}
-          </span>
+          <Avatar size="lg" className="size-11 bg-domain-leg-bg">
+            {client.avatarUrl ? <AvatarImage src={client.avatarUrl} alt="" /> : null}
+            <AvatarFallback
+              aria-hidden="true"
+              className="bg-domain-leg-bg text-body font-bold text-domain-leg-text"
+            >
+              {client.fullName.slice(0, 2) || "당사자"}
+            </AvatarFallback>
+          </Avatar>
           <div className="min-w-0">
             <p className="truncate text-body font-bold text-foreground">{client.fullName}</p>
             <div className="mt-1 flex flex-wrap items-center gap-2">

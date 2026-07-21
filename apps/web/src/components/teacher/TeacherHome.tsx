@@ -4,6 +4,7 @@ import { getBipClients } from "@/app/(app)/records/bip/actions";
 import { getItpClients } from "@/app/(app)/records/itp/actions";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { WeeklyTaskCard } from "@/components/records/WeeklyTaskCard";
 import { isItpActiveStage, isPreTransitionStage } from "@/lib/lifecycle";
 import { ddayFrom, isWithinWeek, sortWeeklyTasks, type WeeklyTaskItem } from "@/lib/weekly-tasks";
@@ -140,12 +141,15 @@ export async function TeacherHome({ userName }: { userName: string | null }) {
               >
                 <Link href={href} className="flex flex-col gap-3 rounded-(--br-md) transition-colors hover:bg-primary-50">
                   <div className="flex items-center gap-3">
-                    <span
-                      aria-hidden="true"
-                      className="flex size-11 shrink-0 items-center justify-center rounded-full bg-domain-edu-bg text-body font-bold text-domain-edu-text"
-                    >
-                      {s.fullName.slice(0, 2) || "학생"}
-                    </span>
+                    <Avatar size="lg" className="size-11 bg-domain-edu-bg">
+                      {s.avatarUrl ? <AvatarImage src={s.avatarUrl} alt="" /> : null}
+                      <AvatarFallback
+                        aria-hidden="true"
+                        className="bg-domain-edu-bg text-body font-bold text-domain-edu-text"
+                      >
+                        {s.fullName.slice(0, 2) || "학생"}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="min-w-0">
                       <p className="truncate text-body font-bold text-foreground">{s.fullName}</p>
                       <div className="mt-1">

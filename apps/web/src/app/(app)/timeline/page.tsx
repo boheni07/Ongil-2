@@ -5,6 +5,9 @@ import { getSocialWorkerClients } from "@/app/(app)/records/isp/actions";
 import { getTherapistClients } from "@/app/(app)/records/therapy/actions";
 import { TimelineView } from "@/components/timeline/TimelineView";
 import { createClient } from "@/lib/supabase/server";
+import { computeAge } from "@/lib/lifecycle";
+import { StageBadge, type LifeStage } from "@/components/lifecycle/StageBadge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 /**
  * T-20/W-20/TH-20 공용 타임라인. searchParams.personId 없으면 담당 대상자 선택 유도 화면을 보여준다.
@@ -35,23 +38,29 @@ export default async function TimelinePage({
   const personLabel =
     role === "social_worker" ? "당사자" : role === "therapist" ? "아동" : "학생";
 
-  const clients =
+  const clients: { personId: string; fullName: string; birthDate: string; avatarUrl: string | null; lifeStage: LifeStage }[] =
     role === "social_worker"
       ? (await getSocialWorkerClients()).map((c) => ({
           personId: c.personId,
           fullName: c.fullName,
           birthDate: c.birthDate,
+          avatarUrl: c.avatarUrl,
+          lifeStage: c.lifeStage,
         }))
       : role === "therapist"
         ? (await getTherapistClients()).map((c) => ({
             personId: c.personId,
             fullName: c.fullName,
             birthDate: c.birthDate,
+            avatarUrl: c.avatarUrl,
+            lifeStage: c.lifeStage,
           }))
         : (await getTeacherStudents()).map((s) => ({
             personId: s.personId,
             fullName: s.fullName,
             birthDate: s.birthDate,
+            avatarUrl: s.avatarUrl,
+            lifeStage: s.lifeStage,
           }));
 
   if (!personId) {
@@ -66,21 +75,31 @@ export default async function TimelinePage({
             담당 {personLabel}가 없습니다.
           </p>
         ) : (
-          <ul className="mt-6 flex flex-col gap-2">
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {clients.map((c) => (
-              <li key={c.personId}>
-                <Link
-                  href={`/timeline?personId=${c.personId}`}
-                  className="flex items-center justify-between rounded-xl bg-white px-4 py-3 ring-1 ring-foreground/10 transition-colors hover:bg-primary-50"
-                >
-                  <span className="text-body font-semibold text-foreground">{c.fullName}</span>
-                  <span aria-hidden="true" className="text-muted-foreground">
-                    →
-                  </span>
-                </Link>
-              </li>
+              <Link
+                key={c.personId}
+                href={`/timeline?personId=${c.personId}`}
+                className="rounded-xl border-2 border-border bg-white p-4 text-left shadow-md transition-colors hover:border-primary-400"
+              >
+                <div className="flex items-center gap-3">
+                  <Avatar size="lg" className="bg-primary-50">
+                    {c.avatarUrl ? <AvatarImage src={c.avatarUrl} alt="" /> : null}
+                    <AvatarFallback aria-hidden="true" className="bg-primary-50 text-2xl">
+                      🧑
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <h3 className="truncate text-body font-bold text-foreground">{c.fullName}</h3>
+                    <p className="text-caption text-muted-foreground">만 {computeAge(c.birthDate)}세</p>
+                    <div className="mt-1">
+                      <StageBadge lifeStage={c.lifeStage} className="min-h-6 pr-2 text-[11px]" />
+                    </div>
+                  </div>
+                </div>
+              </Link>
             ))}
-          </ul>
+          </div>
         )}
       </div>
     );

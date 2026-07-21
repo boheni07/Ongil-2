@@ -59,7 +59,7 @@ export function SessionNoteReadView({ content }: { content: unknown }) {
       </div>
 
       <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
-        <h3 className="mb-2 text-sm font-bold text-foreground">아동 반응·특이사항</h3>
+        <h3 className="mb-2 text-sm font-bold text-foreground">당사자 반응·특이사항</h3>
         <p className="whitespace-pre-wrap text-body leading-relaxed text-foreground">
           {c.observations || <span className="text-muted-foreground">—</span>}
         </p>

@@ -54,6 +54,7 @@ export interface SocialWorkerClient {
   personId: string;
   fullName: string;
   birthDate: string;
+  avatarUrl: string | null;
   lifeStage: LifeStage;
   /** 가장 최근 제출된 ISP(WEL-004) record id. 없으면 null(W-13 "새 ISP 작성"으로 유도). */
   latestIspRecordId: string | null;
@@ -155,7 +156,7 @@ export async function getSocialWorkerClients(): Promise<SocialWorkerClient[]> {
   if (personIds.length === 0) return [];
 
   const [personsRes, ispRes] = await Promise.all([
-    supabase.from("persons").select("id, full_name, birth_date").in("id", personIds),
+    supabase.from("persons").select("id, full_name, birth_date, avatar_url").in("id", personIds),
     supabase
       .from("records")
       .select("id, person_id, content, record_date")
@@ -184,6 +185,7 @@ export async function getSocialWorkerClients(): Promise<SocialWorkerClient[]> {
       personId: p.id as string,
       fullName: (p.full_name as string) ?? "",
       birthDate: p.birth_date as string,
+      avatarUrl: (p.avatar_url as string | null) ?? null,
       lifeStage: computeLifeStage(p.birth_date as string),
       latestIspRecordId: isp?.id ?? null,
       ispGoalCount: goals.length,

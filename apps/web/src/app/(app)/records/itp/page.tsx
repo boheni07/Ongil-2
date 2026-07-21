@@ -3,6 +3,7 @@ import { getItpClients } from "@/app/(app)/records/itp/actions";
 import { StageBadge } from "@/components/lifecycle/StageBadge";
 import { ConfirmBadge } from "@/components/records/ConfirmBadge";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 /**
  * T-19 개별화전환계획(ITP) 목록·학생 선택 — BipListPage.tsx와 동일 구조.
@@ -53,12 +54,15 @@ export default async function ItpListPage() {
               className="flex flex-col gap-3 rounded-xl border-t-4 border-domain-edu-accent bg-white p-4 ring-1 ring-foreground/10 transition-colors hover:bg-primary-50"
             >
               <div className="flex items-center gap-3">
-                <span
-                  aria-hidden="true"
-                  className="flex size-11 shrink-0 items-center justify-center rounded-full bg-domain-edu-bg text-body font-bold text-domain-edu-text"
-                >
-                  {s.fullName.slice(0, 2) || "학생"}
-                </span>
+                <Avatar size="lg" className="size-11 bg-domain-edu-bg">
+                  {s.avatarUrl ? <AvatarImage src={s.avatarUrl} alt="" /> : null}
+                  <AvatarFallback
+                    aria-hidden="true"
+                    className="bg-domain-edu-bg text-body font-bold text-domain-edu-text"
+                  >
+                    {s.fullName.slice(0, 2) || "학생"}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="min-w-0">
                   <p className="truncate text-body font-bold text-foreground">{s.fullName}</p>
                   <div className="mt-1">

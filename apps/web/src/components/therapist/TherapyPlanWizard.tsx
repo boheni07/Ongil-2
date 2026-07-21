@@ -129,7 +129,7 @@ export function TherapyPlanWizard({
 
   async function submit() {
     if (!canSubmit) {
-      setError("아동·진단명·담당치료사·치료기간·목표 1개 이상·회기 빈도를 모두 입력해주세요.");
+      setError("당사자·진단명·담당치료사·치료기간·목표 1개 이상·회기 빈도를 모두 입력해주세요.");
       return;
     }
     setBusy(true);
@@ -149,8 +149,8 @@ export function TherapyPlanWizard({
       <div className="rounded-xl bg-white p-6 ring-1 ring-foreground/10">
         <h1 className="text-headline-2 font-bold text-foreground">치료계획서 작성</h1>
         <p className="mt-3 text-body text-muted-foreground">
-          담당 아동이 없어 치료계획서를 작성할 수 없습니다. 보호자가 의료(MED) 도메인 작성 권한을
-          부여하면 해당 아동의 치료계획서를 작성할 수 있습니다.
+          담당 당사자가 없어 치료계획서를 작성할 수 없습니다. 보호자가 의료(MED) 도메인 작성 권한을
+          부여하면 해당 당사자의 치료계획서를 작성할 수 있습니다.
         </p>
       </div>
     );
@@ -164,7 +164,7 @@ export function TherapyPlanWizard({
           ? `${client.fullName} (만 ${computeAge(client.birthDate)}세) · ${
               THERAPY_TYPES.find((t) => t.value === therapyType)?.label ?? ""
             }`
-          : "아동을 선택하세요"}
+          : "당사자를 선택하세요"}
         {client && (
           <StageBadge lifeStage={client.lifeStage} className="min-h-6 pr-2 text-[11px]" />
         )}
@@ -174,7 +174,7 @@ export function TherapyPlanWizard({
       <div className="flex flex-col gap-6">
         <fieldset className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-foreground/10">
           <legend className="text-sm font-bold text-foreground">대상·기본정보</legend>
-          <Field label="대상 아동" required>
+          <Field label="대상 당사자" required>
             <select
               className={fieldClass}
               value={personId}
@@ -300,7 +300,7 @@ export function TherapyPlanWizard({
           접근 가능하게 둔다(2026-07-20, JournalWizard와 동일한 원칙). */}
       <div className="flex flex-col gap-4 lg:sticky lg:top-6">
         <div className="rounded-xl bg-domain-med-bg p-4 text-body text-domain-med-text ring-1 ring-domain-med-accent/30">
-          ✅ 치료계획서는 공식 문서로 저장 시 확인(Confirmation) 절차가 시작됩니다. 저장 후 아동
+          ✅ 치료계획서는 공식 문서로 저장 시 확인(Confirmation) 절차가 시작됩니다. 저장 후 당사자
           타임라인과 계획서 상세에 기록됩니다.
           <span className="mt-2 block font-bold">
             📋 확인 요청 대상: {client && isSelfConfirmingStage(client.lifeStage) ? "본인" : "보호자"}

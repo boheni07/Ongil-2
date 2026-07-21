@@ -33,8 +33,21 @@ export interface SidebarProps {
   footer?: ReactNode;
 }
 
+/**
+ * 각 항목의 "매칭 길이"를 구해 가장 구체적인(긴) href 하나만 활성화한다. 단순
+ * `pathname.startsWith(item.href + "/")`만 쓰면 "/journals"(일지 목록)가 "/journals/new"
+ * (일지 작성)의 접두사라 두 항목이 동시에 활성화되는 문제가 있었다(2026-07-21 활동지원사
+ * 사이드바에서 발견) — 정확히 일치하면 최우선, 아니면 접두사 매칭된 href 중 가장 긴 것만 고른다.
+ */
+function matchScore(pathname: string | null, href: string): number {
+  if (pathname === href) return Infinity;
+  if (pathname?.startsWith(`${href}/`)) return href.length;
+  return -1;
+}
+
 export function Sidebar({ items, collapsed = false, onToggleCollapsed, className, footer }: SidebarProps) {
   const pathname = usePathname();
+  const bestScore = Math.max(-1, ...items.map((item) => matchScore(pathname, item.href)));
 
   return (
     <nav
@@ -48,7 +61,7 @@ export function Sidebar({ items, collapsed = false, onToggleCollapsed, className
     >
       <ul className="flex flex-1 flex-col gap-1 p-2">
         {items.map((item) => {
-          const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
+          const active = bestScore > -1 && matchScore(pathname, item.href) === bestScore;
           return (
             // href만으로 키를 만들면 "IEP 점검"/"ISP 점검"처럼 전용 화면이 없어 홈과 같은
             // href를 공유하는 항목과 충돌한다(React 중복 키 경고).

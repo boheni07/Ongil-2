@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { handoverPrioritySchema, type HandoverPriority } from "@ongil/validation";
@@ -61,12 +61,13 @@ export function HandoverForm({ persons }: { persons: HandoverPersonOption[] }) {
     setToUserId(list[0]?.userId ?? "");
   }
 
-  // 최초 마운트 시 첫 당사자의 대상 목록을 로드한다.
-  const [initialized, setInitialized] = useState(false);
-  if (!initialized && persons[0]) {
-    setInitialized(true);
-    void loadTargets(persons[0].id);
-  }
+  // 최초 마운트 시 첫 당사자의 대상 목록을 로드한다. 렌더 도중 setState를 트리거하면
+  // "Cannot update a component while rendering a different component" 경고가 발생해
+  // useEffect로 옮겼다(2026-07-21 인계인수 작성 화면 콘솔 오류로 발견).
+  useEffect(() => {
+    if (persons[0]) void loadTargets(persons[0].id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function handlePersonChange(pid: string) {
     setPersonId(pid);

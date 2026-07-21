@@ -78,7 +78,7 @@ export function SessionNoteForm({
       <div className="rounded-xl bg-white p-6 ring-1 ring-foreground/10">
         <h1 className="text-headline-2 font-bold text-foreground">회기 일지 작성</h1>
         <p className="mt-3 text-body text-muted-foreground">
-          {personName} 아동에게 연결할 확정된 치료계획서가 없습니다. 회기 일지는 치료계획서에
+          {personName} 당사자에게 연결할 확정된 치료계획서가 없습니다. 회기 일지는 치료계획서에
           연동되므로 먼저 계획서를 작성해주세요.
         </p>
         <Button
@@ -161,7 +161,7 @@ export function SessionNoteForm({
             </label>
             <label className="flex flex-col gap-1.5">
               <span className="text-label font-semibold text-accent-stone">
-                아동 반응·특이사항 <span className="text-domain-med-text">*</span>
+                당사자 반응·특이사항 <span className="text-domain-med-text">*</span>
               </span>
               <textarea
                 className={`${fieldClass} min-h-24`}

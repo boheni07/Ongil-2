@@ -20,13 +20,13 @@ import { getTimeline as getTimelineImpl } from "../iep/actions";
 
 /**
  * P2-3 치료사(therapist) 치료계획서+회기일지 스위트 Server Action 모음.
- * TH-01 홈(담당 아동), TH-13 치료계획서 작성, TH-14 계획서 상세, TH-15 회기일지 작성, TH-20 의료 타임라인.
+ * TH-01 홈(담당 당사자), TH-13 치료계획서 작성, TH-14 계획서 상세, TH-15 회기일지 작성, TH-20 의료 타임라인.
  * docs/01-prd.md §5-8 F-TH-01~04, docs/05-erd.md §3(MED-005/MED-006)·§4-2·§4-6.
  *
  * P2-1 IEP·P2-2 ISP 스위트와 동일 구조를 therapist/MED 도메인에 이식한 것이다.
  * 접근 통제는 전부 기존 RLS(§4-2)에 위임한다 — records 쓰기는 permissions(도메인 write/edit)
  * 분기가 access_level만 보고 강제하며 role 무관이라 therapist도 동일하게 커버된다.
- * "담당 아동"은 이 치료사가 활성 permissions를 보유한 persons로 정의한다(도메인 무관).
+ * "담당 당사자"는 이 치료사가 활성 permissions를 보유한 persons로 정의한다(도메인 무관).
  *
  * TH-20 타임라인은 domain 무관 범용 함수라 iep/actions.ts의 getTimeline을 그대로 재사용한다
  * (아래 re-export — 중복 구현하지 않는다).
@@ -51,16 +51,17 @@ export interface ActionResult {
   error?: string;
 }
 
-/** TH-01 담당 아동 카드. */
+/** TH-01 담당 당사자 카드. */
 export interface TherapistClient {
   personId: string;
   fullName: string;
   birthDate: string;
+  avatarUrl: string | null;
   lifeStage: LifeStage;
   /** 가장 최근 제출된 치료계획서(MED-005) record id. 없으면 null(TH-13 "새 계획서 작성"으로 유도). */
   latestPlanRecordId: string | null;
   planGoalCount: number;
-  /** 이 아동의 회기일지(MED-006) 총 개수. */
+  /** 이 당사자의 회기일지(MED-006) 총 개수. */
   sessionCount: number;
 }
 
@@ -128,8 +129,8 @@ interface RawPlanRow {
 }
 
 /**
- * TH-01 홈 담당 아동 목록 — 이 치료사가 활성 permissions를 보유한 persons(도메인 무관).
- * 각 아동의 최근 제출 계획서(MED-005)에서 목표 수를, MED-006 개수로 진행 회기 수를 파생한다.
+ * TH-01 홈 담당 당사자 목록 — 이 치료사가 활성 permissions를 보유한 persons(도메인 무관).
+ * 각 당사자의 최근 제출 계획서(MED-005)에서 목표 수를, MED-006 개수로 진행 회기 수를 파생한다.
  * life_stage는 클라이언트 헬퍼(computeLifeStage)로 통일한다(직전 라운드와 동일 결정).
  */
 export async function getTherapistClients(): Promise<TherapistClient[]> {
@@ -154,7 +155,7 @@ export async function getTherapistClients(): Promise<TherapistClient[]> {
   if (personIds.length === 0) return [];
 
   const [personsRes, planRes, sessionRes] = await Promise.all([
-    supabase.from("persons").select("id, full_name, birth_date").in("id", personIds),
+    supabase.from("persons").select("id, full_name, birth_date, avatar_url").in("id", personIds),
     supabase
       .from("records")
       .select("id, person_id, content, record_date")
@@ -192,6 +193,7 @@ export async function getTherapistClients(): Promise<TherapistClient[]> {
       personId: p.id as string,
       fullName: (p.full_name as string) ?? "",
       birthDate: p.birth_date as string,
+      avatarUrl: (p.avatar_url as string | null) ?? null,
       lifeStage: computeLifeStage(p.birth_date as string),
       latestPlanRecordId: plan?.id ?? null,
       planGoalCount: goals.length,
@@ -209,7 +211,7 @@ export async function createTherapyPlan(
   input: TherapyPlanInput & { personId: string }
 ): Promise<ActionResult & { recordId?: string }> {
   const { personId, ...content } = input;
-  if (!UUID_RE.test(personId)) return { error: "아동 정보가 올바르지 않습니다." };
+  if (!UUID_RE.test(personId)) return { error: "당사자 정보가 올바르지 않습니다." };
 
   const parsed = therapyPlanSchema.safeParse(content);
   if (!parsed.success) return { error: firstIssue(parsed.error) };
@@ -367,7 +369,7 @@ export async function updateTherapyPlanGoal(
 
 /**
  * TH-15 회기일지 작성 진입 컨텍스트 — "치료계획 자동연결"이 여기서 이뤄진다.
- * 이 아동의 가장 최근 확정(is_draft=false) MED-005 하나를 자동으로 찾아 therapyPlanId로 반환하고
+ * 이 당사자의 가장 최근 확정(is_draft=false) MED-005 하나를 자동으로 찾아 therapyPlanId로 반환하고
  * (프로토타입 "계획서 THP-… 자동 연결됨" 칩), 그 계획서의 목표(계획 vs 실제 비교 패널 좌측),
  * 다음 회기 차수(연결 계획서에 딸린 회기 수 + 1), 직전 회기의 진행상황·달성도를 함께 내려준다.
  */
@@ -442,7 +444,7 @@ export async function createSessionNote(
   input: SessionNoteInput & { personId: string }
 ): Promise<ActionResult & { recordId?: string }> {
   const { personId, ...content } = input;
-  if (!UUID_RE.test(personId)) return { error: "아동 정보가 올바르지 않습니다." };
+  if (!UUID_RE.test(personId)) return { error: "당사자 정보가 올바르지 않습니다." };
 
   const parsed = sessionNoteSchema.safeParse(content);
   if (!parsed.success) return { error: firstIssue(parsed.error) };

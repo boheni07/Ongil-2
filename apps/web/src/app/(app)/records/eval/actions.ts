@@ -145,7 +145,7 @@ export async function createEvalReport(
   personId: string,
   input: EvalReportInput
 ): Promise<ActionResult & { recordId?: string }> {
-  if (!UUID_RE.test(personId)) return { error: "아동 정보가 올바르지 않습니다." };
+  if (!UUID_RE.test(personId)) return { error: "당사자 정보가 올바르지 않습니다." };
 
   const parsed = evalReportSchema.safeParse(input);
   if (!parsed.success) return { error: firstIssue(parsed.error) };

@@ -33,6 +33,7 @@ export interface BipClient {
   personId: string;
   fullName: string;
   birthDate: string;
+  avatarUrl: string | null;
   lifeStage: LifeStage;
   /** 가장 최근 제출된 BIP(EDU-003) 요약. 없으면 null("새 BIP 작성"으로 유도). */
   latestBip: {
@@ -133,7 +134,7 @@ export async function getBipClients(): Promise<BipClient[]> {
   if (personIds.length === 0) return [];
 
   const [personsRes, bipRes] = await Promise.all([
-    supabase.from("persons").select("id, full_name, birth_date").in("id", personIds),
+    supabase.from("persons").select("id, full_name, birth_date, avatar_url").in("id", personIds),
     supabase
       .from("records")
       .select("id, person_id, content, requires_confirmation, confirmed_at, record_date")
@@ -158,6 +159,7 @@ export async function getBipClients(): Promise<BipClient[]> {
       personId: p.id as string,
       fullName: (p.full_name as string) ?? "",
       birthDate: p.birth_date as string,
+      avatarUrl: (p.avatar_url as string | null) ?? null,
       lifeStage: computeLifeStage(p.birth_date as string),
       latestBip: bip
         ? {
