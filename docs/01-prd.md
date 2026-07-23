@@ -185,7 +185,7 @@
 | `annual_goals[]` | `{area, goal, short_term_goals[], achievement_rate?, evaluation_note?}` | 필수(1개+) | 연간 목표. `achievement_rate`·`evaluation_note`는 T-14 인라인 점검에서 채움 |
 | ˪ `short_term_goals[]` | `{goal, period, evaluation}` | 선택 | 단기(분기) 목표 |
 | `support_services[]` | `{service, provider, frequency}` | 선택 | 지원 서비스 목록 |
-| `transition_plan` | `{goal, steps: string[]}` | 선택(청소년기+ 노출) | 전환계획 서브섹션 — EDU-005·TRA-001과는 별개 |
+| `transition_plan` | `{goal_area?, goal, steps: string[], linked_agencies?: string}` | 선택(청소년기+ 노출) | 전환계획 서브섹션 — EDU-005·TRA-001과는 별개. `goal_area`(전환 목표 영역, enum: `career`/`independent_living`/`community`/`further_education`)·`linked_agencies`(연계 기관, 자유 텍스트)는 2026-07-19 프로토타입 대조로 보강(둘 다 optional, 하위호환) |
 
 **EDU-002 관찰기록** (EDU · camelCase)
 

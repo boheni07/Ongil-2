@@ -105,7 +105,6 @@ export function GuardianshipReportWizard({
       return;
     }
     router.push(`/records/leg?personId=${personId}`);
-    router.refresh();
   }
 
   if (clients.length === 0) {

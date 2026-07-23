@@ -1,4 +1,12 @@
-import { personRegisterSchema, type PersonRegisterInput, type Role } from "@ongil/validation";
+import {
+  personRegisterSchema,
+  personUpdateSchema,
+  selfExpressionSchema,
+  type PersonRegisterInput,
+  type PersonUpdateInput,
+  type SelfExpressionInput,
+  type Role,
+} from "@ongil/validation";
 import { supabase } from "./supabase";
 
 /**
@@ -123,6 +131,105 @@ export async function registerPerson(input: PersonRegisterInput): Promise<Regist
   }
 
   return { ok: true, personId };
+}
+
+/**
+ * G-03 당사자 정보 수정 — persons UPDATE. 웹 updateGuardianPerson(dashboard/actions.ts)과
+ * 동일하게 안전 컬럼(full_name·birth_date·gender·disability_*·emergency_info·avatar_url)만
+ * 갱신한다. 접근 통제는 persons_update RLS(보호자 또는 셀프 당사자, 안전 컬럼 GRANT)에 위임.
+ * 최초 등록 시 받은 민감정보 동의(consents)는 수정 시 다시 요구하지 않는다(웹과 동일).
+ */
+export async function updatePerson(
+  personId: string,
+  input: PersonUpdateInput
+): Promise<RegisterPersonResult> {
+  if (!UUID_RE.test(personId)) return { error: "당사자 정보가 올바르지 않습니다." };
+
+  const parsed = personUpdateSchema.safeParse(input);
+  if (!parsed.success) return { error: firstIssue(parsed.error) };
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "로그인이 필요합니다." };
+
+  const { fullName, birthDate, gender, disabilityTypes, disabilityDegree, emergencyInfo, avatarUrl } =
+    parsed.data;
+
+  const { error } = await supabase
+    .from("persons")
+    .update({
+      full_name: fullName,
+      birth_date: birthDate,
+      gender: gender ?? null,
+      disability_types: disabilityTypes,
+      disability_degree: disabilityDegree ?? null,
+      emergency_info: emergencyInfo ?? null,
+      avatar_url: avatarUrl ?? null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", personId);
+
+  if (error) {
+    return { error: `당사자 정보 수정에 실패했습니다: ${error.message}` };
+  }
+  return { ok: true, personId };
+}
+
+/**
+ * G-22 보호자 대리 자기표현(SELF-001) — docs/07 §5 갭⑥.
+ * 당사자가 스스로 기록하기 어려운 경우 보호자가 대신 자기표현을 남긴다. 당사자 셀프 작성
+ * (person.ts submitSelfExpression, author_id=person_id=당사자)과 달리 author_id=보호자,
+ * person_id=당사자로 저장돼 감사에서 대리 작성임이 구분된다(웹 createSelfExpressionForPerson과 동형).
+ * 접근 통제는 records_insert RLS(guardians 분기, 도메인 무관)에 위임한다. 일상 기록이라
+ * requires_confirmation=false(§4-6) — 확인 절차 없음. logAccess는 best-effort(실패해도 저장 유지).
+ */
+export async function createSelfExpressionForPerson(
+  personId: string,
+  input: SelfExpressionInput
+): Promise<RegisterPersonResult & { recordId?: string }> {
+  if (!UUID_RE.test(personId)) return { error: "당사자 정보가 올바르지 않습니다." };
+
+  const parsed = selfExpressionSchema.safeParse(input);
+  if (!parsed.success) return { error: firstIssue(parsed.error) };
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "로그인이 필요합니다." };
+
+  const { data: row, error: insErr } = await supabase
+    .from("records")
+    .insert({
+      person_id: personId,
+      author_id: user.id, // 보호자 본인 — 대리 작성 주체를 감사에 남긴다.
+      domain: "DAI",
+      record_type: "SELF-001",
+      content: parsed.data,
+      is_draft: false,
+      requires_confirmation: false,
+      record_date: new Date().toISOString(),
+    })
+    .select("id")
+    .single();
+
+  if (insErr) return { error: `기록 저장에 실패했습니다: ${insErr.message}` };
+
+  try {
+    await supabase.from("access_logs").insert({
+      actor_id: user.id,
+      person_id: personId,
+      record_id: row.id as string,
+      action: "create",
+      domain: "DAI",
+      ip_address: null,
+      user_agent: null,
+    });
+  } catch {
+    // 감사 로그 실패는 사용자 작업을 막지 않는다.
+  }
+
+  return { ok: true, recordId: row.id as string };
 }
 
 /** G-01 대시보드 — 보호자가 접근 가능한 당사자 목록(응급정보 포함). */

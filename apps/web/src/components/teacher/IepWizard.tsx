@@ -182,7 +182,6 @@ export function IepWizard({
       return;
     }
     router.push(res.recordId ? `/records/iep/${res.recordId}/review` : "/home");
-    router.refresh();
   }
 
   if (students.length === 0) {

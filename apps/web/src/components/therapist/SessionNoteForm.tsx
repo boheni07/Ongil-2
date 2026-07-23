@@ -118,7 +118,6 @@ export function SessionNoteForm({
       return;
     }
     router.push(`/records/therapy-plan/${planId}`);
-    router.refresh();
   }
 
   const shortPlanId = `THP-${planId.slice(0, 8)}`;

@@ -234,6 +234,50 @@
 
 **진행 경위 메모**: 최초 구현을 맡은 mobile-dev 에이전트가 월간 사용량 한도 도달로 `ItpWizardScreen.tsx` 작성 도중 중단됐으나, 실제로는 lib 2개·화면 2개·`isItpActiveStage` 헬퍼·네비게이션 타입까지는 이미 완성돼 있었다(재확인 결과 손실 없음). 메인 세션이 나머지(네비게이터 등록, `TeacherHomeScreen` 진입점, typecheck)를 직접 마무리했다.
 
+### Wave E — 모바일 파리티 잔여 갭 4건 (2026-07-22 발견)
+
+`docs/02-ia.md` §3-11(모바일 화면 인벤토리 신설) 작성 중 각주로만 남겨뒀던 4건을 코드 레벨로 재확인한 결과 전부 실제 갭으로 확정됐다(Wave C가 커버한 신규 record_type 5종과는 별개로, Wave C 이전부터 있었던 웹 기능인데 모바일에 아예 없던 것들).
+
+| # | 항목 | 웹 대응 화면 | 확인 근거 |
+|---|---|---|---|
+| E-1 | G-03(당사자 정보 수정) 모바일 이식 | `/dashboard/persons/:id/edit` | `PersonRegisterScreen`은 신규 등록 전용, edit 모드·`updatePerson` 호출이 mobile 코드에 전무 |
+| E-2 | G-22(대리 자기표현) 모바일 이식 | `/persons/:id/records/express` | `SelfExpressionScreen`은 `PersonStackParamList`에만 등록, Guardian 스택엔 동등 라우트·`createSelfExpressionForPerson` 호출 없음 |
+| E-3 | S-14(일지 이어작성) 모바일 이식 | `/journals/:id/edit` | `JournalComposeScreen`은 항상 INSERT 경로만 타고 `submitSupportJournal`도 `existingRecordId`/UPDATE 미지원, `JournalDetailScreen`엔 "이어서 작성" 버튼 없음 |
+| E-4 | W-22(사례회의록 목록) 모바일 이식 | `/records/case-notes` | `lib/case-notes.ts`의 `listCaseNotes()`가 어떤 화면에서도 호출되지 않는 죽은 코드, `SocialWorkerHomeScreen`은 목록 없이 바로 작성 화면(`CaseConferenceForm`)으로만 연결 |
+
+상태: ✅ 완료(2026-07-22) — 4건 전부 모바일 이식 완료. `pnpm --filter @ongil/mobile typecheck` 통과(에러 0건). 에뮬레이터가 이 환경에 없어 UI 렌더링·터치 동작은 미검증(타입체크로만 확인). 항목별 상세는 아래.
+
+#### E-1 완료 상세 (2026-07-22) — 당사자 정보 수정(G-03)
+
+- **`apps/mobile/src/lib/guardian.ts`**: `updatePerson(personId, input: PersonUpdateInput)` 신설. 웹 `updateGuardianPerson`(dashboard/actions.ts)과 동일하게 안전 컬럼(full_name·birth_date·gender·disability_*·emergency_info·avatar_url)만 UPDATE. 접근 통제는 기존 `persons_update` RLS(보호자/셀프 당사자, 안전 컬럼 GRANT)에 위임 — 백엔드 변경 없음.
+- **`apps/mobile/src/screens/PersonRegisterScreen.tsx`**: 신규 등록 전용이던 화면을 `route.params.person` 유무로 `create`/`edit` 모드 분기하도록 확장. 웹(`PersonRegisterWizard existing`)과 동일하게 **수정 모드는 민감정보 동의·프로필 사진 단계를 생략**(6단계→4단계). 단계 흐름을 `StepKey[]` 배열로 구동해 create/edit가 같은 렌더 블록을 공유한다. 기존 값 프리필(응급정보 파싱 포함), 수정 모드는 오프라인 초안(`useWizardDraft`) 복원/저장을 하지 않는다. 제출 시 `personUpdateSchema`로 검증 후 `updatePerson` 호출.
+- **`apps/mobile/src/screens/GuardianDashboardScreen.tsx`**: 선택된 당사자 영역에 "✎ {이름} 정보 수정" 버튼 추가 → `PersonRegister { person }`로 진입(웹은 G-01 대시보드에서 진입).
+- **`apps/mobile/src/navigation/types.ts`**: `GuardianStackParamList.PersonRegister`를 `{ person: GuardianPerson } | undefined`로 확장.
+- **웹과의 의도된 차이**: 모바일 폼은 비상연락처를 1건만 입력받는다 — 웹에서 여러 건을 등록한 당사자를 모바일에서 수정할 때 2번째 이후 연락처가 소리 없이 사라지지 않도록 `restContacts`로 보존해 저장 시 다시 합친다. 프로필 사진은 모바일에 업로드 UI가 없어 수정 시 기존 `avatar_url`을 그대로 유지한다(누락 시 null로 지워짐 방지).
+
+#### E-2 완료 상세 (2026-07-22) — 대리 자기표현(G-22)
+
+- **`apps/mobile/src/lib/guardian.ts`**: `createSelfExpressionForPerson(personId, input)` 신설. 웹 동명 액션과 동형 — author_id=보호자, person_id=당사자로 records INSERT(domain='DAI', record_type='SELF-001', requires_confirmation=false). 당사자 셀프 작성(`lib/person.ts` submitSelfExpression, author_id=person_id)과 달리 대리 작성 주체가 감사에 남는다. `access_logs`에 best-effort로 create 로그 기록.
+- **`apps/mobile/src/screens/ProxyExpressScreen.tsx`**(신규): 당사자 본인용 `SelfExpressionScreen`(P-02)의 4단계 위저드 UI(PersonIconGrid·PersonQuestion)를 재사용하되 제출만 `createSelfExpressionForPerson`으로 교체한 보호자용 변형. `GuardianStackParamList`에 등록.
+- **`apps/mobile/src/screens/RecordManagerScreen.tsx`**(G-20): "💬 대신 자기표현 남기기" 버튼 추가 → `ProxyExpress { personId, personName }`(웹 G-20 패턴과 동일).
+- **`apps/mobile/src/navigation/{types,MainNavigator}.tsx`**: `ProxyExpress` 라우트 추가·등록.
+
+#### E-3 완료 상세 (2026-07-22) — 임시저장 일지 이어작성(S-14)
+
+- **`apps/mobile/src/lib/journal.ts`**: `submitSupportJournal`에 4번째 인자 `existingRecordId?` 추가(있으면 INSERT 대신 UPDATE — 웹과 동일 분기). `getJournalDraft(id)` 신설(is_draft=false면 null 반환). 기존 3인자 호출부(오프라인 큐 flush 등)는 그대로 동작(하위호환). 백엔드는 `records_update`의 "작성자 본인 draft" 예외 분기(2026-07-21 마이그레이션)를 그대로 사용 — 변경 없음.
+- **`apps/mobile/src/screens/JournalComposeScreen.tsx`**: `route.params.existingRecordId`가 있으면 `getJournalDraft`로 draft를 불러와 전체 필드 프리필. 제출 시 `existingRecordId`를 넘겨 UPDATE 경로를 탄다. 이어작성 모드는 로컬 초안(`useWizardDraft`) 저장/복원을 하지 않는다.
+- **`apps/mobile/src/screens/JournalDetailScreen.tsx`**(S-13): `isDraft`일 때만 "✎ 이어서 작성" 버튼 추가 → `JournalCompose { existingRecordId }`.
+- **`apps/mobile/src/navigation/types.ts`**: `SupporterStackParamList.JournalCompose`에 `existingRecordId?` 추가.
+- **웹과의 의도된 차이**: 모바일에만 있는 오프라인 큐(`offline-queue`)는 **이어작성 모드에서 우회**한다 — 편집을 큐잉하면 flush 시 새 INSERT로 중복 생성되기 때문. 편집은 항상 온라인 UPDATE로만 처리(웹은 오프라인 큐 자체가 없음).
+
+#### E-4 완료 상세 (2026-07-22) — 사례회의록 목록(W-22)
+
+- **`apps/mobile/src/screens/CaseNotesListScreen.tsx`**(신규): 이미 있었으나 어떤 화면도 호출하지 않던 `lib/case-notes.ts`의 `getCaseNoteClients`/`listCaseNotes`(죽은 코드)를 실제로 쓰는 목록 화면. `LegBoardScreen`과 동일한 구조(상단 새 회의록 작성 버튼 + 담당 당사자별 카드, 탭 시 사례회의록 펼침). 확인 절차가 없는 일상 기록이라 확인 배지를 쓰지 않는다.
+- **`apps/mobile/src/screens/SocialWorkerHomeScreen.tsx`**: "📝 사례회의록" 버튼을 바로 작성 화면(`CaseConferenceForm`)이 아니라 목록 화면(`CaseNotesList`)으로 연결하도록 변경(웹과 동일 흐름). 작성은 목록 상단 버튼에서 진입.
+- **`apps/mobile/src/navigation/{types,MainNavigator}.tsx`**: `CaseNotesList` 라우트 추가·등록.
+
+**검증 방법**: `pnpm --filter @ongil/mobile typecheck` 통과(에러 0건). 에뮬레이터 부재로 시각적 렌더링·터치 동작은 미검증 — 실기기 확보 시 스팟체크 필요.
+
 ### Wave D — 별도 라운드로 분리
 
 | # | 항목 | 비고 |
@@ -245,7 +289,7 @@
 ### 권장 실행 순서
 
 ```
-Wave A(알림 유틸 통합) ✅ 완료(2026-07-18) → Wave B(pgTAP 하네스+회귀테스트+메타테스트) ✅ 완료(2026-07-18) → Wave C(모바일 파리티 2단계) ✅ 완료(2026-07-18) → (Wave D는 별도 라운드/트랙)
+Wave A(알림 유틸 통합) ✅ 완료(2026-07-18) → Wave B(pgTAP 하네스+회귀테스트+메타테스트) ✅ 완료(2026-07-18) → Wave C(모바일 파리티 2단계) ✅ 완료(2026-07-18) → Wave E(모바일 파리티 잔여 4건) ✅ 완료(2026-07-22) → (Wave D는 별도 라운드/트랙)
 ```
 
-Wave A·B·C 전체 완료 — 신규 record_type 6종(EDU-003/EDU-005/WEL-006/LEG-001/LEG-002 + 기존 안정화분) 전부 웹·모바일 양쪽에서 동등한 기능을 제공하며, pgTAP 회귀·정책 논리 일관성 검증까지 갖춘 상태다. 남은 항목은 Wave D(E2E 브라우저 스팟체크·카카오/네이버 OAuth·학대신고 에스컬레이션)뿐이며 이들은 각각 성격이 달라(브라우저 자동화/외부 인증 연동/법률 자문 선행) 별도 라운드·트랙으로 분리해 두었다.
+Wave A·B·C·E 전체 완료 — 신규 record_type 6종(EDU-003/EDU-005/WEL-006/LEG-001/LEG-002 + 기존 안정화분) 전부 웹·모바일 양쪽에서 동등한 기능을 제공하며, G-03(당사자 수정)·G-22(대리 자기표현)·S-14(일지 이어작성)·W-22(사례회의록 목록) 등 Wave C 이전부터 있던 웹 기능의 모바일 파리티 갭도 해소했고, pgTAP 회귀·정책 논리 일관성 검증까지 갖춘 상태다. 남은 항목은 Wave D(E2E 브라우저 스팟체크·카카오/네이버 OAuth·학대신고 에스컬레이션)뿐이며 이들은 각각 성격이 달라(브라우저 자동화/외부 인증 연동/법률 자문 선행) 별도 라운드·트랙으로 분리해 두었다.

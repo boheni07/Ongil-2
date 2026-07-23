@@ -85,7 +85,6 @@ export function ExpressWizard() {
     setSaved(true);
     setTimeout(() => {
       router.push("/home");
-      router.refresh();
     }, 2000);
   }
 

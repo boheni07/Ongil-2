@@ -98,7 +98,6 @@ export function BipForm({
       return;
     }
     router.push("/records/bip");
-    router.refresh();
   }
 
   if (students.length === 0) {

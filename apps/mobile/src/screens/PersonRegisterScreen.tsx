@@ -10,8 +10,8 @@ import {
 } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { personRegisterSchema } from "@ongil/validation";
-import { registerPerson } from "../lib/guardian";
+import { personRegisterSchema, personUpdateSchema } from "@ongil/validation";
+import { registerPerson, updatePerson } from "../lib/guardian";
 import { useAsyncAction } from "../hooks/useAsyncAction";
 import { useWizardDraft } from "../hooks/useWizardDraft";
 import { CategoryChip } from "../components/IconSelector";
@@ -26,7 +26,25 @@ import type { GuardianStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<GuardianStackParamList, "PersonRegister">;
 
-const STEP_CAPS = ["기본 정보", "민감정보 동의", "장애 정보", "응급 정보", "프로필 사진", "확인"];
+type StepKey = "basic" | "consent" | "disability" | "emergency" | "photo" | "confirm";
+const STEP_CAP: Record<StepKey, string> = {
+  basic: "기본 정보",
+  consent: "민감정보 동의",
+  disability: "장애 정보",
+  emergency: "응급 정보",
+  photo: "프로필 사진",
+  confirm: "확인",
+};
+// 수정 모드(G-03)는 민감정보 동의(최초 등록 시 이미 받아 consents에 영구 보관)와 사진 단계를 건너뛴다.
+const CREATE_STEPS: StepKey[] = ["basic", "consent", "disability", "emergency", "photo", "confirm"];
+const EDIT_STEPS: StepKey[] = ["basic", "disability", "emergency", "confirm"];
+
+type EmergencyContact = { name: string; relation?: string; phone: string };
+type EmergencyShape = {
+  allergies?: string[];
+  medications?: string[];
+  contacts?: EmergencyContact[];
+} | null;
 const DISABILITY_TYPES = [
   "지적장애",
   "자폐성장애",
@@ -57,21 +75,36 @@ interface Draft {
   contactPhone: string;
 }
 
-/** Flow-G-01 당사자 등록 6단계 위저드. persons→guardians→consents 순차 저장(registerPerson). */
-export function PersonRegisterScreen({ navigation }: Props) {
+/**
+ * Flow-G-01 당사자 등록/수정 위저드.
+ *  - 신규: persons→guardians→consents 순차 저장(registerPerson), 6단계.
+ *  - 수정(route.params.person): persons UPDATE(updatePerson), 동의·사진 단계 생략 4단계.
+ */
+export function PersonRegisterScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
+  const existing = route.params?.person ?? null;
+  const isEdit = Boolean(existing);
+  const steps = isEdit ? EDIT_STEPS : CREATE_STEPS;
+  const em = (existing?.emergencyInfo ?? null) as EmergencyShape;
+  const existingContacts = em?.contacts ?? [];
+
   const [step, setStep] = useState(1);
-  const [fullName, setFullName] = useState("");
-  const [birthDate, setBirthDate] = useState("");
-  const [gender, setGender] = useState<"M" | "F" | "other" | null>(null);
-  const [consent, setConsent] = useState(false);
-  const [disabilityTypes, setDisabilityTypes] = useState<string[]>([]);
-  const [disabilityDegree, setDisabilityDegree] = useState<"severe" | "mild" | null>(null);
-  const [allergies, setAllergies] = useState("");
-  const [medications, setMedications] = useState("");
-  const [contactName, setContactName] = useState("");
-  const [contactRelation, setContactRelation] = useState("");
-  const [contactPhone, setContactPhone] = useState("");
+  const [fullName, setFullName] = useState(existing?.fullName ?? "");
+  const [birthDate, setBirthDate] = useState(existing?.birthDate ?? "");
+  const [gender, setGender] = useState<"M" | "F" | "other" | null>(existing?.gender ?? null);
+  const [consent, setConsent] = useState(isEdit);
+  const [disabilityTypes, setDisabilityTypes] = useState<string[]>(existing?.disabilityTypes ?? []);
+  const [disabilityDegree, setDisabilityDegree] = useState<"severe" | "mild" | null>(
+    existing?.disabilityDegree ?? null
+  );
+  const [allergies, setAllergies] = useState((em?.allergies ?? []).join(", "));
+  const [medications, setMedications] = useState((em?.medications ?? []).join(", "));
+  const [contactName, setContactName] = useState(existingContacts[0]?.name ?? "");
+  const [contactRelation, setContactRelation] = useState(existingContacts[0]?.relation ?? "");
+  const [contactPhone, setContactPhone] = useState(existingContacts[0]?.phone ?? "");
+  // 모바일 폼은 비상연락 1건만 입력받는다 — 웹에서 여러 건을 등록한 당사자를 수정할 때
+  // 2번째 이후 연락처가 소리 없이 사라지지 않도록 보존해 저장 시 다시 합친다.
+  const restContacts = existingContacts.slice(1);
 
   const { loading, error, run } = useAsyncAction();
   const { checkRestore, saveDraft, clearDraft } = useWizardDraft<Draft>("register:draft");
@@ -108,12 +141,17 @@ export function PersonRegisterScreen({ navigation }: Props) {
   }, []);
 
   useEffect(() => {
-    void checkRestore(applyDraft);
-  }, [checkRestore, applyDraft]);
+    navigation.setOptions({ title: isEdit ? "당사자 정보 수정" : "당사자 등록" });
+  }, [navigation, isEdit]);
+
+  // 임시저장(오프라인 초안)은 신규 등록에만 쓴다 — 수정 모드는 기존 값이 소스라 초안 복원/저장을 하지 않는다.
+  useEffect(() => {
+    if (!isEdit) void checkRestore(applyDraft);
+  }, [checkRestore, applyDraft, isEdit]);
 
   useEffect(() => {
-    saveDraft(snapshot());
-  }, [step, saveDraft, snapshot]);
+    if (!isEdit) saveDraft(snapshot());
+  }, [step, saveDraft, snapshot, isEdit]);
 
   const splitList = (s: string) =>
     s
@@ -121,8 +159,9 @@ export function PersonRegisterScreen({ navigation }: Props) {
       .map((x) => x.trim())
       .filter(Boolean);
 
-  const buildInput = () => {
-    const contacts =
+  /** sensitiveConsent를 뺀 공통 필드(personUpdateSchema 대응). 신규는 여기에 동의 플래그만 더한다. */
+  const buildCommon = () => {
+    const firstContact =
       contactName.trim() && contactPhone.trim()
         ? [
             {
@@ -132,6 +171,7 @@ export function PersonRegisterScreen({ navigation }: Props) {
             },
           ]
         : [];
+    const contacts = [...firstContact, ...restContacts];
     const allergyList = splitList(allergies);
     const medList = splitList(medications);
     const emergencyInfo =
@@ -142,26 +182,39 @@ export function PersonRegisterScreen({ navigation }: Props) {
       fullName: fullName.trim(),
       birthDate: birthDate.trim(),
       gender: gender ?? undefined,
-      sensitiveConsent: consent as true,
       disabilityTypes,
       disabilityDegree: disabilityDegree ?? undefined,
       emergencyInfo,
+      // 모바일엔 사진 업로드 UI가 없으므로 수정 시 기존 avatar_url을 유지한다(누락 시 null로 지워짐 방지).
+      ...(existing?.avatarUrl ? { avatarUrl: existing.avatarUrl } : {}),
     };
   };
 
   const toggleType = (t: string) =>
     setDisabilityTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
 
+  const key = steps[step - 1];
   const canNext =
-    (step === 1 && fullName.trim() && /^\d{4}-\d{2}-\d{2}$/.test(birthDate.trim())) ||
-    (step === 2 && consent) ||
-    step === 3 ||
-    step === 4 ||
-    step === 5;
+    (key === "basic" && Boolean(fullName.trim()) && /^\d{4}-\d{2}-\d{2}$/.test(birthDate.trim())) ||
+    (key === "consent" && consent) ||
+    key === "disability" ||
+    key === "emergency" ||
+    key === "photo";
 
   const submit = () =>
     run(async () => {
-      const parsed = personRegisterSchema.safeParse(buildInput());
+      if (isEdit && existing) {
+        const parsed = personUpdateSchema.safeParse(buildCommon());
+        if (!parsed.success) return parsed.error.issues[0]?.message ?? "입력값을 확인해주세요.";
+        const res = await updatePerson(existing.id, parsed.data);
+        if (res.error && !res.ok) return res.error;
+        navigation.goBack();
+        return;
+      }
+      const parsed = personRegisterSchema.safeParse({
+        ...buildCommon(),
+        sensitiveConsent: consent as true,
+      });
       if (!parsed.success) return parsed.error.issues[0]?.message ?? "입력값을 확인해주세요.";
       const res = await registerPerson(parsed.data);
       if (res.error && !res.ok) return res.error;
@@ -176,13 +229,13 @@ export function PersonRegisterScreen({ navigation }: Props) {
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + SPACING.xl }]}
       keyboardShouldPersistTaps="handled"
     >
-      <StepBar current={step} total={6} label="당사자 등록" />
+      <StepBar current={step} total={steps.length} label={isEdit ? "당사자 정보 수정" : "당사자 등록"} />
       <Text style={styles.stepCap}>
-        {step}/6 · {STEP_CAPS[step - 1]}
+        {step}/{steps.length} · {STEP_CAP[key]}
       </Text>
       {error ? <ErrorBanner message={error} /> : null}
 
-      {step === 1 && (
+      {key === "basic" && (
         <Card>
           <Text style={styles.label}>이름 *</Text>
           <TextInput
@@ -215,7 +268,7 @@ export function PersonRegisterScreen({ navigation }: Props) {
         </Card>
       )}
 
-      {step === 2 && (
+      {key === "consent" && (
         <Card>
           <InfoBanner message="장애·건강정보는 민감정보입니다(PIPA §23). 보호자가 대리 동의합니다." />
           <Text style={styles.consentBody}>
@@ -237,7 +290,7 @@ export function PersonRegisterScreen({ navigation }: Props) {
         </Card>
       )}
 
-      {step === 3 && (
+      {key === "disability" && (
         <Card>
           <Text style={styles.label}>장애 유형 (복수 선택)</Text>
           <View style={styles.pickWrap}>
@@ -259,7 +312,7 @@ export function PersonRegisterScreen({ navigation }: Props) {
         </Card>
       )}
 
-      {step === 4 && (
+      {key === "emergency" && (
         <Card>
           <Text style={styles.label}>알레르기 (쉼표로 구분)</Text>
           <TextInput
@@ -309,7 +362,7 @@ export function PersonRegisterScreen({ navigation }: Props) {
         </Card>
       )}
 
-      {step === 5 && (
+      {key === "photo" && (
         <Card>
           <InfoBanner message="프로필 사진은 선택입니다. 사진 업로드는 준비 중이며, 건너뛰고 등록할 수 있습니다." />
           <View style={styles.avatarPlaceholder}>
@@ -318,7 +371,7 @@ export function PersonRegisterScreen({ navigation }: Props) {
         </Card>
       )}
 
-      {step === 6 && (
+      {key === "confirm" && (
         <Card>
           <Text style={styles.summaryTitle}>입력 내용을 확인하세요</Text>
           <SumRow k="이름" v={fullName.trim() || "-"} />
@@ -341,8 +394,8 @@ export function PersonRegisterScreen({ navigation }: Props) {
 
       <WizardFooter
         onPrev={step > 1 ? () => setStep((s) => s - 1) : () => navigation.goBack()}
-        onNext={step < 6 ? () => setStep((s) => s + 1) : undefined}
-        onSubmit={step === 6 ? submit : undefined}
+        onNext={key !== "confirm" ? () => setStep((s) => s + 1) : undefined}
+        onSubmit={key === "confirm" ? submit : undefined}
         nextDisabled={!canNext}
         loading={loading}
       />

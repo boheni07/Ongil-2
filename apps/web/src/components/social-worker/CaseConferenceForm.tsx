@@ -80,7 +80,6 @@ export function CaseConferenceForm({
       return;
     }
     router.push(`/records/case-notes?personId=${personId}`);
-    router.refresh();
   }
 
   if (clients.length === 0) {

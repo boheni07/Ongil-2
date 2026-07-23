@@ -160,7 +160,6 @@ function buildInput(): Omit<PersonRegisterInput, "sensitiveConsent"> {
       return;
     }
     router.push("/dashboard");
-    router.refresh();
   }
 
   return (

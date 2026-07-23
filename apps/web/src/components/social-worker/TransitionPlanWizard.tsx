@@ -137,7 +137,6 @@ export function TransitionPlanWizard({
     // "다음 단계에서 제공됩니다" 안내만 뜨는 막다른 길이 된다 — role 무관하게 항상 유효한
     // 타임라인으로 보낸다(getTimeline은 RLS만으로 걸러지는 범용 조회).
     router.push(`/timeline?personId=${personId}`);
-    router.refresh();
   }
 
   if (clients.length === 0) {

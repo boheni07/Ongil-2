@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getJournalDetail, type SupportJournalDetail } from "../lib/journal";
@@ -13,8 +13,8 @@ import type { SupporterStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<SupporterStackParamList, "JournalDetail">;
 
-/** S-13 일지 상세 — 단일 활동일지 전체 내용. */
-export function JournalDetailScreen({ route }: Props) {
+/** S-13 일지 상세 — 단일 활동일지 전체 내용. 임시저장(draft)이면 이어서 작성할 수 있다(S-14). */
+export function JournalDetailScreen({ route, navigation }: Props) {
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [journal, setJournal] = useState<SupportJournalDetail | null>(null);
@@ -62,6 +62,23 @@ export function JournalDetailScreen({ route }: Props) {
       <Text style={styles.subtle}>
         {journal.personName ?? "이용자"} · {c.service_date}
       </Text>
+
+      {journal.isDraft ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="임시저장된 일지 이어서 작성"
+          onPress={() =>
+            navigation.navigate("JournalCompose", {
+              personId: journal.personId,
+              personName: journal.personName ?? "",
+              existingRecordId: journal.id,
+            })
+          }
+          style={({ pressed }) => [styles.continueBtn, pressed && styles.pressed]}
+        >
+          <Text style={styles.continueBtnText}>✎ 이어서 작성</Text>
+        </Pressable>
+      ) : null}
 
       <Section title="서비스 정보">
         <KV k="이용자" v={journal.personName ?? "-"} />
@@ -150,6 +167,16 @@ const styles = StyleSheet.create({
   v: { flex: 1, fontSize: 14, fontWeight: "600", color: NEUTRAL.text },
   body: { fontSize: 14, lineHeight: 22, color: NEUTRAL.text },
   muted: { fontSize: 14, color: NEUTRAL.textMuted },
+  continueBtn: {
+    marginTop: SPACING.lg,
+    minHeight: 48,
+    borderRadius: RADIUS.md,
+    backgroundColor: PRIMARY[600],
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  continueBtnText: { fontSize: 15, fontWeight: "800", color: "#fff" },
+  pressed: { opacity: 0.85 },
   tagWrap: { flexDirection: "row", flexWrap: "wrap", gap: SPACING.sm },
   tag: {
     backgroundColor: NEUTRAL.surface,

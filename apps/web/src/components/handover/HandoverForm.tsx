@@ -106,7 +106,6 @@ export function HandoverForm({ persons }: { persons: HandoverPersonOption[] }) {
       return;
     }
     router.push("/handovers");
-    router.refresh();
   }
 
   if (persons.length === 0) {

@@ -18,6 +18,7 @@ import { PermissionGrantScreen } from "../screens/PermissionGrantScreen";
 import { RecordManagerScreen } from "../screens/RecordManagerScreen";
 import { RecordDetailScreen } from "../screens/RecordDetailScreen";
 import { RecordFormScreen } from "../screens/RecordFormScreen";
+import { ProxyExpressScreen } from "../screens/ProxyExpressScreen";
 import { AccessLogsScreen } from "../screens/AccessLogsScreen";
 import { GuardianTimelineScreen } from "../screens/GuardianTimelineScreen";
 import { TeacherHomeScreen } from "../screens/TeacherHomeScreen";
@@ -34,6 +35,7 @@ import { TransitionPlanWizardScreen } from "../screens/TransitionPlanWizardScree
 import { ServiceUsageScreen } from "../screens/ServiceUsageScreen";
 import { WelTimelineScreen } from "../screens/WelTimelineScreen";
 import { CaseConferenceFormScreen } from "../screens/CaseConferenceFormScreen";
+import { CaseNotesListScreen } from "../screens/CaseNotesListScreen";
 import { LegBoardScreen } from "../screens/LegBoardScreen";
 import { GuardianshipReportWizardScreen } from "../screens/GuardianshipReportWizardScreen";
 import { AdvocacyConsultationFormScreen } from "../screens/AdvocacyConsultationFormScreen";
@@ -208,6 +210,11 @@ export function MainNavigator({ session }: { session: Session }) {
           options={{ title: "기록 작성" }}
         />
         <GuardianStack.Screen
+          name="ProxyExpress"
+          component={ProxyExpressScreen}
+          options={{ title: "대신 자기표현 남기기" }}
+        />
+        <GuardianStack.Screen
           name="AccessLogs"
           component={AccessLogsScreen}
           options={{ title: "접근 로그" }}
@@ -322,6 +329,11 @@ export function MainNavigator({ session }: { session: Session }) {
           name="WelTimeline"
           component={WelTimelineScreen}
           options={{ title: "복지 타임라인" }}
+        />
+        <SocialWorkerStack.Screen
+          name="CaseNotesList"
+          component={CaseNotesListScreen}
+          options={{ title: "사례회의록" }}
         />
         <SocialWorkerStack.Screen
           name="CaseConferenceForm"

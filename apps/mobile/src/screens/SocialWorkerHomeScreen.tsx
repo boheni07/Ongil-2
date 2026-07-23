@@ -207,8 +207,8 @@ export function SocialWorkerHomeScreen({ navigation }: Props) {
       <View style={styles.newRow}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="사례회의록 작성"
-          onPress={() => navigation.navigate("CaseConferenceForm")}
+          accessibilityLabel="사례회의록 목록"
+          onPress={() => navigation.navigate("CaseNotesList")}
           style={({ pressed }) => [styles.altBtn, pressed && styles.pressed]}
         >
           <Text style={styles.altBtnText}>📝 사례회의록</Text>

@@ -79,7 +79,6 @@ export function RecordForm({
       return;
     }
     router.push(`/persons/${personId}/records`);
-    router.refresh();
   }
 
   return (

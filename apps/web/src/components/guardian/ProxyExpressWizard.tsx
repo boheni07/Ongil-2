@@ -96,7 +96,6 @@ export function ProxyExpressWizard({
     setSaved(true);
     setTimeout(() => {
       router.push(recordsHref);
-      router.refresh();
     }, 1500);
   }
 

@@ -99,7 +99,6 @@ export function ObservationForm({
       return;
     }
     router.push(`/timeline?personId=${personId}`);
-    router.refresh();
   }
 
   if (students.length === 0) {

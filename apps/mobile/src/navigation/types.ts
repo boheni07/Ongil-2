@@ -1,4 +1,5 @@
 import type { Role } from "@ongil/validation";
+import type { GuardianPerson } from "../lib/guardian";
 
 /**
  * 미로그인 상태 Auth Stack 파라미터.
@@ -32,7 +33,8 @@ export type PersonStackParamList = {
 export type SupporterStackParamList = {
   SupporterTabs: undefined;
   SupporterHome: undefined;
-  JournalCompose: { personId: string; personName: string } | undefined;
+  // existingRecordId가 있으면 임시저장 일지 이어작성(S-14) — 해당 draft를 불러와 프리필한다.
+  JournalCompose: { personId: string; personName: string; existingRecordId?: string } | undefined;
   JournalDetail: { journalId: string };
   HandoverList: undefined;
   HandoverCompose: { personId: string; personName: string } | undefined;
@@ -51,12 +53,14 @@ export type SupporterTabParamList = {
 export type GuardianStackParamList = {
   GuardianTabs: undefined;
   GuardianDashboard: undefined;
-  PersonRegister: undefined;
+  // person이 있으면 수정 모드(G-03), 없으면 신규 등록(G-02).
+  PersonRegister: { person: GuardianPerson } | undefined;
   PermissionMatrix: { personId: string; personName: string };
   PermissionGrant: { personId: string; personName: string };
   RecordManager: { personId: string; personName: string };
   RecordDetail: { recordId: string; personId: string; personName: string };
   RecordForm: { personId: string; personName: string; recordId?: string };
+  ProxyExpress: { personId: string; personName: string };
   AccessLogs: { personId: string; personName: string };
   Timeline: { personId: string; personName: string };
   PrivacySettings: undefined;
@@ -102,6 +106,7 @@ export type SocialWorkerStackParamList = {
   TransitionPlanWizard: { personId: string; personName: string };
   ServiceUsage: undefined;
   WelTimeline: { personId: string; personName: string };
+  CaseNotesList: undefined;
   CaseConferenceForm: { personId?: string; personName?: string } | undefined;
   LegBoard: undefined;
   GuardianshipReportWizard: { personId?: string; personName?: string } | undefined;

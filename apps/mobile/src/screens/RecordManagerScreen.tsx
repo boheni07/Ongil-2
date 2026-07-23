@@ -62,6 +62,14 @@ export function RecordManagerScreen({ route, navigation }: Props) {
         >
           <Text style={styles.newBtnText}>＋ 새 기록 작성</Text>
         </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="대신 자기표현 남기기"
+          onPress={() => navigation.navigate("ProxyExpress", { personId, personName })}
+          style={({ pressed }) => [styles.proxyBtn, pressed && styles.pressed]}
+        >
+          <Text style={styles.proxyBtnText}>💬 대신 자기표현 남기기</Text>
+        </Pressable>
       </View>
 
       <FlatList
@@ -131,6 +139,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   newBtnText: { fontSize: 15, fontWeight: "800", color: "#1A1C1A" },
+  proxyBtn: {
+    marginTop: SPACING.xs,
+    minHeight: TOUCH_MIN,
+    borderRadius: RADIUS.md,
+    borderWidth: 1.5,
+    borderColor: NEUTRAL.border,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+  },
+  proxyBtnText: { fontSize: 15, fontWeight: "700", color: NEUTRAL.text },
   pressed: { opacity: 0.85 },
   listContent: { paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xl },
   emptyBox: { padding: SPACING.xl, alignItems: "center" },

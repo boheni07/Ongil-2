@@ -46,7 +46,6 @@ export function GlobalHeader({
   async function handleSignOut() {
     await createClient().auth.signOut();
     router.push("/login");
-    router.refresh();
   }
 
   return (

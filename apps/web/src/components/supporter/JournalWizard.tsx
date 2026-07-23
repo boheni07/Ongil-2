@@ -182,7 +182,6 @@ export function JournalWizard({
       return;
     }
     router.push(res.recordId ? `/journals/${res.recordId}` : "/home");
-    router.refresh();
   }
 
   const personName = persons.find((p) => p.id === personId)?.name ?? "이용자";

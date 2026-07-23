@@ -13,6 +13,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { computeServiceHours, supportJournalSchema } from "@ongil/validation";
 import {
+  getJournalDraft,
   getPreviousJournal,
   getServiceablePersons,
   submitSupportJournal,
@@ -69,6 +70,8 @@ export function JournalComposeScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const paramPersonId = route.params?.personId;
   const paramPersonName = route.params?.personName;
+  const existingRecordId = route.params?.existingRecordId;
+  const isEdit = Boolean(existingRecordId);
 
   const [step, setStep] = useState(1);
   const [persons, setPersons] = useState<{ id: string; fullName: string }[]>([]);
@@ -97,6 +100,10 @@ export function JournalComposeScreen({ navigation, route }: Props) {
     }, [])
   );
   const { checkRestore, saveDraft, clearDraft } = useWizardDraft<Draft>("journal:draft");
+
+  useEffect(() => {
+    if (isEdit) navigation.setOptions({ title: "일지 이어작성" });
+  }, [navigation, isEdit]);
 
   const snapshot = useCallback(
     (): Draft => ({
@@ -130,14 +137,36 @@ export function JournalComposeScreen({ navigation, route }: Props) {
   useEffect(() => {
     void (async () => {
       setPersons(await getServiceablePersons());
+      // 이어작성(S-14): draft를 불러와 전체 필드 프리필. 초안 복원 다이얼로그는 띄우지 않는다.
+      if (existingRecordId) {
+        const draft = await getJournalDraft(existingRecordId);
+        if (draft) {
+          const c = draft.content;
+          setPersonId(draft.personId);
+          setServiceDate(c.service_date);
+          setStartTime(c.start_time);
+          setEndTime(c.end_time ?? "");
+          setCategories(c.activities.map((a) => a.category));
+          const mins: Record<string, string> = {};
+          c.activities.forEach((a) => {
+            mins[a.category] = String(a.minutes);
+          });
+          setMinutes(mins);
+          setMealStatus(c.meal_status ?? null);
+          setHealthStatus(c.health_status ?? null);
+          setIncidents(c.incidents ?? "");
+          setHandoverNote(c.handover_note ?? "");
+        }
+        return;
+      }
       if (!paramPersonId) await checkRestore(applyDraft);
     })();
-  }, [checkRestore, applyDraft, paramPersonId]);
+  }, [checkRestore, applyDraft, paramPersonId, existingRecordId]);
 
-  // 단계 이동 시 로컬 임시저장(오프라인 대비)
+  // 단계 이동 시 로컬 임시저장(오프라인 대비). 이어작성 모드는 서버 draft가 소스라 로컬 초안을 만들지 않는다.
   useEffect(() => {
-    saveDraft(snapshot());
-  }, [step, saveDraft, snapshot]);
+    if (!isEdit) saveDraft(snapshot());
+  }, [step, saveDraft, snapshot, isEdit]);
 
   const buildInput = () => ({
     service_date: serviceDate.trim(),
@@ -186,10 +215,11 @@ export function JournalComposeScreen({ navigation, route }: Props) {
       if (!parsed.success) return parsed.error.issues[0]?.message ?? "입력값을 확인해주세요.";
 
       // 실패 감지보다 사전 확인이 신뢰성 높다: 오프라인이면 네트워크 호출 없이 바로 큐잉.
+      // 단, 이어작성(기존 draft UPDATE)은 큐잉하면 flush 시 새 INSERT로 중복 생성되므로 큐를 쓰지 않는다.
       const netState = await Network.getNetworkStateAsync().catch(() => null);
       const offline = netState != null && netState.isConnected === false;
 
-      if (offline) {
+      if (offline && !isEdit) {
         await enqueue({
           formType: "journal",
           personId,
@@ -208,9 +238,9 @@ export function JournalComposeScreen({ navigation, route }: Props) {
         return;
       }
 
-      const res = await submitSupportJournal(personId, parsed.data, isDraft);
+      const res = await submitSupportJournal(personId, parsed.data, isDraft, existingRecordId);
       if (res.error) return res.error;
-      clearDraft();
+      if (!isEdit) clearDraft();
       if (res.recordId) {
         navigation.replace("JournalDetail", { journalId: res.recordId });
       } else {

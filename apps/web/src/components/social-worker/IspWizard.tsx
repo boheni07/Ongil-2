@@ -158,7 +158,6 @@ export function IspWizard({
       return;
     }
     router.push(res.recordId ? `/records/isp/${res.recordId}/review` : "/home");
-    router.refresh();
   }
 
   if (clients.length === 0) {

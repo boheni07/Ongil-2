@@ -101,7 +101,6 @@ export function ItpWizard({
       return;
     }
     router.push("/records/itp");
-    router.refresh();
   }
 
   if (clients.length === 0) {

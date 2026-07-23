@@ -151,6 +151,15 @@ export function GuardianDashboardScreen({ navigation }: Props) {
 
       {selected ? (
         <>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${selected.fullName} 정보 수정`}
+            onPress={() => navigation.navigate("PersonRegister", { person: selected })}
+            style={({ pressed }) => [styles.editBtn, pressed && styles.pressed]}
+          >
+            <Text style={styles.editBtnText}>✎ {selected.fullName} 정보 수정</Text>
+          </Pressable>
+
           <View style={styles.pinned}>
             <Text style={styles.pinnedTitle}>🚨 응급 대응 정보 — {selected.fullName}</Text>
             <EmergencyRow label="알레르기" value={emergency?.allergies?.join(", ")} />
@@ -379,6 +388,17 @@ const styles = StyleSheet.create({
     backgroundColor: PRIMARY[50],
   },
   addBtnText: { fontSize: 16, fontWeight: "700", color: PRIMARY[700] },
+  editBtn: {
+    marginTop: SPACING.lg,
+    minHeight: 44,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: NEUTRAL.border,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: NEUTRAL.bg,
+  },
+  editBtnText: { fontSize: 15, fontWeight: "700", color: NEUTRAL.text },
   pressed: { opacity: 0.85 },
   pinned: {
     marginTop: SPACING.lg,

@@ -859,6 +859,101 @@ CREATE POLICY persons_insert ON persons FOR INSERT
 > `confirmer_id := person_id`(성년 당사자 본인 확인)가 성립한다. 대리 등록(보호자가 당사자를 등록)은
 > 기존대로 `role='guardian'` 분기로 처리된다.
 
+> **UPDATE/DELETE 정책 부재 이력(2026-07-19~21, `p3_persons_update_and_guardians_delete_rls` →
+> `p3_persons_update_self_person`):** `p0_4_rls_grants`(2026-07-09)가 이미 `persons` 테이블 전체에
+> UPDATE/DELETE를 `authenticated`에 GRANT했지만, 정책은 오랫동안 SELECT/INSERT 둘뿐이었다 — 실제로는
+> 누구도(보호자조차) 당사자 정보를 수정할 방법이 없는 상태로 방치돼 있었다("보호자 대시보드에서
+> 당사자 정보를 수정할 방법이 없다"는 사용자 피드백으로 발견). 정책만 열고 컬럼 GRANT를 그대로
+> 두면 guardians 관계만 있어도 `primary_guardian_id`(주보호자 위조)·`id`·`is_adult`(생애주기
+> 산출값 위조)까지 마음대로 바꿀 수 있어 2026-07-18 `users` 컬럼권한 사고와 동일 계열의 결함이
+> 됐을 것 — 그래서 정책 신설과 동시에 REVOKE 후 안전 컬럼만 재부여했다(순서 중요, 컬럼 GRANT는
+> 가산적이라 REVOKE 없는 GRANT는 no-op).
+
+```sql
+-- 보호자 또는 셀프 가입 당사자 본인만 UPDATE, 안전 컬럼만 허용
+CREATE POLICY persons_update ON persons FOR UPDATE
+  USING (
+    EXISTS (SELECT 1 FROM guardians WHERE person_id = persons.id AND user_id = auth.uid())
+    OR persons.id = auth.uid()  -- 셀프 가입 당사자 본인(persons.id = auth.uid())
+  )
+  WITH CHECK (
+    EXISTS (SELECT 1 FROM guardians WHERE person_id = persons.id AND user_id = auth.uid())
+    OR persons.id = auth.uid()
+  );
+
+REVOKE UPDATE ON public.persons FROM authenticated;
+GRANT UPDATE (
+  full_name, birth_date, gender, disability_types, disability_degree,
+  emergency_info, avatar_url, updated_at
+) ON public.persons TO authenticated;
+
+-- 공동보호자 자진 탈퇴(피보호자 목록에서 제외) — 자기 링크만, 주보호자(is_primary=true)는 제외
+-- (persons.primary_guardian_id가 ON DELETE RESTRICT라 주보호자 링크 삭제는 정합성을 깨뜨림 —
+-- 주보호자 재지정은 별도 기능, 이번 범위 밖). DELETE는 컬럼 개념이 없어 USING만으로 충분히 안전.
+CREATE POLICY guardians_delete ON guardians FOR DELETE
+  USING (user_id = auth.uid() AND is_primary = false);
+```
+
+> **컬럼 GRANT 범위:** `persons_update`의 `WITH CHECK`가 있어도 컬럼을 안전 목록(`full_name`·
+> `birth_date`·`gender`·`disability_types`·`disability_degree`·`emergency_info`·`avatar_url`·
+> `updated_at`)으로 제한해 `primary_guardian_id`·`id`·`is_adult` 등 신뢰 컬럼 위조를 이중으로
+> 차단한다. 셀프 가입 당사자 분기(`persons.id = auth.uid()`)는 이 안전 컬럼 목록 안에서만
+> 유효하므로 위 보호가 그대로 적용된다.
+
+### 4-1-1. users 테이블
+
+> **`users_select_own` → `users_select_related` 대체 이력(2026-07-19, `p3_users_select_related_stakeholders`):**
+> 최초 정책 `users_select_own`(`auth.uid() = id`)은 자기 자신 외에는 아무도 조회할 수 없어,
+> `records.select("...,author:users!author_id(full_name)")` 같은 임베디드 조인이 타인에겐
+> 항상 `null`을 반환했다 — G-01 보호자 대시보드의 "최근 기록"·"권한 현황" 카드가 작성자·그란티
+> 이름을 못 보여주는 문제를 조사하다가 실제 guardian1 세션(REST API curl)으로 재현·발견했다.
+> `/persons/[id]/records`(RecordManager)의 "작성자" 컬럼도 처음부터 동일하게 null이었을
+> 것으로 추정된다(2026-07-17 `persons_select` 갭과 같은 계열의 선재 결함).
+
+```sql
+-- 당사자를 매개로 이미 연결된 이해관계자끼리만 서로의 기본 정보 조회 가능
+DROP POLICY IF EXISTS users_select_own ON users;
+
+CREATE POLICY users_select_related ON users FOR SELECT
+  USING (
+    auth.uid() = id
+    OR EXISTS (
+      -- users.id 가 어떤 당사자의 보호자이고, 그 당사자를 나도 보호자/권한보유자로서 접근 가능
+      SELECT 1 FROM guardians g
+      WHERE g.user_id = users.id
+        AND (
+          g.person_id = auth.uid()
+          OR EXISTS (SELECT 1 FROM guardians g2 WHERE g2.person_id = g.person_id AND g2.user_id = auth.uid())
+          OR EXISTS (
+            SELECT 1 FROM permissions p2
+            WHERE p2.person_id = g.person_id AND p2.grantee_id = auth.uid() AND p2.is_active = true
+          )
+        )
+    )
+    OR EXISTS (
+      -- users.id 가 어떤 당사자에 활성 권한을 가진 그란티(전문가)이고, 그 당사자를 나도 접근 가능
+      SELECT 1 FROM permissions p
+      WHERE p.grantee_id = users.id
+        AND p.is_active = true
+        AND (
+          p.person_id = auth.uid()
+          OR EXISTS (SELECT 1 FROM guardians g3 WHERE g3.person_id = p.person_id AND g3.user_id = auth.uid())
+          OR EXISTS (
+            SELECT 1 FROM permissions p3
+            WHERE p3.person_id = p.person_id AND p3.grantee_id = auth.uid() AND p3.is_active = true
+          )
+        )
+    )
+  );
+```
+
+> **컬럼 범위(의도적으로 넓음):** 이 정책은 행 단위만 제한하고 컬럼은 건드리지 않는다 — `users`
+> 테이블은 `p0_4_rls_grants`에서 이미 컬럼 제한 없는 SELECT가 부여돼 있고, `findGranteeByEmail`이
+> `email` 컬럼을, `exportMyData`가 자기 자신의 `email`/`created_at`을 읽는 등 컬럼을 좁히면 깨지는
+> 기존 기능이 있어 그대로 뒀다. 즉 이 정책이 여는 행에 대해서는 `email`/`fcm_token` 등도 함께
+> 보인다 — 당사자를 매개로 이미 합법적으로 연결된 사이로 한정되므로 위험도는 낮다고 판단했으나,
+> 더 좁히고 싶다면 후속 라운드에서 컬럼별 뷰 분리를 검토할 것.
+
 ### 4-2. records 테이블
 
 ```sql
@@ -915,7 +1010,7 @@ CREATE POLICY records_insert ON records FOR INSERT
     )
   );
 
--- edit 권한 보유자, 보호자, 또는 당사자 본인이 '자기가 작성한' 기록만 UPDATE
+-- edit 권한 보유자, 보호자, 당사자 본인이 '자기가 작성한' 기록, 또는 작성자 본인의 미제출 임시저장(draft)만 UPDATE
 -- (write는 신규 작성까지, 기존 기록 수정은 edit부터. 당사자 self-edit는 author_id로 한정)
 CREATE POLICY records_update ON records FOR UPDATE
   USING (
@@ -938,6 +1033,13 @@ CREATE POLICY records_update ON records FOR UPDATE
       (SELECT role FROM users WHERE id = auth.uid()) = 'person'
       AND person_id = auth.uid()
       AND author_id = auth.uid()
+    )
+    -- 작성자 본인의 미제출 임시저장(draft)은 도메인 접근수준(write만 있어도)과 무관하게 이어서 저장 가능.
+    -- 이미 제출 확정된(is_draft=false) 기록에는 적용되지 않아 "write만으로 확정 기록 수정" 같은 권한
+    -- 상승은 발생하지 않는다 (활동지원사가 자기 임시저장 일지를 이어 쓰는 시나리오, 20260721000000 마이그레이션)
+    OR (
+      author_id = auth.uid()
+      AND is_draft = true
     )
   );
 ```

@@ -141,7 +141,6 @@ export function TherapyPlanWizard({
       return;
     }
     router.push(res.recordId ? `/records/therapy-plan/${res.recordId}` : "/home");
-    router.refresh();
   }
 
   if (clients.length === 0) {
