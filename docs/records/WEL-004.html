@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WEL-004 — ISP 개별지원계획 서식 | 온길</title>
+<style>
+
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  background: #F7F8FA;
+  color: #1F2937;
+  line-height: 1.5;
+}
+.page { max-width: 1400px; margin: 0 auto; padding: 32px 24px 80px; }
+.back-link { display: inline-block; margin-bottom: 16px; color: #6B7280; text-decoration: none; font-size: 14px; }
+.back-link:hover { text-decoration: underline; }
+.header-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.domain-badge {
+  background: #EDFAF3; color: #276B4C; border: 1px solid #3EA67333;
+  padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 600;
+}
+.type-code { font-family: ui-monospace, monospace; font-size: 13px; color: #9CA3AF; }
+.confirm-badge { background: #FEF3C7; color: #92400E; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+.draft-badge { background: #F3F4F6; color: #6B7280; padding: 3px 8px; border-radius: 6px; font-size: 12px; }
+h1 { font-size: 26px; margin: 4px 0; }
+.subtitle { color: #6B7280; margin: 0 0 24px; font-size: 15px; }
+
+.record-form {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+  align-items: start;
+}
+.card {
+  background: #fff;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+.card legend { font-weight: 700; font-size: 16px; padding: 0 6px; }
+
+.field { margin: 20px 0; }
+.field label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px; color: #374151; }
+.req { color: #DC2626; }
+.hint { font-size: 12px; color: #9CA3AF; margin: 4px 0 0; }
+
+input[type="text"], input[type="date"], input[type="time"], input[type="datetime-local"],
+input[type="number"], select, textarea {
+  width: 100%;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #fff;
+  color: #1F2937;
+}
+textarea { resize: vertical; }
+
+.choice-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.choice-tile {
+  display: flex; align-items: center; gap: 6px;
+  border: 1px solid #D1D5DB; border-radius: 10px;
+  padding: 10px 14px; cursor: pointer; font-size: 14px;
+  min-height: 44px;
+}
+.choice-tile .emoji { font-size: 18px; }
+.choice-tile input { margin: 0; }
+
+.subgroup { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.inline-field label { font-size: 13px; font-weight: 500; color: #4B5563; margin-bottom: 4px; display: block; }
+
+.period-row { display: flex; align-items: center; gap: 8px; }
+.period-row .tilde { color: #9CA3AF; }
+
+.tag-cat { margin-bottom: 10px; }
+.tag-cat-label { font-size: 12px; color: #9CA3AF; display: block; margin-bottom: 4px; }
+.tag-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag-chip {
+  border: 1px solid #D1D5DB; background: #fff; border-radius: 999px;
+  padding: 6px 12px; font-size: 13px; cursor: pointer;
+}
+
+.repeat-list { display: flex; flex-direction: column; gap: 8px; }
+.repeat-row { display: flex; gap: 8px; }
+.repeat-row input { flex: 1; }
+.btn-remove { border: none; background: #F3F4F6; color: #6B7280; border-radius: 6px; width: 32px; cursor: pointer; }
+.btn-add {
+  align-self: flex-start; border: 1px dashed #9CA3AF; background: none; color: #6B7280;
+  border-radius: 8px; padding: 8px 12px; font-size: 13px; cursor: pointer; margin-top: 6px;
+}
+
+.repeat-table-wrap { overflow-x: auto; }
+.repeat-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+.repeat-table th { text-align: left; font-size: 12px; color: #6B7280; padding: 6px 8px; border-bottom: 1px solid #E5E7EB; white-space: nowrap; }
+.repeat-table td { padding: 6px; vertical-align: top; }
+.repeat-table td input, .repeat-table td select, .repeat-table td textarea { min-width: 110px; }
+.col-action { width: 36px; }
+
+.sidebar { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 24px; }
+.banner { border: 1px solid; border-radius: 12px; padding: 16px; font-size: 13px; }
+.banner strong { display: block; margin-bottom: 6px; font-size: 15px; }
+.banner p { margin: 4px 0; }
+.age-guard { font-weight: 600; }
+
+.target-person { background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 16px; }
+
+.action-card { background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.btn-save { background: #D9A62E; color: #fff; border: none; border-radius: 8px; padding: 12px; font-weight: 700; font-size: 15px; cursor: pointer; }
+.btn-cancel { background: none; border: 1px solid #D1D5DB; color: #4B5563; border-radius: 8px; padding: 10px; font-size: 14px; cursor: pointer; }
+
+.meta-card { background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; padding: 14px; font-size: 12px; color: #6B7280; }
+.meta-card p { margin: 4px 0; }
+.meta-card strong { color: #374151; }
+
+@media (max-width: 900px) {
+  .record-form { grid-template-columns: 1fr; }
+  .sidebar { position: static; }
+  .subgroup { grid-template-columns: 1fr; }
+}
+
+</style>
+</head>
+<body>
+  <div class="page">
+    <header class="page-header">
+      <a class="back-link" href="./index.html">← 기록 서식 목록</a>
+      <div class="header-row">
+        <span class="domain-badge">복지</span>
+        <span class="type-code">WEL-004</span>
+        <span class="confirm-badge">확인절차 필요</span>
+      </div>
+      <h1>ISP 개별지원계획</h1>
+      <p class="subtitle">사회복지사가 수립하는 개별 지원계획</p>
+    </header>
+
+    <form class="record-form">
+      <div class="left-col">
+        <fieldset class="card">
+          <legend>기본 정보 및 서식 필드</legend>
+          
+        <div class="field">
+          <label>지원 기간 <span class="req">*</span></label>
+          <div class="period-row"><input type="date" /><span class="tilde">~</span><input type="date" /></div>
+          
+        </div>
+
+        <div class="field">
+          <label>재사정 예정일 <span class="req">*</span></label>
+          <input type="date" />
+          
+        </div>
+
+        <div class="field">
+          <label>담당자 <span class="req">*</span></label>
+          <input type="text" placeholder="" maxlength="" />
+          
+        </div>
+
+        <div class="field">
+          <label>사정 도구/근거 (선택)</label>
+          <input type="text" placeholder="" maxlength="" />
+          
+        </div>
+
+        <div class="field">
+          <label>욕구사정</label>
+          
+          <div class="repeat-table-wrap">
+            <table class="repeat-table">
+              <thead><tr><th>욕구 영역</th><th>당사자·가족 욕구 진술</th><th>장애요인</th><th class="col-action"></th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><input type="text" placeholder="" /></td><td><input type="text" placeholder="" /></td><td><input type="text" placeholder="" /></td>
+                  <td class="col-action"><button type="button" class="btn-remove" aria-label="삭제">✕</button></td>
+                </tr>
+              </tbody>
+            </table>
+            <button type="button" class="btn-add">+ 행 추가</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>목표 (1개 이상) <span class="req">*</span></label>
+          
+          <div class="repeat-table-wrap">
+            <table class="repeat-table">
+              <thead><tr><th>영역</th><th>장기 목표</th><th>단기 목표</th><th>담당자</th><th>기한</th><th class="col-action"></th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><input type="text" placeholder="" /></td><td><input type="text" placeholder="" /></td><td><input type="text" placeholder="" /></td><td><input type="text" placeholder="" /></td><td><input type="date" /></td>
+                  <td class="col-action"><button type="button" class="btn-remove" aria-label="삭제">✕</button></td>
+                </tr>
+              </tbody>
+            </table>
+            <button type="button" class="btn-add">+ 행 추가</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>지원 서비스</label>
+          
+          <div class="repeat-table-wrap">
+            <table class="repeat-table">
+              <thead><tr><th>서비스명</th><th>제공기관</th><th>빈도</th><th>시작일</th><th class="col-action"></th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><input type="text" placeholder="" /></td><td><input type="text" placeholder="" /></td><td><input type="text" placeholder="" /></td><td><input type="date" /></td>
+                  <td class="col-action"><button type="button" class="btn-remove" aria-label="삭제">✕</button></td>
+                </tr>
+              </tbody>
+            </table>
+            <button type="button" class="btn-add">+ 행 추가</button>
+          </div>
+        </div>
+        </fieldset>
+      </div>
+
+      <aside class="sidebar">
+        <div class="banner" style="background:#EDFAF3;color:#276B4C;border-color:#3EA673">
+          <strong>WEL-004 · ISP 개별지원계획</strong>
+          <p>주 작성자: 사회복지사</p>
+          
+          <p>제출 시 확인 주체(성년=본인, 미성년=주보호자)가 자동 지정되어 확인 요청 알림이 발송됩니다.</p>
+        </div>
+
+        <div class="field target-person">
+          <label>제출 대상</label>
+          <select><option>당사자를 선택하세요</option></select>
+        </div>
+
+        <div class="action-card">
+          <button type="button" class="btn-save">저장</button>
+          <button type="button" class="btn-cancel">취소</button>
+        </div>
+
+        <div class="meta-card">
+          <p><strong>연결 화면</strong> W-13 / W-14</p>
+          <p><strong>스키마 출처</strong> packages/validation/src/records.ts</p>
+        </div>
+      </aside>
+    </form>
+  </div>
+</body>
+</html>

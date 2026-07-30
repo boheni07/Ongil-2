@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>기록 서식 전체 목록 | 온길</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  background: #F7F8FA;
+  color: #1F2937;
+}
+.wrap { max-width: 1200px; margin: 0 auto; padding: 40px 24px 80px; }
+h1 { font-size: 28px; margin-bottom: 4px; }
+.lead { color: #6B7280; margin: 0 0 32px; font-size: 15px; }
+.domain-section { margin-bottom: 36px; }
+.domain-section h2 { display: flex; align-items: center; gap: 8px; font-size: 18px; margin-bottom: 14px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.domain-code { font-family: ui-monospace, monospace; font-size: 12px; color: #9CA3AF; font-weight: 400; }
+.rec-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.rec-card {
+  display: block; background: #fff; border: 1px solid #E5E7EB; border-radius: 12px;
+  padding: 16px; text-decoration: none; color: inherit; transition: box-shadow .15s, transform .15s;
+}
+.rec-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); transform: translateY(-1px); }
+.rec-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.rec-card .type-code { font-family: ui-monospace, monospace; font-size: 12px; color: #9CA3AF; }
+.confirm-dot { color: #D97706; font-size: 10px; }
+.rec-card h3 { font-size: 15px; margin: 0 0 4px; }
+.rec-card p { font-size: 12px; color: #6B7280; margin: 0 0 10px; min-height: 32px; }
+.rec-author { font-size: 11px; color: #9CA3AF; }
+.legend { font-size: 12px; color: #9CA3AF; margin-top: 4px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>온길 — 분야별 기록 서식 전체 목록</h1>
+    <p class="lead">16종 record_type의 실제 입력 필드(packages/validation/src/records.ts 기준)를 그대로 반영한 정적 서식 화면입니다.
+      <span class="legend">● 확인절차(제출 시 보호자/본인 확인) 필요 유형</span></p>
+    
+      <section class="domain-section">
+        <h2><span class="dot" style="background:#4377C0"></span>교육 <span class="domain-code">EDU</span></h2>
+        <div class="rec-grid">
+        <a class="rec-card" href="./EDU-001.html">
+          <div class="rec-card-top">
+            <span class="type-code">EDU-001</span>
+            <span class="confirm-dot" title="확인절차 필요">●</span>
+          </div>
+          <h3>IEP 개별화교육계획</h3>
+          <p>특수교사가 수립하는 연간 개별화교육계획</p>
+          <span class="rec-author">특수교사</span>
+        </a>
+        <a class="rec-card" href="./EDU-002.html">
+          <div class="rec-card-top">
+            <span class="type-code">EDU-002</span>
+            
+          </div>
+          <h3>관찰기록</h3>
+          <p>특수교사가 수업·생활 중 관찰한 내용을 기록</p>
+          <span class="rec-author">특수교사</span>
+        </a>
+        <a class="rec-card" href="./EDU-003.html">
+          <div class="rec-card-top">
+            <span class="type-code">EDU-003</span>
+            <span class="confirm-dot" title="확인절차 필요">●</span>
+          </div>
+          <h3>행동중재계획 (BIP)</h3>
+          <p>특수교사가 수립하는 문제행동 중재 계획서</p>
+          <span class="rec-author">특수교사</span>
+        </a>
+        <a class="rec-card" href="./EDU-005.html">
+          <div class="rec-card-top">
+            <span class="type-code">EDU-005</span>
+            <span class="confirm-dot" title="확인절차 필요">●</span>
+          </div>
+          <h3>개별화전환계획 (ITP)</h3>
+          <p>특수교사가 작성하는 청소년 전환기(13~18세) 학교 단위 전환교육계획</p>
+          <span class="rec-author">특수교사</span>
+        </a></div>
+      </section>
+
+      <section class="domain-section">
+        <h2><span class="dot" style="background:#E04545"></span>치료 <span class="domain-code">MED</span></h2>
+        <div class="rec-grid">
+        <a class="rec-card" href="./MED-005.html">
+          <div class="rec-card-top">
+            <span class="type-code">MED-005</span>
+            <span class="confirm-dot" title="확인절차 필요">●</span>
+          </div>
+          <h3>치료계획서</h3>
+          <p>치료사가 수립하는 치료 목표 및 계획 문서</p>
+          <span class="rec-author">치료사</span>
+        </a>
+        <a class="rec-card" href="./MED-006.html">
+          <div class="rec-card-top">
+            <span class="type-code">MED-006</span>
+            
+          </div>
+          <h3>회기 일지</h3>
+          <p>치료사가 매 회기 후 남기는 진행 기록</p>
+          <span class="rec-author">치료사</span>
+        </a>
+        <a class="rec-card" href="./MED-007.html">
+          <div class="rec-card-top">
+            <span class="type-code">MED-007</span>
+            
+          </div>
+          <h3>평가보고서</h3>
+          <p>치료사가 초기·중간·최종 시점에 작성하는 평가 보고서</p>
+          <span class="rec-author">치료사</span>
+        </a></div>
+      </section>
+
+      <section class="domain-section">
+        <h2><span class="dot" style="background:#3EA673"></span>복지 <span class="domain-code">WEL</span></h2>
+        <div class="rec-grid">
+        <a class="rec-card" href="./WEL-004.html">
+          <div class="rec-card-top">
+            <span class="type-code">WEL-004</span>
+            <span class="confirm-dot" title="확인절차 필요">●</span>
+          </div>
+          <h3>ISP 개별지원계획</h3>
+          <p>사회복지사가 수립하는 개별 지원계획</p>
+          <span class="rec-author">사회복지사</span>
+        </a>
+        <a class="rec-card" href="./WEL-005.html">
+          <div class="rec-card-top">
+            <span class="type-code">WEL-005</span>
+            
+          </div>
+          <h3>서비스 이용계획</h3>
+          <p>사회복지사가 관리하는 당사자별 서비스 이용 현황</p>
+          <span class="rec-author">사회복지사</span>
+        </a>
+        <a class="rec-card" href="./WEL-006.html">
+          <div class="rec-card-top">
+            <span class="type-code">WEL-006</span>
+            
+          </div>
+          <h3>사례회의록</h3>
+          <p>사회복지사가 ISP 수립·재사정 논의 과정을 기록</p>
+          <span class="rec-author">사회복지사</span>
+        </a></div>
+      </section>
+
+      <section class="domain-section">
+        <h2><span class="dot" style="background:#8A5DC6"></span>전환 <span class="domain-code">TRA</span></h2>
+        <div class="rec-grid">
+        <a class="rec-card" href="./TRA-001.html">
+          <div class="rec-card-top">
+            <span class="type-code">TRA-001</span>
+            <span class="confirm-dot" title="확인절차 필요">●</span>
+          </div>
+          <h3>전환계획</h3>
+          <p>사회복지사가 관리하는 성인기 진입 전환 로드맵(만 14세 이상)</p>
+          <span class="rec-author">사회복지사 (특수교사 작성 가능)</span>
+        </a></div>
+      </section>
+
+      <section class="domain-section">
+        <h2><span class="dot" style="background:#5A7FA0"></span>법률·권리 <span class="domain-code">LEG</span></h2>
+        <div class="rec-grid">
+        <a class="rec-card" href="./LEG-001.html">
+          <div class="rec-card-top">
+            <span class="type-code">LEG-001</span>
+            <span class="confirm-dot" title="확인절차 필요">●</span>
+          </div>
+          <h3>후견감독보고서</h3>
+          <p>사회복지사가 지원하는 성년후견인의 법원 제출용 정기보고</p>
+          <span class="rec-author">사회복지사</span>
+        </a>
+        <a class="rec-card" href="./LEG-002.html">
+          <div class="rec-card-top">
+            <span class="type-code">LEG-002</span>
+            
+          </div>
+          <h3>권익옹호 상담기록</h3>
+          <p>사회복지사가 남기는 인권·차별·학대의심 등 상담 기록</p>
+          <span class="rec-author">사회복지사</span>
+        </a></div>
+      </section>
+
+      <section class="domain-section">
+        <h2><span class="dot" style="background:#E8991E"></span>활동지원 <span class="domain-code">DAI</span></h2>
+        <div class="rec-grid">
+        <a class="rec-card" href="./DAI-002.html">
+          <div class="rec-card-top">
+            <span class="type-code">DAI-002</span>
+            
+          </div>
+          <h3>활동지원 일지</h3>
+          <p>활동지원사가 서비스 제공 후 남기는 일일 지원 기록</p>
+          <span class="rec-author">활동지원사</span>
+        </a></div>
+      </section>
+
+      <section class="domain-section">
+        <h2><span class="dot" style="background:#D9A62E"></span>자기표현 <span class="domain-code">SELF</span></h2>
+        <div class="rec-grid">
+        <a class="rec-card" href="./SELF-001.html">
+          <div class="rec-card-top">
+            <span class="type-code">SELF-001</span>
+            
+          </div>
+          <h3>자기표현</h3>
+          <p>당사자 본인이 매일 남기는 기분·식사·건강·활동 기록</p>
+          <span class="rec-author">당사자 본인(보호자 대리 작성 가능)</span>
+        </a></div>
+      </section>
+
+      <section class="domain-section">
+        <h2><span class="dot" style="background:#6B7280"></span>보호자 직접기록 <span class="domain-code">GEN</span></h2>
+        <div class="rec-grid">
+        <a class="rec-card" href="./GEN-001.html">
+          <div class="rec-card-top">
+            <span class="type-code">GEN-001</span>
+            
+          </div>
+          <h3>보호자 기록</h3>
+          <p>보호자가 도메인 제한 없이 직접 작성하는 범용 기록</p>
+          <span class="rec-author">보호자</span>
+        </a></div>
+      </section>
+  </div>
+</body>
+</html>

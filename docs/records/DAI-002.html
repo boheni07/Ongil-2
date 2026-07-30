@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DAI-002 — 활동지원 일지 서식 | 온길</title>
+<style>
+
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  background: #F7F8FA;
+  color: #1F2937;
+  line-height: 1.5;
+}
+.page { max-width: 1400px; margin: 0 auto; padding: 32px 24px 80px; }
+.back-link { display: inline-block; margin-bottom: 16px; color: #6B7280; text-decoration: none; font-size: 14px; }
+.back-link:hover { text-decoration: underline; }
+.header-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.domain-badge {
+  background: #FFF5E6; color: #B56F10; border: 1px solid #E8991E33;
+  padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 600;
+}
+.type-code { font-family: ui-monospace, monospace; font-size: 13px; color: #9CA3AF; }
+.confirm-badge { background: #FEF3C7; color: #92400E; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+.draft-badge { background: #F3F4F6; color: #6B7280; padding: 3px 8px; border-radius: 6px; font-size: 12px; }
+h1 { font-size: 26px; margin: 4px 0; }
+.subtitle { color: #6B7280; margin: 0 0 24px; font-size: 15px; }
+
+.record-form {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+  align-items: start;
+}
+.card {
+  background: #fff;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+.card legend { font-weight: 700; font-size: 16px; padding: 0 6px; }
+
+.field { margin: 20px 0; }
+.field label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px; color: #374151; }
+.req { color: #DC2626; }
+.hint { font-size: 12px; color: #9CA3AF; margin: 4px 0 0; }
+
+input[type="text"], input[type="date"], input[type="time"], input[type="datetime-local"],
+input[type="number"], select, textarea {
+  width: 100%;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #fff;
+  color: #1F2937;
+}
+textarea { resize: vertical; }
+
+.choice-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.choice-tile {
+  display: flex; align-items: center; gap: 6px;
+  border: 1px solid #D1D5DB; border-radius: 10px;
+  padding: 10px 14px; cursor: pointer; font-size: 14px;
+  min-height: 44px;
+}
+.choice-tile .emoji { font-size: 18px; }
+.choice-tile input { margin: 0; }
+
+.subgroup { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.inline-field label { font-size: 13px; font-weight: 500; color: #4B5563; margin-bottom: 4px; display: block; }
+
+.period-row { display: flex; align-items: center; gap: 8px; }
+.period-row .tilde { color: #9CA3AF; }
+
+.tag-cat { margin-bottom: 10px; }
+.tag-cat-label { font-size: 12px; color: #9CA3AF; display: block; margin-bottom: 4px; }
+.tag-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag-chip {
+  border: 1px solid #D1D5DB; background: #fff; border-radius: 999px;
+  padding: 6px 12px; font-size: 13px; cursor: pointer;
+}
+
+.repeat-list { display: flex; flex-direction: column; gap: 8px; }
+.repeat-row { display: flex; gap: 8px; }
+.repeat-row input { flex: 1; }
+.btn-remove { border: none; background: #F3F4F6; color: #6B7280; border-radius: 6px; width: 32px; cursor: pointer; }
+.btn-add {
+  align-self: flex-start; border: 1px dashed #9CA3AF; background: none; color: #6B7280;
+  border-radius: 8px; padding: 8px 12px; font-size: 13px; cursor: pointer; margin-top: 6px;
+}
+
+.repeat-table-wrap { overflow-x: auto; }
+.repeat-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+.repeat-table th { text-align: left; font-size: 12px; color: #6B7280; padding: 6px 8px; border-bottom: 1px solid #E5E7EB; white-space: nowrap; }
+.repeat-table td { padding: 6px; vertical-align: top; }
+.repeat-table td input, .repeat-table td select, .repeat-table td textarea { min-width: 110px; }
+.col-action { width: 36px; }
+
+.sidebar { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 24px; }
+.banner { border: 1px solid; border-radius: 12px; padding: 16px; font-size: 13px; }
+.banner strong { display: block; margin-bottom: 6px; font-size: 15px; }
+.banner p { margin: 4px 0; }
+.age-guard { font-weight: 600; }
+
+.target-person { background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 16px; }
+
+.action-card { background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.btn-save { background: #D9A62E; color: #fff; border: none; border-radius: 8px; padding: 12px; font-weight: 700; font-size: 15px; cursor: pointer; }
+.btn-cancel { background: none; border: 1px solid #D1D5DB; color: #4B5563; border-radius: 8px; padding: 10px; font-size: 14px; cursor: pointer; }
+
+.meta-card { background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; padding: 14px; font-size: 12px; color: #6B7280; }
+.meta-card p { margin: 4px 0; }
+.meta-card strong { color: #374151; }
+
+@media (max-width: 900px) {
+  .record-form { grid-template-columns: 1fr; }
+  .sidebar { position: static; }
+  .subgroup { grid-template-columns: 1fr; }
+}
+
+</style>
+</head>
+<body>
+  <div class="page">
+    <header class="page-header">
+      <a class="back-link" href="./index.html">← 기록 서식 목록</a>
+      <div class="header-row">
+        <span class="domain-badge">활동지원</span>
+        <span class="type-code">DAI-002</span>
+        <span class="draft-badge">일상 기록(확인절차 없음)</span>
+      </div>
+      <h1>활동지원 일지</h1>
+      <p class="subtitle">활동지원사가 서비스 제공 후 남기는 일일 지원 기록</p>
+    </header>
+
+    <form class="record-form">
+      <div class="left-col">
+        <fieldset class="card">
+          <legend>기본 정보 및 서식 필드</legend>
+          
+        <div class="field">
+          <label>서비스 일자 <span class="req">*</span></label>
+          <input type="date" />
+          
+        </div>
+
+        <div class="field">
+          <label>시작 시간 <span class="req">*</span></label>
+          <input type="time" />
+          
+        </div>
+
+        <div class="field">
+          <label>종료 시간 <span class="req">*</span></label>
+          <input type="time" />
+          <p class="hint">종료 시간은 시작 시간보다 늦어야 합니다. 실적 시간(service_hours)은 서버가 자동 계산합니다.</p>
+        </div>
+
+        <div class="field">
+          <label>계획(사전 일정) 시간</label>
+          <input type="number" min="0" max="24" placeholder="" />
+          <p class="hint">실적 시간과 별개의 사전 계획 시간(선택)</p>
+        </div>
+
+        <div class="field">
+          <label>활동 내역</label>
+          
+          <div class="repeat-table-wrap">
+            <table class="repeat-table">
+              <thead><tr><th>활동 항목</th><th>소요(분)</th><th class="col-action"></th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><input type="text" placeholder="예: 외출 동행" /></td><td><input type="number" /></td>
+                  <td class="col-action"><button type="button" class="btn-remove" aria-label="삭제">✕</button></td>
+                </tr>
+              </tbody>
+            </table>
+            <button type="button" class="btn-add">+ 행 추가</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>건강 상태 <span class="req">*</span></label>
+          <div class="choice-group" role="radiogroup"><label class="choice-tile"><input type="radio" name="health_status" value="good" /><span class="emoji">💪</span><span>좋음</span></label><label class="choice-tile"><input type="radio" name="health_status" value="sick" /><span class="emoji">🤒</span><span>아픔</span></label><label class="choice-tile"><input type="radio" name="health_status" value="tired" /><span class="emoji">😴</span><span>피곤함</span></label></div>
+          
+        </div>
+
+        <div class="field">
+          <label>식사 상태 <span class="req">*</span></label>
+          <div class="choice-group" role="radiogroup"><label class="choice-tile"><input type="radio" name="meal_status" value="full" /><span class="emoji">🍚</span><span>다 먹음</span></label><label class="choice-tile"><input type="radio" name="meal_status" value="partial" /><span class="emoji">🥄</span><span>일부 먹음</span></label><label class="choice-tile"><input type="radio" name="meal_status" value="none" /><span class="emoji">🚫</span><span>안 먹음</span></label></div>
+          
+        </div>
+
+        <div class="field">
+          <label>특이사항 (최대 2000자)</label>
+          <textarea rows="3" placeholder="" maxlength="2000"></textarea>
+          
+        </div>
+
+        <div class="field">
+          <label>인계인수 메모 (최대 2000자)</label>
+          <textarea rows="3" placeholder="" maxlength="2000"></textarea>
+          <p class="hint">다음 지원자에게 전달할 인계 사항</p>
+        </div>
+        </fieldset>
+      </div>
+
+      <aside class="sidebar">
+        <div class="banner" style="background:#FFF5E6;color:#B56F10;border-color:#E8991E">
+          <strong>DAI-002 · 활동지원 일지</strong>
+          <p>주 작성자: 활동지원사</p>
+          
+          <p>일상 기록으로, 별도 확인 절차 없이 즉시 저장됩니다.</p>
+        </div>
+
+        <div class="field target-person">
+          <label>제출 대상</label>
+          <select><option>당사자를 선택하세요</option></select>
+        </div>
+
+        <div class="action-card">
+          <button type="button" class="btn-save">저장</button>
+          <button type="button" class="btn-cancel">취소</button>
+        </div>
+
+        <div class="meta-card">
+          <p><strong>연결 화면</strong> S-01</p>
+          <p><strong>스키마 출처</strong> packages/validation/src/records.ts</p>
+        </div>
+      </aside>
+    </form>
+  </div>
+</body>
+</html>
