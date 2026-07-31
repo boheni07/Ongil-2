@@ -5,26 +5,32 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+// 절대경로(/#...)로 둬야 지원·약관 같은 콘텐츠 페이지에서도 랜딩으로 돌아가 앵커까지 이동한다.
 const MENU = [
-  { href: "#s-intro", label: "플랫폼 소개" },
-  { href: "#s-domain", label: "6개 도메인" },
-  { href: "#s-role", label: "역할별 서비스" },
-  { href: "#s-security", label: "보안" },
+  { href: "/#s-intro", label: "플랫폼 소개" },
+  { href: "/#s-domain", label: "6개 도메인" },
+  { href: "/#s-role", label: "역할별 서비스" },
+  { href: "/#s-security", label: "보안" },
 ];
 
 /**
  * 랜딩 상단 내비게이션. 히어로 위에 겹쳐 기본 투명이며, 스크롤(>60px) 시 흰 배경으로 전환한다.
  * 프로토타입(web-common.html #lpNav)의 scroll 토글 동작을 클라이언트 컴포넌트로 재현.
+ *
+ * `forceSolid`: 히어로 없이 흰 배경으로 바로 시작하는 콘텐츠 페이지(지원·약관 등)용 —
+ * 투명 상태로 시작하면 흰 배경 위에 흰 글씨가 그대로 묻혀 보이지 않는다.
  */
-export function LandingNavbar() {
-  const [scrolled, setScrolled] = useState(false);
+export function LandingNavbar({ forceSolid = false }: { forceSolid?: boolean }) {
+  const [scrolledState, setScrolledState] = useState(false);
+  const scrolled = forceSolid || scrolledState;
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60);
+    if (forceSolid) return;
+    const onScroll = () => setScrolledState(window.scrollY > 60);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [forceSolid]);
 
   return (
     <nav
